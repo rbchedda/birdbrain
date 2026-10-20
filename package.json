@@ -1,0 +1,14 @@
+{
+  "name": "birdbrain-workspace",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "db:test": "node --test supabase/tests/",
+    "ingest:game-lands": "node ingest/game-lands.mjs",
+    "test": "npm run db:test && node --test ingest/ && npm --prefix app test"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.10",
+    "@electric-sql/pglite-postgis": "^0.2.10"
+  }
+}
