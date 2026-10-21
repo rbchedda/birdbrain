@@ -156,3 +156,26 @@ describe('post-photos storage reads', () => {
     assert.equal(await seesPhoto(alice, name), true);
   });
 });
+
+describe('minimum delay', () => {
+  it('keeps an 11:59 PM post private until 11:59 AM, not midnight', async () => {
+    const { rows } = await db.query(`select public.public_after_for('2026-11-14 23:59:00-05') t`);
+    assert.equal(rows[0].t.toISOString(), '2026-11-15T16:59:00.000Z'); // 11:59 AM EST
+  });
+
+  it('leaves morning posts on the next-midnight rule', async () => {
+    const { rows } = await db.query(`select public.public_after_for('2026-11-14 07:00:00-05') t`);
+    assert.equal(rows[0].t.toISOString(), '2026-11-15T05:00:00.000Z'); // midnight EST
+  });
+
+  it('applies to new posts and comments at least 12 hours out', async () => {
+    const p = await post(alice, 'min delay');
+    const c = await comment(alice, p, 'note');
+    const { rows } = await db.query(
+      `select (select public_after >= created_at + interval '12 hours' from public.posts where id = $1) p,
+              (select public_after >= created_at + interval '12 hours' from public.comments where id = $2) c`,
+      [p, c],
+    );
+    assert.deepEqual(rows[0], { p: true, c: true });
+  });
+});

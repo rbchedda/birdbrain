@@ -31,15 +31,15 @@ before(async () => {
 });
 
 describe('next-day delay (no live game alerts)', () => {
-  it('sets public_after to midnight Eastern on the following day', async () => {
+  it('sets public_after to next-day midnight Eastern or 12 hours, whichever is later', async () => {
     const { rows } = await db.query(
-      `select public_after = public.next_day_et(created_at) ok,
-              (public_after at time zone 'America/New_York')::time = '00:00' midnight,
-              public_after > created_at later
+      `select public_after = public.public_after_for(created_at) ok,
+              public_after >= public.next_day_et(created_at) next_day,
+              public_after >= created_at + interval '12 hours' min_delay
          from public.posts where id = $1`,
       [postId],
     );
-    assert.deepEqual(rows[0], { ok: true, midnight: true, later: true });
+    assert.deepEqual(rows[0], { ok: true, next_day: true, min_delay: true });
   });
 
   it('handles the evening hours when UTC has already rolled over', async () => {
