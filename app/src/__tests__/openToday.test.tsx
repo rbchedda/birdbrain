@@ -4,7 +4,7 @@ import { Linking } from 'react-native';
 import { OpenToday } from '@/components/OpenToday';
 import huntingHours from '@/data/huntingHours.json';
 import { PGC_DIGEST_URL, REGS, regsFor, sundayAllowed } from '@/data/regs';
-import { describeStatus, legalHours, speciesStatus } from '@/data/seasons';
+import { describeStatus, legalHours, placeToday, speciesStatus } from '@/data/seasons';
 import { etWallTime, officialDay, officialHours, pgcHoursZone, type HoursTable } from '@/lib/sun';
 import { etParts } from '@/lib/time';
 
@@ -114,6 +114,16 @@ describe('season and Sunday rules on fixed dates', () => {
   it('pheasant: 19 statewide Sundays plus 2 junior', () => {
     expect(regsFor('pheasant').sundayNote).toBe('Sundays open: 19 statewide Sundays plus 2 in the junior season.');
   });
+  it('waterfowl possession says see digest', () => {
+    expect(regsFor('waterfowl').possession).toBe('See digest (federal exceptions)');
+  });
+  it('map place status uses the same official hours as the card', () => {
+    const place = { id: 'x', name: 'Field', type: 'stocking' as const, county: 'Dauphin', species: ['pheasant' as const, 'dove' as const], center: harrisburg, acres: null };
+    const today = placeToday(place, new Date('2026-11-03T16:00:00Z'));
+    const day = officialDay('2026-11-03', harrisburg.lng)!;
+    expect(today.statuses[0].status).toMatchObject({ kind: 'open', start: day.huntStart, end: day.huntEnd });
+    expect(today.statuses[1].status).toMatchObject({ kind: 'open', start: day.huntStart, end: day.sunset });
+  });
   it('closes doves between segments', () => {
     expect(speciesStatus('dove', '2026-12-01', harrisburg)).toMatchObject({ kind: 'closed', nextOpen: { date: '2026-12-18' } });
   });
@@ -148,6 +158,6 @@ describe('OpenToday card', () => {
     expect(screen.getByTestId('open-today-asof')).toHaveTextContent(
       new RegExp(`^Regulations v${REGS.version.replace('.', '\\.')}, as of Wed, Oct 21, 2026\\. Hours from the official PGC table \\(pgc-hours@2026-07-09\\)\\.$`),
     );
-    expect(REGS.version).toBe('2026-27.2');
+    expect(REGS.version).toBe('2026-27.3');
   });
 });
