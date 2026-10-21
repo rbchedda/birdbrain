@@ -305,7 +305,7 @@ describe('Guide tab', () => {
 
 describe('After-the-hunt log', () => {
   it('shares a delayed post with per-place counts that stay private', async () => {
-    await open('/log?placeId=stock-sample-1');
+    await open('/new/post?placeId=stock-sample-1');
     expect(await screen.findByText('Pheasant stocking (sample B)')).toBeTruthy();
     await fireEvent.press(screen.getByLabelText('More flushed'));
     await fireEvent.press(screen.getByLabelText('More flushed'));
@@ -337,7 +337,6 @@ describe('After-the-hunt log', () => {
   it('saves a private entry locally first and shows its backup status', async () => {
     await open('/log');
     await fireEvent.changeText(await screen.findByLabelText('Notes'), 'Scouting only');
-    await fireEvent.press(screen.getByText('Private'));
     expect(screen.getByText(/only you can see it/)).toBeTruthy();
     await fireEvent.press(screen.getByText('Save privately'));
     expect(await screen.findByText(/Saved to your private log on this device/)).toBeTruthy();

@@ -1,5 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
+import { Fragment } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -10,8 +12,8 @@ type IconName = keyof typeof Ionicons.glyphMap;
 const icons: Record<string, { on: IconName; off: IconName }> = {
   index: { on: 'map', off: 'map-outline' },
   feed: { on: 'newspaper', off: 'newspaper-outline' },
-  groups: { on: 'people', off: 'people-outline' },
-  plan: { on: 'calendar', off: 'calendar-outline' },
+  guide: { on: 'book', off: 'book-outline' },
+  profile: { on: 'person-circle', off: 'person-circle-outline' },
 };
 
 export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
@@ -28,25 +30,8 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
           if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
         };
 
-        if (route.name === 'log') {
-          return (
-            <View key={route.key} style={styles.item}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Log a hunt or harvest"
-                accessibilityState={{ selected: focused }}
-                onPress={onPress}
-                style={({ pressed }) => [styles.logButton, pressed && { opacity: 0.85 }]}
-              >
-                <Ionicons name="add" size={32} color={colors.onAccent} />
-              </Pressable>
-              <Text style={[styles.label, focused && styles.labelActive]}>{label}</Text>
-            </View>
-          );
-        }
-
         const icon = icons[route.name] ?? icons.index;
-        return (
+        const tab = (
           <Pressable
             key={route.key}
             accessibilityRole="tab"
@@ -58,6 +43,24 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             <Ionicons name={focused ? icon.on : icon.off} size={24} color={focused ? colors.accent : colors.muted} />
             <Text style={[styles.label, focused && styles.labelActive]}>{label}</Text>
           </Pressable>
+        );
+        // The center ＋ sits after Feed (index 1). It opens the chooser, not a tab.
+        if (index !== 1) return tab;
+        return (
+          <Fragment key={route.key}>
+            {tab}
+            <View style={styles.item}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="New: log a hunt or post"
+                onPress={() => router.push('/new')}
+                style={({ pressed }) => [styles.logButton, pressed && { opacity: 0.85 }]}
+              >
+                <Ionicons name="add" size={32} color={colors.onAccent} />
+              </Pressable>
+              <Text style={styles.label}>New</Text>
+            </View>
+          </Fragment>
         );
       })}
     </View>
