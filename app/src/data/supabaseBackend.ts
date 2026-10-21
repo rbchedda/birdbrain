@@ -345,14 +345,25 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
 
     async report(target, reason, details) {
       const userId = await me();
-      check(
-        await sb.from('reports').insert({
-          reporter_id: userId,
-          [`${target.kind}_id`]: target.id,
-          reason,
-          details: details || null,
-        }),
-      );
+      const res = await sb.from('reports').insert({
+        reporter_id: userId,
+        [`${target.kind}_id`]: target.id,
+        reason,
+        details: details || null,
+      });
+      if (res.error?.code === '23505') throw new Error('You already reported this.');
+      check(res);
+    },
+
+    async rulesAccepted() {
+      const userId = await me();
+      const r = check(await sb.from('profiles').select('rules_accepted_at').eq('id', userId).maybeSingle()) as Row | null;
+      return !!r?.rules_accepted_at;
+    },
+
+    async acceptRules() {
+      await me();
+      check(await sb.rpc('accept_community_rules'));
     },
 
     async groups() {

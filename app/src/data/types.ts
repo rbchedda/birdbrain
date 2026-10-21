@@ -133,6 +133,7 @@ export type ReportReason =
   | 'illegal_activity'
   | 'live_game_alert'
   | 'location_exposed'
+  | 'hate'
   | 'other';
 
 export type ReportTarget = { kind: 'post' | 'comment' | 'profile'; id: string };
@@ -141,6 +142,7 @@ export const reportReasons: { key: ReportReason; label: string }[] = [
   { key: 'live_game_alert', label: 'Real-time game alert' },
   { key: 'location_exposed', label: 'Exposes a private location' },
   { key: 'harassment', label: 'Harassment' },
+  { key: 'hate', label: 'Hate speech or slurs' },
   { key: 'illegal_activity', label: 'Illegal activity' },
   { key: 'graphic', label: 'Graphic content' },
   { key: 'spam', label: 'Spam' },

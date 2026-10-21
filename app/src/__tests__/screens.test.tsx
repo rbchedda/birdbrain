@@ -51,6 +51,27 @@ describe('Map (Pheasant Planner)', () => {
   });
 });
 
+describe('Community rules', () => {
+  it('gates the feed until the rules are accepted, once', async () => {
+    expect(await backend.rulesAccepted()).toBe(false);
+    await open('/feed');
+    expect(await screen.findByText(/please read and accept the community rules/)).toBeTruthy();
+    expect(screen.queryByText(samplePosts()[0].caption)).toBeNull();
+    await fireEvent.press(screen.getByText('Read community rules'));
+    expect(await screen.findByText(/zero tolerance for objectionable content/)).toBeTruthy();
+    await fireEvent.press(screen.getByText('I agree to the community rules'));
+    expect(await screen.findByText(samplePosts()[0].caption)).toBeTruthy();
+    expect(await backend.rulesAccepted()).toBe(true);
+  });
+
+  it('is linked from the feed and shows it was accepted', async () => {
+    await open('/feed');
+    await fireEvent.press(await screen.findByText('Community rules'));
+    expect(await screen.findByText('You’ve accepted the community rules.')).toBeTruthy();
+    expect(screen.queryByText('I agree to the community rules')).toBeNull();
+  });
+});
+
 describe('Feed', () => {
   it('renders visible posts with blurred areas and toggles like', async () => {
     await open('/feed');
@@ -90,6 +111,64 @@ describe('Feed', () => {
     await fireEvent.changeText(screen.getByLabelText('Add a comment'), 'Congrats on the rooster');
     await fireEvent.press(screen.getByText('Comment'));
     expect(await screen.findByText('Congrats on the rooster')).toBeTruthy();
+  });
+});
+
+describe('Report and block on posts, comments and profiles', () => {
+  it('offers the hate reason and refuses a duplicate report', async () => {
+    await open('/feed');
+    await screen.findByText(samplePosts()[2].caption);
+    await fireEvent.press(screen.getAllByLabelText('Post options')[2]);
+    await fireEvent.press(screen.getByText('Report post'));
+    await fireEvent.press(screen.getByText('Hate speech or slurs'));
+    await fireEvent.press(screen.getByText('Send report'));
+    expect(await screen.findByText('Thanks. A moderator will review it.')).toBeTruthy();
+    await expect(backend.report({ kind: 'post', id: samplePosts()[2].id }, 'spam')).rejects.toThrow('You already reported this.');
+  });
+
+  it('reports a comment and blocks its author from the post screen', async () => {
+    await open('/post/p1');
+    const c = await screen.findByText('Great dog work!');
+    expect(c).toBeTruthy();
+    await fireEvent.press(screen.getAllByLabelText('Comment options')[0]);
+    await fireEvent.press(screen.getByText('Report comment'));
+    await fireEvent.press(screen.getByText('Harassment'));
+    await fireEvent.press(screen.getByText('Send report'));
+    expect(await screen.findByText('Thanks. A moderator will review it.')).toBeTruthy();
+    await fireEvent.press(screen.getByText('Done'));
+
+    await fireEvent.press(screen.getAllByLabelText('Comment options')[0]);
+    const block = screen.getByText(/^Block /);
+    const blockedName = String(block.props.children).replace('Block ', '');
+    await fireEvent.press(block);
+    await waitFor(() => expect(screen.queryByText('Great dog work!')).toBeNull());
+    const blocked = await backend.blockedUsers();
+    expect(blocked.map((a) => a.displayName)).toContain(blockedName);
+    for (const a of blocked) await backend.setBlocked(a.id, false);
+  });
+
+  it('rejects an objectionable comment', async () => {
+    await open('/post/p1');
+    await screen.findByText('Great dog work!');
+    await fireEvent.changeText(screen.getByLabelText('Add a comment'), 'what a FUCKING bird');
+    await fireEvent.press(screen.getByText('Comment'));
+    expect(await screen.findByText(/objectionable content/)).toBeTruthy();
+    expect(screen.queryByText('what a FUCKING bird', { exact: true })).toBeNull();
+  });
+
+  it('reports and blocks from a hunter profile', async () => {
+    const sam = samplePosts()[3];
+    await open(`/user/${sam.author.id}`);
+    expect(await screen.findByText(sam.caption)).toBeTruthy();
+    await fireEvent.press(screen.getByText('Report'));
+    await fireEvent.press(screen.getByText('Spam'));
+    await fireEvent.press(screen.getByText('Send report'));
+    expect(await screen.findByText('Thanks. A moderator will review it.')).toBeTruthy();
+    await fireEvent.press(screen.getByText('Done'));
+    await fireEvent.press(screen.getByText('Block'));
+    expect(await screen.findByText(/Blocked\. Neither of you/)).toBeTruthy();
+    expect(screen.queryByText(sam.caption)).toBeNull();
+    await backend.setBlocked(sam.author.id, false);
   });
 });
 

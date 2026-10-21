@@ -61,6 +61,9 @@ export interface Backend {
   blockedUsers(): Promise<Author[]>;
   setBlocked(userId: string, blocked: boolean): Promise<void>;
   report(target: ReportTarget, reason: ReportReason, details?: string): Promise<void>;
+  /** Whether the signed-in user has accepted the community rules (once, ever). */
+  rulesAccepted(): Promise<boolean>;
+  acceptRules(): Promise<void>;
 
   groups(): Promise<Group[]>;
   setMember(groupId: string, member: boolean): Promise<void>;
