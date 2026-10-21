@@ -3,32 +3,16 @@ import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
 import { createTestDb } from '../supabase/tests/db.mjs';
-import { fetchFeatures, ingestSource, pick, SOURCES, toRows, upsertRows } from './arcgis.mjs';
+import { cropsIn, fetchFeatures, ingestSource, missingFields, pick, SOURCES, toRows, upsertRows } from './arcgis.mjs';
 
-const gameLands = JSON.parse(readFileSync(new URL('./fixtures/two-game-lands.geojson', import.meta.url)));
+const fixture = (name) => JSON.parse(readFileSync(new URL(`./fixtures/${name}`, import.meta.url)));
+const gameLands = fixture('two-game-lands.geojson');
+// Schemas and sample rows captured from the live PGC layers (see the file's note).
+const live = fixture('pgc-live-sample.json').sources;
+const byName = (features, key, value) => features.find((f) => f.properties[key] === value);
 
-const stockingFeatures = [
-  {
-    type: 'Feature',
-    geometry: { type: 'Point', coordinates: [-75.95, 40.45] },
-    properties: { OBJECTID: 1, GlobalID: '{A1}', Property: 'SGL 110', County: 'Berks', Region: 'Southeast',
-      Property_Type: 'State Game Lands', Number_Releases: 9, Total_Released: 1200, Late_Season_Status: 'Yes' },
-  },
-  {
-    type: 'Feature',
-    geometry: { type: 'Point', coordinates: [-77.86, 40.79] },
-    properties: { OBJECTID: 2, GlobalID: '{B2}', Property: 'SGL 176', County: 'Centre', Region: 'Southcentral',
-      Property_Type: 'State Game Lands', Number_Releases: 6, Total_Released: 800, Late_Season_Status: 'No' },
-  },
-];
-
-const doveFeatures = [
-  {
-    type: 'Feature',
-    geometry: { type: 'Polygon', coordinates: [[[-76.7, 39.95], [-76.69, 39.95], [-76.69, 39.96], [-76.7, 39.96], [-76.7, 39.95]]] },
-    properties: { OBJECTID: 7, SGL: 243, County: 'York', Crop: 'Sunflower', Acres: 12.5 },
-  },
-];
+const stockingFeatures = ['101', 'Beltzville State Park'].map((n) => byName(live.pheasant_stocking.features, 'property_name', n));
+const doveFeatures = [byName(live.dove_fields.features, 'OBJECTID', 47)]; // "SGL 169"
 
 /** Fake ArcGIS server: layer metadata at ?f=json, paged GeoJSON at /query. */
 function fakeServer(layers, { pageCap = 1 } = {}) {
@@ -67,39 +51,101 @@ describe('fetchFeatures', () => {
     assert.equal(calls.length, 2);
   });
 
+  it('times out a hung request instead of waiting forever', async () => {
+    const fetchImpl = (url, { signal }) => new Promise((_, reject) => signal.addEventListener('abort', () => reject(signal.reason)));
+    await assert.rejects(fetchFeatures('https://x/L', { fetchImpl, timeoutMs: 20 }), /timed out after 20 ms/);
+  });
+
   it('surfaces ArcGIS errors', async () => {
     const fetchImpl = async () => ({ ok: true, json: async () => ({ error: { code: 400, message: 'bad' } }) });
     await assert.rejects(fetchFeatures('https://x/L', { fetchImpl }), /ArcGIS error/);
   });
 });
 
+describe('live schema', () => {
+  for (const [name, config] of Object.entries(SOURCES)) {
+    it(`${name} reads only fields the live layer has`, () => {
+      assert.ok(live[name], `no captured schema for ${name}`);
+      assert.equal(live[name].layerUrl, config.layerUrl);
+      assert.deepEqual(missingFields(config, live[name].fields), []);
+    });
+  }
+
+  it('flags mapped fields that disappear upstream', () => {
+    assert.deepEqual(missingFields(SOURCES.dove_fields, [{ name: 'GlobalID' }]),
+      ['Project_Name', 'Project_Area', 'Description', 'Active', 'last_edited_date']);
+  });
+});
+
 describe('toRows', () => {
   it('maps game lands by SGL number and merges split parcels', () => {
-    const split = [...gameLands.features, { ...gameLands.features[0], properties: { ...gameLands.features[0].properties, ACRES: 100 } }];
+    const split = [...gameLands.features, { ...gameLands.features[0], properties: { ...gameLands.features[0].properties, gis_area_ac: 100 } }];
     const rows = toRows(SOURCES.game_lands, split);
     assert.deepEqual(rows.map((r) => [r.source_id, r.name]), [['12', 'State Game Lands 12'], ['24', 'State Game Lands 24']]);
     assert.equal(JSON.parse(rows[0].geojson).type, 'GeometryCollection');
-    assert.equal(rows[0].acres, Math.round((24598.795567599998 + 100) * 10) / 10);
+    assert.equal(rows[0].acres, Math.round((24597.6 + 100) * 10) / 10);
   });
 
-  it('maps stocking points and keeps raw attributes', () => {
-    const [row] = toRows(SOURCES.pheasant_stocking, stockingFeatures);
-    assert.equal(row.source_id, '{A1}');
-    assert.equal(row.name, 'SGL 110');
-    assert.equal(row.county, 'Berks');
-    const props = JSON.parse(row.properties);
-    assert.equal(props.total_released, 1200);
-    assert.equal(props.raw.OBJECTID, 1);
+  it('reads game land acres, region, status and edit date from the live field names', () => {
+    const row = toRows(SOURCES.game_lands, gameLands.features)[1];
+    assert.equal(row.acres, 8585.2); // gis_area_ac, not Shape__Area (Web Mercator square metres)
+    assert.equal(row.county, null); // the layer has no county
+    assert.equal(row.source_updated_at, '2026-10-19T14:48:24.000Z');
+    assert.deepEqual(JSON.parse(row.properties), { sgl: 24, pgc_region: 'Northwest', status: 'Active', raw: gameLands.features[1].properties });
   });
 
-  it('names dove fields from their game land', () => {
-    const [row] = toRows(SOURCES.dove_fields, doveFeatures);
-    assert.equal(row.name, 'SGL 243 dove field');
-    assert.equal(JSON.parse(row.properties).planted, 'Sunflower');
+  it('keys stocking points by property and names game lands in full', () => {
+    const rows = toRows(SOURCES.pheasant_stocking, live.pheasant_stocking.features);
+    const ids = Object.fromEntries(rows.map((r) => [r.source_id, r]));
+    assert.deepEqual(Object.keys(ids).sort(),
+      ['name:beltzville-state-park', 'name:jeffers-tree-farm', 'sgl:101', 'sgl:155', 'sgl:65']);
+    assert.equal(ids['sgl:101'].name, 'State Game Lands 101');
+    assert.equal(ids['sgl:155'].name, 'State Game Lands 155'); // property_type is null upstream
+    assert.equal(ids['name:beltzville-state-park'].name, 'Beltzville State Park');
+    const p = JSON.parse(ids['sgl:101'].properties);
+    assert.deepEqual({ ...p, raw: undefined }, {
+      sgl: 101, pgc_region: 'Northwest', property_type: 'SGL', late_season: false, number_releases: 6,
+      total_released: 360, globalid: '02d7cb09-b6ea-4f2a-9a27-7ce5342be0ab', raw: undefined,
+    });
+    assert.equal(p.raw.late_season_status, 'No Late Season Stocking');
+  });
+
+  it('reads late-season status as a boolean and keeps unknown counts null', () => {
+    const rows = Object.fromEntries(toRows(SOURCES.pheasant_stocking, live.pheasant_stocking.features)
+      .map((r) => [r.source_id, JSON.parse(r.properties)]));
+    assert.equal(rows['name:beltzville-state-park'].late_season, true);
+    assert.equal(rows['sgl:65'].number_releases, null);
+    assert.equal(rows['name:jeffers-tree-farm'].total_released, null);
+  });
+
+  it('maps dove fields from Project_Name, Project_Area and Description', () => {
+    const rows = Object.fromEntries(toRows(SOURCES.dove_fields, live.dove_fields.features)
+      .map((r) => [JSON.parse(r.properties).raw.OBJECTID, r]));
+    assert.equal(Object.keys(rows).length, 8);
+    assert.equal(rows[47].name, 'SGL 169 dove field');
+    assert.equal(rows[47].acres, 18.6);
+    assert.deepEqual(JSON.parse(rows[47].properties).crops, ['sunflower', 'wheat']);
+    assert.equal(rows[42].name, 'Dove field 252'); // renamed from the SGL it overlaps on upsert
+    assert.equal(rows[203].name, 'Beltzville dove field');
+    assert.equal(rows[398].name, 'King Farm Dove Fields');
+    assert.equal(rows[204].name, 'Dove field');
+    assert.equal(rows[417].acres, null); // Project_Area blank upstream; filled from geometry on upsert
+    assert.equal(JSON.parse(rows[239].properties).project_name, '411');
+  });
+
+  it('skips dove fields marked inactive', () => {
+    const f = live.dove_fields.features[0];
+    assert.equal(toRows(SOURCES.dove_fields, [{ ...f, properties: { ...f.properties, Active: 'N' } }]).length, 0);
+  });
+
+  it('finds crops in free-text descriptions', () => {
+    assert.deepEqual(cropsIn('planted in wheat, sunflower, and brown-top millet'), ['sunflower', 'wheat', 'millet']);
+    assert.deepEqual(cropsIn('Primarily winter wheat. ... small grains'), ['wheat', 'small grains']);
+    assert.deepEqual(cropsIn(null), []);
   });
 
   it('skips features without geometry or an id', () => {
-    assert.equal(toRows(SOURCES.game_lands, [{ properties: { SGL: 1 }, geometry: null }, { properties: {}, geometry: {} }]).length, 0);
+    assert.equal(toRows(SOURCES.game_lands, [{ properties: { sgl: 1 }, geometry: null }, { properties: {}, geometry: {} }]).length, 0);
   });
 });
 
@@ -121,11 +167,35 @@ describe('upsertRows', () => {
     ].sort((a, b) => a.type.localeCompare(b.type)));
   });
 
+  it('tags dove fields with the game land they overlap and fills blank acreage', async () => {
+    const db = await createTestDb();
+    const doves = [42, 239, 417].map((id) => byName(live.dove_fields.features, 'OBJECTID', id));
+    // A stand-in SGL 252 polygon covering the "252" field (OBJECTID 42) only.
+    const [x0, y0] = doves[0].geometry.coordinates[0][0];
+    const [x1, y1] = doves[0].geometry.coordinates[0][2];
+    const sgl252 = { type: 'Feature', properties: { ...gameLands.features[0].properties, sgl: 252 },
+      geometry: { type: 'Polygon', coordinates: [[[x0 - 0.01, y0 - 0.01], [x1 + 0.01, y0 - 0.01], [x1 + 0.01, y1 + 0.01], [x0 - 0.01, y1 + 0.01], [x0 - 0.01, y0 - 0.01]]] } };
+    await upsertRows(db, SOURCES.game_lands, toRows(SOURCES.game_lands, [sgl252]));
+    await upsertRows(db, SOURCES.dove_fields, toRows(SOURCES.dove_fields, doves));
+    const { rows } = await db.query(
+      `select properties -> 'raw' ->> 'OBJECTID' oid, name, (properties ->> 'sgl')::int sgl, acres::float
+         from public.places where type = 'dove_field' order by 1`,
+    );
+    assert.deepEqual(rows.map(({ oid, name, sgl }) => [oid, name, sgl]), [
+      ['239', 'Dove field 411', null], // "411" is not a game land number
+      ['417', 'Dove field 285', null],
+      ['42', 'SGL 252 dove field', 252],
+    ]);
+    const acres = Object.fromEntries(rows.map((r) => [r.oid, r.acres]));
+    assert.equal(acres[42], 27.6); // Project_Area as published
+    assert.ok(acres[417] > 0, 'blank Project_Area is computed from the geometry');
+  });
+
   it('updates in place and deletes features dropped upstream', async () => {
     const db = await createTestDb();
     const rows = toRows(SOURCES.pheasant_stocking, stockingFeatures);
     await upsertRows(db, SOURCES.pheasant_stocking, rows);
-    const before = await db.query(`select id from public.places where source_id = '{A1}'`);
+    const before = await db.query(`select id from public.places where source_id = 'sgl:101'`);
     const result = await upsertRows(db, SOURCES.pheasant_stocking, [{ ...rows[0], name: 'Renamed' }]);
     assert.deepEqual(result, { upserted: 1, deleted: 1 });
     const after = await db.query('select id, name from public.places');

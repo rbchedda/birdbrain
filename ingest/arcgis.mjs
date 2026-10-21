@@ -19,6 +19,8 @@ import { pathToFileURL } from 'node:url';
 
 const PGC = 'https://services1.arcgis.com/k8yxvICm95iIFicb/arcgis/rest/services';
 const PAGE_SIZE = 1000;
+// PGC's ArcGIS host is sometimes slow; cap each request so one hung layer can't wedge a run.
+export const FETCH_TIMEOUT_MS = Number(process.env.INGEST_FETCH_TIMEOUT_MS) || 60_000;
 
 /** Case-insensitive property lookup across candidate field names. */
 export function pick(props, ...names) {
@@ -32,27 +34,37 @@ export function pick(props, ...names) {
 
 const num = (v) => (v === null || v === '' || Number.isNaN(Number(v)) ? null : Number(v));
 const epochToIso = (v) => (typeof v === 'number' ? new Date(v).toISOString() : null);
+const round1 = (v) => (v === null ? null : Math.round(v * 10) / 10);
 
-// Field names below are best guesses from the layer descriptions. Run
-// `--describe` against the live service and adjust before trusting a mapping;
-// unmapped attributes are kept in properties.raw either way.
+/** Lowercase slug for building stable ids from names. */
+export const slug = (s) => String(s).toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+// Crops named in dove field descriptions ("planted in wheat, sunflower, and brown-top millet").
+const CROPS = ['sunflower', 'wheat', 'millet', 'sorghum', 'buckwheat', 'small grains'];
+export const cropsIn = (text) => CROPS.filter((c) => new RegExp(`\\b${c}`, 'i').test(text ?? ''));
+
+// Mappings verified against the live layers with `--describe` on 2026-10-21;
+// ingest/fixtures/pgc-live-sample.json holds the captured schemas and sample
+// rows. `fields` lists every attribute a mapping reads, so --describe can flag
+// drift. None of the three layers carries a county. Unmapped attributes are
+// kept in properties.raw either way.
 export const SOURCES = {
   game_lands: {
     source: 'pgc:state_game_lands',
     layerUrl: `${PGC}/State_Game_Lands_Boundaries/FeatureServer/300`,
     type: 'game_land',
     species: [],
+    fields: ['sgl', 'gis_area_ac', 'pgc_region', 'sgl_status', 'last_edited_date'],
     toRow(p) {
-      const sgl = num(pick(p, 'SGL', 'SGL_NUM', 'SGL_NUMBER', 'GAMELANDNUM', 'NUMBER'));
+      const sgl = num(pick(p, 'sgl'));
       if (!Number.isInteger(sgl)) return null;
-      const acres = num(pick(p, 'ACRES', 'GIS_ACRES', 'SHAPE_AREA_ACRES'));
       return {
         source_id: String(sgl),
         name: `State Game Lands ${sgl}`,
-        county: pick(p, 'COUNTY', 'COUNTY_NAME'),
-        acres: acres === null ? null : Math.round(acres * 10) / 10,
-        source_updated_at: epochToIso(pick(p, 'MOD_DATE', 'EDITDATE', 'LAST_EDITED_DATE')),
-        properties: { sgl, pgc_region: pick(p, 'PGC_REGION', 'REGION') },
+        county: null,
+        acres: round1(num(pick(p, 'gis_area_ac'))),
+        source_updated_at: epochToIso(pick(p, 'last_edited_date')),
+        properties: { sgl, pgc_region: pick(p, 'pgc_region'), status: pick(p, 'sgl_status') },
       };
     },
     // Several polygons can share one SGL number; merge them into one row.
@@ -64,22 +76,31 @@ export const SOURCES = {
     layerUrl: `${PGC}/Pheasant_Hunting_Pennsylvania/FeatureServer/100`,
     type: 'stocking',
     species: ['pheasant'],
+    fields: ['property_name', 'property_type', 'pgc_region', 'late_season_status', 'number_releases',
+      'total_released', 'globalid', 'last_edited_date'],
     toRow(p) {
-      const property = pick(p, 'PROPERTY', 'PROPERTY_NAME', 'NAME', 'LOCATION');
-      const id = pick(p, 'GLOBALID', 'SITE_ID', 'ID') ?? property;
-      if (!id) return null;
+      const property = pick(p, 'property_name');
+      if (property === null) return null;
+      // Game lands are listed by bare number ("65"), sometimes without a property_type.
+      const sgl = /^\d{1,3}$/.test(String(property).trim()) ? Number(property) : null;
+      const late = pick(p, 'late_season_status');
       return {
-        source_id: String(id),
-        name: String(property ?? id),
-        county: pick(p, 'COUNTY', 'COUNTY_NAME'),
+        // Keyed by property, not GlobalID: PGC rebuilds this layer each season
+        // (every feature was re-created in Sept-Oct 2026), which would churn
+        // GlobalIDs and cascade-delete users' saved places.
+        source_id: sgl !== null ? `sgl:${sgl}` : `name:${slug(property)}`,
+        name: sgl !== null ? `State Game Lands ${sgl}` : String(property).trim(),
+        county: null,
         acres: null,
-        source_updated_at: epochToIso(pick(p, 'EDITDATE', 'LAST_EDITED_DATE')),
+        source_updated_at: epochToIso(pick(p, 'last_edited_date')),
         properties: {
-          region: pick(p, 'REGION', 'PGC_REGION'),
-          property_type: pick(p, 'PROPERTY_TYPE', 'PROP_TYPE', 'TYPE'),
-          number_releases: num(pick(p, 'NUMBER_RELEASES', 'NUM_RELEASES')),
-          total_released: num(pick(p, 'TOTAL_RELEASED', 'TOTAL_BIRDS')),
-          late_season_status: pick(p, 'LATE_SEASON_STATUS', 'LATE_SEASON'),
+          sgl,
+          pgc_region: pick(p, 'pgc_region'),
+          property_type: pick(p, 'property_type'),
+          late_season: late === null ? null : !/^no\b/i.test(late),
+          number_releases: num(pick(p, 'number_releases')),
+          total_released: num(pick(p, 'total_released')),
+          globalid: pick(p, 'globalid'),
         },
       };
     },
@@ -90,34 +111,46 @@ export const SOURCES = {
     layerUrl: `${PGC}/Managed_Dove_Fields_(Public_View)/FeatureServer/0`,
     type: 'dove_field',
     species: ['dove'],
+    fields: ['GlobalID', 'Project_Name', 'Project_Area', 'Description', 'Active', 'last_edited_date'],
     toRow(p) {
-      const id = pick(p, 'GLOBALID', 'FIELD_ID', 'ID', 'OBJECTID');
-      if (id === null) return null;
-      const sgl = num(pick(p, 'SGL', 'SGL_NUM', 'GAMELANDS'));
-      const fieldName = pick(p, 'FIELD_NAME', 'NAME');
+      const id = pick(p, 'GlobalID');
+      if (id === null || /^n/i.test(pick(p, 'Active') ?? '')) return null;
+      // Project_Name is free text: "SGL 169", "252", "Windmill Hill", "2425", or blank.
+      // Bare numbers aren't reliably SGLs (411, 414, 419 lie off game lands),
+      // so the SGL comes from the polygon overlap in upsertRows (sglByOverlap).
+      const label = pick(p, 'Project_Name')?.trim() ?? null;
+      const description = pick(p, 'Description');
       return {
         source_id: String(id),
-        name: String(fieldName ?? (sgl ? `SGL ${sgl} dove field` : `Dove field ${id}`)),
-        county: pick(p, 'COUNTY', 'COUNTY_NAME'),
-        acres: num(pick(p, 'ACRES', 'FIELD_ACRES')),
-        source_updated_at: epochToIso(pick(p, 'EDITDATE', 'LAST_EDITED_DATE')),
-        properties: { sgl, planted: pick(p, 'CROP', 'PLANTED', 'PLANTING', 'CROP_TYPE') },
+        name: !label ? 'Dove field' : /dove/i.test(label) ? label : /^\d+$/.test(label) ? `Dove field ${label}` : `${label} dove field`,
+        county: null,
+        // Blank for a few fields; upsertRows fills those from the geometry.
+        acres: round1(num(pick(p, 'Project_Area'))),
+        source_updated_at: epochToIso(pick(p, 'last_edited_date')),
+        properties: { sgl: null, project_name: label, description, crops: cropsIn(description) },
       };
     },
+    sglByOverlap: { nameSuffix: 'dove field' },
   },
 };
 
-async function getJson(url, fetchImpl) {
-  const res = await fetchImpl(url);
-  if (!res.ok) throw new Error(`ArcGIS request failed: ${res.status} ${res.statusText} (${url})`);
-  const body = await res.json();
-  if (body.error) throw new Error(`ArcGIS error: ${JSON.stringify(body.error)} (${url})`);
-  return body;
+async function getJson(url, fetchImpl, timeoutMs = FETCH_TIMEOUT_MS) {
+  const signal = AbortSignal.timeout(timeoutMs);
+  try {
+    const res = await fetchImpl(url, { signal });
+    if (!res.ok) throw new Error(`ArcGIS request failed: ${res.status} ${res.statusText} (${url})`);
+    const body = await res.json();
+    if (body.error) throw new Error(`ArcGIS error: ${JSON.stringify(body.error)} (${url})`);
+    return body;
+  } catch (err) {
+    if (signal.aborted) throw new Error(`ArcGIS request timed out after ${timeoutMs} ms (${url})`);
+    throw err;
+  }
 }
 
 /** Layer metadata: fields, max record count, and editingInfo.lastEditDate. */
-export async function fetchLayerInfo(layerUrl, { fetchImpl = fetch } = {}) {
-  const info = await getJson(`${layerUrl}?f=json`, fetchImpl);
+export async function fetchLayerInfo(layerUrl, { fetchImpl = fetch, timeoutMs } = {}) {
+  const info = await getJson(`${layerUrl}?f=json`, fetchImpl, timeoutMs);
   return {
     name: info.name,
     geometryType: info.geometryType,
@@ -128,7 +161,7 @@ export async function fetchLayerInfo(layerUrl, { fetchImpl = fetch } = {}) {
 }
 
 /** Every feature as WGS84 GeoJSON, following ArcGIS pagination. */
-export async function fetchFeatures(layerUrl, { fetchImpl = fetch, pageSize = PAGE_SIZE } = {}) {
+export async function fetchFeatures(layerUrl, { fetchImpl = fetch, pageSize = PAGE_SIZE, timeoutMs } = {}) {
   const features = [];
   // Advance by what the server returned; it may cap pages below pageSize.
   for (let offset = 0; ; offset = features.length) {
@@ -142,12 +175,18 @@ export async function fetchFeatures(layerUrl, { fetchImpl = fetch, pageSize = PA
       resultRecordCount: String(pageSize),
       f: 'geojson',
     });
-    const page = await getJson(`${layerUrl}/query?${params}`, fetchImpl);
+    const page = await getJson(`${layerUrl}/query?${params}`, fetchImpl, timeoutMs);
     features.push(...(page.features ?? []));
     const more = page.exceededTransferLimit ?? page.properties?.exceededTransferLimit;
     if (!page.features?.length || (!more && page.features.length < pageSize)) break;
   }
   return features;
+}
+
+/** Mapped field names a layer no longer has (exact match; ArcGIS names are case-sensitive in queries). */
+export function missingFields(config, liveFields) {
+  const live = new Set(liveFields.map((f) => f.name));
+  return config.fields.filter((name) => !live.has(name));
 }
 
 /** Map features to place rows using a source config. */
@@ -190,13 +229,16 @@ export async function upsertRows(db, config, rows, { layerUrl, lastEditDate } = 
       when extensions.geometrytype(g) in ('POINT', 'MULTIPOINT') then g
       else extensions.st_multi(extensions.st_collectionextract(extensions.st_makevalid(g), 3))
     end`;
+  // When PGC leaves a polygon's acreage blank, use its geodesic area.
+  const acresSql = `coalesce($3::numeric, case when extensions.geometrytype(g) in ('POLYGON', 'MULTIPOLYGON')
+      then round((extensions.st_area(g::extensions.geography) / 4046.8564224)::numeric, 1) end)`;
   await db.query('begin');
   try {
     for (const r of rows) {
       await db.query(
         `with src as (select extensions.st_setsrid(extensions.st_geomfromgeojson($2), 4326) g)
          insert into public.places (type, name, state, county, species, geom, acres, source, source_id, source_updated_at, properties)
-         select $8::public.place_type, $1, 'PA', $9, $10::public.species[], ${geomSql}, $3, $4, $5, $6, $7::jsonb from src
+         select $8::public.place_type, $1, 'PA', $9, $10::public.species[], ${geomSql}, ${acresSql}, $4, $5, $6, $7::jsonb from src
          on conflict (source, source_id) do update set
            name = excluded.name,
            county = excluded.county,
@@ -209,6 +251,7 @@ export async function upsertRows(db, config, rows, { layerUrl, lastEditDate } = 
           config.type, r.county, `{${config.species.join(',')}}`],
       );
     }
+    if (config.sglByOverlap) await assignSglByOverlap(db, config);
     const removed = await db.query(
       `delete from public.places where source = $1 and not (source_id = any($2::text[]))`,
       [config.source, rows.map((r) => r.source_id)],
@@ -226,6 +269,28 @@ export async function upsertRows(db, config, rows, { layerUrl, lastEditDate } = 
     await db.query('rollback');
     throw err;
   }
+}
+
+/**
+ * Tag each of a source's places with the State Game Land it overlaps most and
+ * name it after that SGL ("SGL 252 dove field"). Uses the game lands already in places, so ingest
+ * game_lands first (SOURCES order does).
+ */
+async function assignSglByOverlap(db, config) {
+  await db.query(
+    `update public.places d set
+       properties = d.properties || jsonb_build_object('sgl', gl.sgl),
+       name = case when gl.sgl is null then d.name else 'SGL ' || gl.sgl || ' ' || $3 end
+     from public.places d2
+     left join lateral (
+       select (g.properties ->> 'sgl')::int sgl from public.places g
+        where g.source = $2 and extensions.st_intersects(g.geom, d2.geom)
+        order by extensions.st_area(extensions.st_intersection(g.geom, d2.geom)) desc
+        limit 1
+     ) gl on true
+     where d.id = d2.id and d.source = $1`,
+    [config.source, SOURCES.game_lands.source, config.sglByOverlap.nameSuffix],
+  );
 }
 
 /** Whether the layer changed since the last recorded run. */
@@ -262,15 +327,25 @@ async function main() {
   for (const n of selected) if (!SOURCES[n]) throw new Error(`Unknown source "${n}". Known: ${Object.keys(SOURCES).join(', ')}`);
 
   if (flag('--describe')) {
+    let drift = false;
     for (const n of selected) {
-      const info = await fetchLayerInfo(SOURCES[n].layerUrl);
-      const features = await fetchFeatures(SOURCES[n].layerUrl, { pageSize: 5 }).catch(() => []);
-      const rows = toRows(SOURCES[n], features.slice(0, 5));
-      console.log(`\n== ${n} (${info.name}, ${info.geometryType}), last edit ${info.lastEditDate}`);
-      console.log(info.fields.map((f) => `  ${f.name} [${f.type}] ${f.alias ?? ''}`).join('\n'));
-      console.log(`  sample mapped rows: ${rows.length} of ${Math.min(features.length, 5)}`);
-      for (const r of rows.slice(0, 2)) console.log('  ', r.source_id, '|', r.name, '|', r.county, '|', r.properties.slice(0, 200));
+      try {
+        const info = await fetchLayerInfo(SOURCES[n].layerUrl);
+        const features = await fetchFeatures(SOURCES[n].layerUrl, { pageSize: 5 }).catch(() => []);
+        const rows = toRows(SOURCES[n], features.slice(0, 5));
+        const missing = missingFields(SOURCES[n], info.fields);
+        drift ||= missing.length > 0;
+        console.log(`\n== ${n} (${info.name}, ${info.geometryType}), last edit ${info.lastEditDate}`);
+        console.log(info.fields.map((f) => `  ${SOURCES[n].fields.includes(f.name) ? '*' : ' '} ${f.name} [${f.type}] ${f.alias ?? ''}`).join('\n'));
+        console.log(`  (* = mapped) mapped fields missing from the live layer: ${missing.join(', ') || 'none'}`);
+        console.log(`  sample mapped rows: ${rows.length} of ${Math.min(features.length, 5)}`);
+        for (const r of rows.slice(0, 2)) console.log('  ', r.source_id, '|', r.name, '|', r.acres, '|', r.properties.slice(0, 200));
+      } catch (err) {
+        drift = true;
+        console.error(`\n== ${n} failed: ${err.message}`);
+      }
     }
+    if (drift) process.exitCode = 1;
     return;
   }
 

@@ -1,0 +1,708 @@
+{
+ "captured": "2026-10-21",
+ "note": "Attributes verbatim from the live PGC layers (f=geojson); dove field polygons reduced to their bounding boxes.",
+ "sources": {
+  "game_lands": {
+   "layerUrl": "https://services1.arcgis.com/k8yxvICm95iIFicb/arcgis/rest/services/State_Game_Lands_Boundaries/FeatureServer/300",
+   "fields": [
+    {
+     "name": "OBJECTID",
+     "type": "esriFieldTypeOID",
+     "alias": "OBJECTID"
+    },
+    {
+     "name": "pgc_region",
+     "type": "esriFieldTypeString",
+     "alias": "PGC Region"
+    },
+    {
+     "name": "sgl",
+     "type": "esriFieldTypeSmallInteger",
+     "alias": "SGL"
+    },
+    {
+     "name": "sgl_name",
+     "type": "esriFieldTypeString",
+     "alias": "SGL Label"
+    },
+    {
+     "name": "sgl_status",
+     "type": "esriFieldTypeString",
+     "alias": "SGL Status"
+    },
+    {
+     "name": "gis_area_ac",
+     "type": "esriFieldTypeDouble",
+     "alias": "GIS Area (acres)"
+    },
+    {
+     "name": "perimeter_miles",
+     "type": "esriFieldTypeDouble",
+     "alias": "Perimeter (miles)"
+    },
+    {
+     "name": "GlobalID",
+     "type": "esriFieldTypeGlobalID",
+     "alias": "GlobalID"
+    },
+    {
+     "name": "created_user",
+     "type": "esriFieldTypeString",
+     "alias": "created_user"
+    },
+    {
+     "name": "created_date",
+     "type": "esriFieldTypeDate",
+     "alias": "created_date"
+    },
+    {
+     "name": "last_edited_user",
+     "type": "esriFieldTypeString",
+     "alias": "last_edited_user"
+    },
+    {
+     "name": "last_edited_date",
+     "type": "esriFieldTypeDate",
+     "alias": "last_edited_date"
+    },
+    {
+     "name": "Shape__Area",
+     "type": "esriFieldTypeDouble",
+     "alias": "Shape__Area"
+    },
+    {
+     "name": "Shape__Length",
+     "type": "esriFieldTypeDouble",
+     "alias": "Shape__Length"
+    }
+   ],
+   "features": []
+  },
+  "pheasant_stocking": {
+   "layerUrl": "https://services1.arcgis.com/k8yxvICm95iIFicb/arcgis/rest/services/Pheasant_Hunting_Pennsylvania/FeatureServer/100",
+   "fields": [
+    {
+     "name": "OBJECTID",
+     "type": "esriFieldTypeOID",
+     "alias": "OBJECTID"
+    },
+    {
+     "name": "globalid",
+     "type": "esriFieldTypeGlobalID",
+     "alias": "GlobalID"
+    },
+    {
+     "name": "pgc_region",
+     "type": "esriFieldTypeString",
+     "alias": "PGC Region"
+    },
+    {
+     "name": "property_type",
+     "type": "esriFieldTypeString",
+     "alias": "Property Type"
+    },
+    {
+     "name": "property_name",
+     "type": "esriFieldTypeString",
+     "alias": "Property Name"
+    },
+    {
+     "name": "late_season_status",
+     "type": "esriFieldTypeString",
+     "alias": "Late Season Status"
+    },
+    {
+     "name": "number_releases",
+     "type": "esriFieldTypeSmallInteger",
+     "alias": "Number of Releases"
+    },
+    {
+     "name": "total_released",
+     "type": "esriFieldTypeInteger",
+     "alias": "Total Number of Birds Released"
+    },
+    {
+     "name": "longitude",
+     "type": "esriFieldTypeDouble",
+     "alias": "Longitude"
+    },
+    {
+     "name": "latitude",
+     "type": "esriFieldTypeDouble",
+     "alias": "Latitude"
+    },
+    {
+     "name": "created_user",
+     "type": "esriFieldTypeString",
+     "alias": "created_user"
+    },
+    {
+     "name": "created_date",
+     "type": "esriFieldTypeDate",
+     "alias": "created_date"
+    },
+    {
+     "name": "last_edited_user",
+     "type": "esriFieldTypeString",
+     "alias": "last_edited_user"
+    },
+    {
+     "name": "last_edited_date",
+     "type": "esriFieldTypeDate",
+     "alias": "last_edited_date"
+    }
+   ],
+   "features": [
+    {
+     "type": "Feature",
+     "geometry": {
+      "type": "Point",
+      "coordinates": [
+       -78.212105,
+       39.894668
+      ]
+     },
+     "properties": {
+      "OBJECTID": 234,
+      "globalid": "fce07d3c-d28c-4870-b7af-e758a654f4b8",
+      "pgc_region": "Southcentral",
+      "property_type": "SGL",
+      "property_name": "65",
+      "late_season_status": "No Late Season Stocking",
+      "number_releases": null,
+      "total_released": null,
+      "longitude": null,
+      "latitude": null,
+      "created_user": "PAGameCommissionGIS",
+      "created_date": 1788976222000,
+      "last_edited_user": "PAGameCommissionGIS",
+      "last_edited_date": 1788976753000
+     }
+    },
+    {
+     "type": "Feature",
+     "geometry": {
+      "type": "Point",
+      "coordinates": [
+       -80.469967,
+       41.850158
+      ]
+     },
+     "properties": {
+      "OBJECTID": 235,
+      "globalid": "02d7cb09-b6ea-4f2a-9a27-7ce5342be0ab",
+      "pgc_region": "Northwest",
+      "property_type": "SGL",
+      "property_name": "101",
+      "late_season_status": "No Late Season Stocking",
+      "number_releases": 6,
+      "total_released": 360,
+      "longitude": null,
+      "latitude": null,
+      "created_user": "PAGameCommissionGIS",
+      "created_date": 1788976222000,
+      "last_edited_user": "PAGameCommissionGIS",
+      "last_edited_date": 1788976536000
+     }
+    },
+    {
+     "type": "Feature",
+     "geometry": {
+      "type": "Point",
+      "coordinates": [
+       -79.868925,
+       42.003712
+      ]
+     },
+     "properties": {
+      "OBJECTID": 260,
+      "globalid": "1bf72d8c-8480-4d2c-9dca-bf51f74ca63c",
+      "pgc_region": null,
+      "property_type": null,
+      "property_name": "155",
+      "late_season_status": "No Late Season Stocking",
+      "number_releases": 5,
+      "total_released": 145,
+      "longitude": null,
+      "latitude": null,
+      "created_user": "PAGameCommissionGIS",
+      "created_date": 1788976222000,
+      "last_edited_user": "PAGameCommissionGIS",
+      "last_edited_date": 1788976538000
+     }
+    },
+    {
+     "type": "Feature",
+     "geometry": {
+      "type": "Point",
+      "coordinates": [
+       -75.60171,
+       40.868744
+      ]
+     },
+     "properties": {
+      "OBJECTID": 394,
+      "globalid": "f1418405-9abb-4798-81fb-68c207ecd01b",
+      "pgc_region": "Northeast",
+      "property_type": "Other Properties",
+      "property_name": "Beltzville State Park",
+      "late_season_status": "Late Season Stocking",
+      "number_releases": 9,
+      "total_released": 2965,
+      "longitude": null,
+      "latitude": null,
+      "created_user": "PAGameCommissionGIS",
+      "created_date": 1788976222000,
+      "last_edited_user": "PAGameCommissionGIS",
+      "last_edited_date": 1788976983000
+     }
+    },
+    {
+     "type": "Feature",
+     "geometry": {
+      "type": "Point",
+      "coordinates": [
+       -75.734074,
+       41.762434
+      ]
+     },
+     "properties": {
+      "OBJECTID": 442,
+      "globalid": "73466fa3-d027-4088-b0aa-ce688f563d9f",
+      "pgc_region": null,
+      "property_type": null,
+      "property_name": "Jeffers Tree Farm",
+      "late_season_status": "Late Season Stocking",
+      "number_releases": null,
+      "total_released": null,
+      "longitude": null,
+      "latitude": null,
+      "created_user": "PAGameCommissionGIS",
+      "created_date": 1790341053000,
+      "last_edited_user": "PAGameCommissionGIS",
+      "last_edited_date": 1790341067000
+     }
+    }
+   ]
+  },
+  "dove_fields": {
+   "layerUrl": "https://services1.arcgis.com/k8yxvICm95iIFicb/arcgis/rest/services/Managed_Dove_Fields_(Public_View)/FeatureServer/0",
+   "fields": [
+    {
+     "name": "OBJECTID",
+     "type": "esriFieldTypeOID",
+     "alias": "OBJECTID"
+    },
+    {
+     "name": "Project_Name",
+     "type": "esriFieldTypeString",
+     "alias": "Project Name"
+    },
+    {
+     "name": "Project_Area",
+     "type": "esriFieldTypeSingle",
+     "alias": "Acres"
+    },
+    {
+     "name": "Description",
+     "type": "esriFieldTypeString",
+     "alias": "Description"
+    },
+    {
+     "name": "GlobalID",
+     "type": "esriFieldTypeGlobalID",
+     "alias": "GlobalID"
+    },
+    {
+     "name": "Active",
+     "type": "esriFieldTypeString",
+     "alias": "Active"
+    },
+    {
+     "name": "created_user",
+     "type": "esriFieldTypeString",
+     "alias": "created_user"
+    },
+    {
+     "name": "created_date",
+     "type": "esriFieldTypeDate",
+     "alias": "created_date"
+    },
+    {
+     "name": "last_edited_user",
+     "type": "esriFieldTypeString",
+     "alias": "last_edited_user"
+    },
+    {
+     "name": "last_edited_date",
+     "type": "esriFieldTypeDate",
+     "alias": "last_edited_date"
+    },
+    {
+     "name": "Shape__Area",
+     "type": "esriFieldTypeDouble",
+     "alias": "Shape__Area"
+    },
+    {
+     "name": "Shape__Length",
+     "type": "esriFieldTypeDouble",
+     "alias": "Shape__Length"
+    }
+   ],
+   "features": [
+    {
+     "type": "Feature",
+     "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+       [
+        [
+         -76.97058,
+         41.12334
+        ],
+        [
+         -76.96389,
+         41.12334
+        ],
+        [
+         -76.96389,
+         41.1267
+        ],
+        [
+         -76.97058,
+         41.1267
+        ],
+        [
+         -76.97058,
+         41.12334
+        ]
+       ]
+      ]
+     },
+     "properties": {
+      "OBJECTID": 42,
+      "Project_Name": "252",
+      "Project_Area": 27.59105,
+      "Description": "SGL 252 dove field. Spring Creek is just south of the fields, and the general area is surrounded by active farmland and woodlots.",
+      "GlobalID": "508eeb87-d922-4d4e-832b-a4e1575cbf4e",
+      "Active": "Y",
+      "created_user": "danieljon@pa.lcl_PAGame",
+      "created_date": 1692632910336,
+      "last_edited_user": "kweiser@PA.LCL_PAGame",
+      "last_edited_date": 1753472325820,
+      "Shape__Area": 196957.27734375,
+      "Shape__Length": 2011.3929281591777
+     }
+    },
+    {
+     "type": "Feature",
+     "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+       [
+        [
+         -77.5121,
+         40.15735
+        ],
+        [
+         -77.49158,
+         40.15735
+        ],
+        [
+         -77.49158,
+         40.17354
+        ],
+        [
+         -77.5121,
+         40.17354
+        ],
+        [
+         -77.5121,
+         40.15735
+        ]
+       ]
+      ]
+     },
+     "properties": {
+      "OBJECTID": 47,
+      "Project_Name": "SGL 169",
+      "Project_Area": 18.5645,
+      "Description": "There are 4 managed dove fields on SGL 169 totaling approximately 19 acres of fields. These fields are a mix of sunflower and wheat.",
+      "GlobalID": "43a34ede-c538-44a8-886a-2089e030f284",
+      "Active": "Y",
+      "created_user": "danieljon@pa.lcl_PAGame",
+      "created_date": 1692632910336,
+      "last_edited_user": "jerdiehl@pa.lcl_PAGame",
+      "last_edited_date": 1786554284144,
+      "Shape__Area": 128803.109375,
+      "Shape__Length": 3698.1071225476203
+     }
+    },
+    {
+     "type": "Feature",
+     "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+       [
+        [
+         -75.60374,
+         40.87445
+        ],
+        [
+         -75.59854,
+         40.87445
+        ],
+        [
+         -75.59854,
+         40.87745
+        ],
+        [
+         -75.60374,
+         40.87745
+        ],
+        [
+         -75.60374,
+         40.87445
+        ]
+       ]
+      ]
+     },
+     "properties": {
+      "OBJECTID": 203,
+      "Project_Name": "Beltzville",
+      "Project_Area": 13.04509,
+      "Description": "Sunflower Field",
+      "GlobalID": "eb22fe37-2f1f-4fa2-af81-3de7fd30c058",
+      "Active": "Y",
+      "created_user": "danieljon@pa.lcl_PAGame",
+      "created_date": 1692632910336,
+      "last_edited_user": "ljoshua@PA.LCL_PAGame",
+      "last_edited_date": 1698666940739,
+      "Shape__Area": 92426.33984375,
+      "Shape__Length": 2395.7940144210065
+     }
+    },
+    {
+     "type": "Feature",
+     "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+       [
+        [
+         -75.60433,
+         40.8737
+        ],
+        [
+         -75.59962,
+         40.8737
+        ],
+        [
+         -75.59962,
+         40.87494
+        ],
+        [
+         -75.60433,
+         40.87494
+        ],
+        [
+         -75.60433,
+         40.8737
+        ]
+       ]
+      ]
+     },
+     "properties": {
+      "OBJECTID": 204,
+      "Project_Name": null,
+      "Project_Area": 3.251319,
+      "Description": null,
+      "GlobalID": "cded6231-1715-49e4-9393-563cd3608b33",
+      "Active": "Y",
+      "created_user": "danieljon@pa.lcl_PAGame",
+      "created_date": 1692632910336,
+      "last_edited_user": "ljoshua@PA.LCL_PAGame",
+      "last_edited_date": 1698666941156,
+      "Shape__Area": 23035.01953125,
+      "Shape__Length": 1312.9506536291262
+     }
+    },
+    {
+     "type": "Feature",
+     "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+       [
+        [
+         -79.29509,
+         40.45459
+        ],
+        [
+         -79.29268,
+         40.45459
+        ],
+        [
+         -79.29268,
+         40.45944
+        ],
+        [
+         -79.29509,
+         40.45944
+        ],
+        [
+         -79.29509,
+         40.45459
+        ]
+       ]
+      ]
+     },
+     "properties": {
+      "OBJECTID": 239,
+      "Project_Name": "411",
+      "Project_Area": 13.02956,
+      "Description": "Half millet and half Sunflower",
+      "GlobalID": "ccf3e27b-b4f6-4a68-9ac9-eda554f0f303",
+      "Active": "Y",
+      "created_user": "danieljon@pa.lcl_PAGame",
+      "created_date": 1692632910336,
+      "last_edited_user": "ljoshua@PA.LCL_PAGame",
+      "last_edited_date": 1698666945635,
+      "Shape__Area": 91174.4453125,
+      "Shape__Length": 1686.6955107674407
+     }
+    },
+    {
+     "type": "Feature",
+     "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+       [
+        [
+         -80.51423,
+         41.3474
+        ],
+        [
+         -80.5113,
+         41.3474
+        ],
+        [
+         -80.5113,
+         41.35207
+        ],
+        [
+         -80.51423,
+         41.35207
+        ],
+        [
+         -80.51423,
+         41.3474
+        ]
+       ]
+      ]
+     },
+     "properties": {
+      "OBJECTID": 297,
+      "Project_Name": "SGL 415",
+      "Project_Area": 21.89228,
+      "Description": null,
+      "GlobalID": "59f73a31-ca3a-4bf1-958c-b0ee94c362e5",
+      "Active": "Y",
+      "created_user": "danieljon@pa.lcl_PAGame",
+      "created_date": 1692632910336,
+      "last_edited_user": "ljoshua@PA.LCL_PAGame",
+      "last_edited_date": 1698666955324,
+      "Shape__Area": 157348.734375,
+      "Shape__Length": 1738.8433871844009
+     }
+    },
+    {
+     "type": "Feature",
+     "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+       [
+        [
+         -79.87692,
+         41.07216
+        ],
+        [
+         -79.87154,
+         41.07216
+        ],
+        [
+         -79.87154,
+         41.07462
+        ],
+        [
+         -79.87692,
+         41.07462
+        ],
+        [
+         -79.87692,
+         41.07216
+        ]
+       ]
+      ]
+     },
+     "properties": {
+      "OBJECTID": 398,
+      "Project_Name": "King Farm Dove Fields",
+      "Project_Area": 17.08698,
+      "Description": "Dove Fields off Plesant Valley Road",
+      "GlobalID": "8208fd7c-7335-4dbd-8885-1fa43f079b38",
+      "Active": "Y",
+      "created_user": "danieljon@pa.lcl_PAGame",
+      "created_date": 1692632910336,
+      "last_edited_user": "ljoshua@PA.LCL_PAGame",
+      "last_edited_date": 1756129734222,
+      "Shape__Area": 121786.9375,
+      "Shape__Length": 1895.1889484321232
+     }
+    },
+    {
+     "type": "Feature",
+     "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+       [
+        [
+         -80.47175,
+         40.78526
+        ],
+        [
+         -80.46992,
+         40.78526
+        ],
+        [
+         -80.46992,
+         40.78632
+        ],
+        [
+         -80.47175,
+         40.78632
+        ],
+        [
+         -80.47175,
+         40.78526
+        ]
+       ]
+      ]
+     },
+     "properties": {
+      "OBJECTID": 417,
+      "Project_Name": "285",
+      "Project_Area": null,
+      "Description": null,
+      "GlobalID": "7a3cbea0-d9a7-4c4c-bfec-7851717e0db8",
+      "Active": "Y",
+      "created_user": "bstouffer@PA.LCL_PAGame",
+      "created_date": 1716393694519,
+      "last_edited_user": "bstouffer@PA.LCL_PAGame",
+      "last_edited_date": 1716393918441,
+      "Shape__Area": 10330.16015625,
+      "Shape__Length": 518.8581184431475
+     }
+    }
+   ]
+  }
+ }
+}
