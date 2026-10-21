@@ -93,11 +93,21 @@ describe('counties access', () => {
     }
   });
 
-  it('only the service role can run the backfill', async () => {
-    await assert.rejects(
-      as(db, 'authenticated', alice, (tx) => tx.query('select public.assign_place_counties()')),
-      /permission denied/,
+  it('only the service role can run the backfill (security definer)', async () => {
+    for (const [role, uid] of [['anon', null], ['authenticated', alice]]) {
+      await assert.rejects(
+        as(db, role, uid, (tx) => tx.query('select public.assign_place_counties()')),
+        /permission denied/,
+        role,
+      );
+    }
+    const { rows } = await as(db, 'service_role', null, (tx) => tx.query('select public.assign_place_counties() n'));
+    assert.equal(typeof rows[0].n, 'number');
+    const def = await db.query(
+      `select p.prosecdef, p.proconfig from pg_proc p where p.oid = 'public.assign_place_counties()'::regprocedure`,
     );
+    assert.equal(def.rows[0].prosecdef, true);
+    assert.deepEqual(def.rows[0].proconfig, ['search_path=""']);
   });
 });
 

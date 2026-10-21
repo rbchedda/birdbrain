@@ -48,8 +48,10 @@ create trigger places_set_county before insert or update on public.places
 
 -- Fill places that were loaded before (or without) counties. Ingest calls this
 -- after each county load. Returns the number of rows updated.
+-- Security definer so it can update every place regardless of the caller's
+-- RLS; only service_role may execute it.
 create function public.assign_place_counties() returns integer
-language plpgsql set search_path = '' as $$
+language plpgsql security definer set search_path = '' as $$
 declare
   n integer;
 begin
@@ -60,6 +62,7 @@ begin
 end;
 $$;
 revoke execute on function public.assign_place_counties() from public, anon, authenticated;
+grant execute on function public.assign_place_counties() to service_role;
 
 -- County whose PGC release weeks apply to a stocking place. Game lands can
 -- straddle county lines, and PGC's allocation lists some under a neighboring
