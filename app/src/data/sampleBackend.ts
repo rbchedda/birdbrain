@@ -262,7 +262,7 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
     async upsertHuntLogEntry(e) {
       const rows = await readJson<Record<string, HuntLogUpload & { version: number }>>(HUNT_LOG_KEY, {});
       const cur = rows[e.clientId];
-      const body = (x: HuntLogUpload) => JSON.stringify([x.species, x.caption, x.huntedOn, x.placeCounts]);
+      const body = (x: HuntLogUpload) => JSON.stringify([x.species, x.caption, x.huntedOn, x.placeCounts, x.details ?? null]);
       if (!cur) {
         rows[e.clientId] = { ...e, baseVersion: null, version: 1 };
         await writeJson(HUNT_LOG_KEY, rows);
@@ -275,6 +275,17 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
         return { version: cur.version + 1, conflict: false };
       }
       return { version: cur.version, conflict: true };
+    },
+
+    async deleteHuntLogEntry(clientId) {
+      const rows = await readJson<Record<string, unknown>>(HUNT_LOG_KEY, {});
+      delete rows[clientId];
+      await writeJson(HUNT_LOG_KEY, rows);
+    },
+
+    // Offline: photos stay on the device; the path mirrors the private bucket layout.
+    async uploadDiaryPhoto(clientId, photo) {
+      return `${sampleMe.id}/${clientId}/${photo.id}.jpg`;
     },
   };
 }

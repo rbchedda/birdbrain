@@ -285,19 +285,22 @@ describe('After-the-hunt log', () => {
     expect(screen.getByText(/Delayed · others see it/)).toBeTruthy();
   });
 
-  it('saves a private entry locally first and shows its backup status', async () => {
-    await open('/log');
-    await fireEvent.changeText(await screen.findByLabelText('Notes'), 'Scouting only');
-    expect(screen.getByText(/only you can see it/)).toBeTruthy();
-    await fireEvent.press(screen.getByText('Save privately'));
+  it('logs a hunt to the private diary by default and shows it on the profile', async () => {
+    await open('/new/log?placeId=stock-sample-1');
+    expect(await screen.findByText(/Saves to your private Hunt Log/)).toBeTruthy();
+    expect(screen.getByDisplayValue('Pheasant stocking (sample B)')).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText('More flushes'));
+    await fireEvent.changeText(screen.getByLabelText('Notes'), 'Scouting only');
+    await fireEvent.press(screen.getByText('Save to diary'));
     expect(await screen.findByText(/Saved to your private log on this device/)).toBeTruthy();
     expect(await screen.findByText('Backed up')).toBeTruthy();
 
     const page = await backend.feed(null, 20);
     expect(page.posts.some((p) => p.caption === 'Scouting only')).toBe(false);
 
-    await open('/profile');
-    expect(await screen.findByText('Scouting only')).toBeTruthy();
-    expect(screen.getByText('Private · only on this device')).toBeTruthy();
+    await open('/profile/hunt-log');
+    expect(await screen.findByText(/1 flushes \/ 0 shots/)).toBeTruthy();
+    expect(screen.getAllByText('Backed up').length).toBeGreaterThan(0);
+    expect(screen.queryByText(/only on this device/)).toBeNull();
   });
 });
