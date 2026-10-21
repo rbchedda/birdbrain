@@ -119,8 +119,11 @@ export const stockedProperties: { county: string; name: string; sgl: number | nu
 
 const norm = (c: string | null | undefined) => (c ?? '').trim().toLowerCase();
 
+/** A county's release weeks with birds allocated (PGC lists some releases with 0 for a county). */
 export const windowsForCounty = (county: string | null | undefined) =>
-  stockingWindows.filter((w) => norm(w.county) === norm(county)).sort((a, b) => a.windowStart.localeCompare(b.windowStart));
+  stockingWindows
+    .filter((w) => norm(w.county) === norm(county) && w.cocks + w.hens > 0)
+    .sort((a, b) => a.windowStart.localeCompare(b.windowStart));
 
 /** County windows for a stocking point, in the PlaceDetail shape. Empty if the county isn't in PGC's table. */
 export function stockingFor(place: Place): StockingEvent[] {
