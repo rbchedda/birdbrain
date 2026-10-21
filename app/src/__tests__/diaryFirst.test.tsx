@@ -72,6 +72,8 @@ describe('Community feed is opt-in under Crew', () => {
     expect(await screen.findByText('Open community feed')).toBeTruthy();
     await waitFor(async () => expect(await readShareToCommunity()).toBe(true));
 
+    // The feed has its own one-time rules gate (feat/report-block); accept it here.
+    await backend.acceptRules();
     await fireEvent.press(screen.getByText('Open community feed'));
     expect(await screen.findByText(samplePosts()[0].caption)).toBeTruthy();
   });
