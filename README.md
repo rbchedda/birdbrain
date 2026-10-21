@@ -9,7 +9,8 @@ returning hunters find public land, learn the rules, and build a community.
 | --- | --- |
 | `app/` | Expo (React Native, TypeScript) app for iOS, Android and web |
 | `supabase/` | Postgres + PostGIS schema migrations |
-| `ingest/` | Data ingestion jobs (PASDA State Game Lands → `places`) |
+| `ingest/` | Data ingestion jobs (PGC ArcGIS layers → `places`, pheasant allocation → `stocking_events`) |
+| `data/` | Committed seed data scraped from PGC pages |
 
 ## App
 
@@ -46,32 +47,67 @@ Privacy and safety model:
 
 ## Ingestion
 
-`ingest/arcgis.mjs` pulls Pennsylvania Game Commission ArcGIS FeatureServer layers into `places`:
+Two jobs, both plain Node (no extra dependencies). Every network request has a timeout (`INGEST_FETCH_TIMEOUT_MS`, default 60 s), so one slow PGC endpoint fails its own source instead of hanging the run.
 
-| Source | Layer | `places.type` |
-|---|---|---|
-| `game_lands` | State_Game_Lands_Boundaries/300 | `game_land` |
-| `pheasant_stocking` | Pheasant_Hunting_Pennsylvania/100 | `stocking` |
-| `dove_fields` | Managed_Dove_Fields_(Public_View)/0 | `dove_field` |
+### PGC map layers → `places` (`ingest/arcgis.mjs`)
+
+| Source | Layer | `places.type` | `source_id` |
+|---|---|---|---|
+| `game_lands` | State_Game_Lands_Boundaries/300 | `game_land` | SGL number |
+| `pheasant_stocking` | Pheasant_Hunting_Pennsylvania/100 | `stocking` | `sgl:<n>` or `name:<slug>` |
+| `dove_fields` | Managed_Dove_Fields_(Public_View)/0 | `dove_field` | GlobalID |
 
 Each run checks the layer's `editingInfo.lastEditDate` against `ingest_state` and skips unchanged layers. Re-runs are safe, features removed upstream are deleted, and a run that returns no usable rows fails instead of wiping the table.
 
 ```
-npm run ingest:describe                              # print live field names and sample rows (no DB)
+npm run ingest:describe                              # live fields (* = mapped), drift check, sample rows; no DB
 DATABASE_URL=postgres://... npm run ingest           # all sources
 DATABASE_URL=postgres://... npm run ingest -- pheasant_stocking --force
 node ingest/arcgis.mjs --out data/raw                # fetch GeoJSON only
 ```
 
-The field mappings in `SOURCES` were written from the layer descriptions, not the live schemas. Run `ingest:describe` and fix any mapping before the first real load. Unmapped attributes are kept in `properties.raw`.
+The `SOURCES` mappings were checked against the live layers with `ingest:describe` on 2026-10-21. A full offline load into PGlite mapped every feature: 319 game lands, 216 stocking points and 83 dove fields. `ingest/fixtures/pgc-live-sample.json` holds the captured schemas and sample rows the tests run against. `ingest:describe` exits non-zero if a mapped field disappears upstream. Unmapped attributes are kept in `properties.raw`. Notes on the live data:
 
-`.github/workflows/ingest.yml` runs the ingester hourly October to February and daily the rest of the year. Add a `DATABASE_URL` repository secret to enable it.
+- No layer has a county field, so `places.county` is null for PGC rows.
+- Stocking points are keyed by property, not GlobalID, because PGC re-created every feature for the 2026-27 season; game lands come through as a bare number in `property_name` and are named `State Game Lands <n>`.
+- A dove field's game land comes from polygon overlap with `game_lands` (loaded first), not from `Project_Name`, which mixes SGL numbers with other codes (411, 414, 419 and 2425 aren't on game lands). Crops are pulled from the free-text `Description`.
 
-Data: Pennsylvania Game Commission, used under the PGC Mapping Center terms (cite PGC, describe changes, provided "as is"). BirdBrain is not affiliated with the PGC.
+`.github/workflows/ingest.yml` runs the layer ingester hourly October to February and daily the rest of the year. Add a `DATABASE_URL` repository secret to enable it.
+
+### Pheasant allocation → `stocking_events` (`ingest/stocking_windows.mjs`)
+
+PGC publishes release windows only as HTML tables: an overview page and one page per region. The script turns them into `data/pgc/pheasant-allocation-<season>.json`, which is committed:
+
+- `events`: cocks and hens per county for each release (junior/youth hunt, pre-season, four in-season, three winter), with the week PGC ships it, dated using the season year from the page heading.
+- `properties`: the game lands and other properties stocked in each county. `winter_late` marks the bold-underlined game lands that also get the 2nd and 3rd winter releases.
+
+PGC gives counts per county, not per property, so they live on `stocking_events`. The property list goes in `stocking_properties`, and junior and adult totals are in the `stocking_county_totals` view. All three are public read and service-role write. Before anything is written, every count is checked against the county, region and statewide totals on the pages; the run stops if a table changes shape. Output is deterministic, so a re-run with unchanged pages produces an identical file.
+
+```
+node ingest/stocking_windows.mjs                     # scrape pa.gov, rewrite the seed file
+node ingest/stocking_windows.mjs --from <dir>        # parse saved pages (overview.html, <region>.html)
+DATABASE_URL=postgres://... node ingest/stocking_windows.mjs --load data/pgc/pheasant-allocation-2026-27.json
+```
+
+`--load` replaces that season's rows in one transaction, refuses an empty seed, and links properties to `places`. It isn't scheduled yet.
+
+### Data terms
+
+Data: Pennsylvania Game Commission. The PGC Mapping Center license on these layers requires that PGC be clearly cited in anything derived from the data and that any modifications be described. The data is provided "as is", with no warranty. The allocation tables are PGC content on pa.gov and are cited the same way (`citation` in each seed file). Changes BirdBrain makes:
+
+- Game lands split across polygons are merged into one row.
+- Blank dove field acreage is computed from the geometry.
+- Dove fields are tagged with the game land they overlap.
+- Allocation dates gain a year, and property lists are split into one row per property.
+
+The app's data page must show the citation and the "as is" disclaimer. BirdBrain is not affiliated with the PGC.
 
 ## Open items
 
-- Run `npm run ingest:describe` and confirm the field mappings against the live PGC layers.
-- Pheasant release windows by county come from PGC's regional allocation tables (HTML, no API); they belong in `stocking_events`.
+- No `DATABASE_URL` yet: nothing has been loaded into a hosted database. First load: run `ingest` (game lands before dove fields; `SOURCES` is already in that order), then `stocking_windows.mjs --load`.
+- Schedule the allocation scrape and load (for example weekly from September to February in `ingest.yml`), and decide whether a changed seed should open a PR or load directly.
+- Junior hunt stocking sites are published separately as a PDF (linked from the allocation page) and aren't scraped. `stocking_events` has the junior counts per county but not the sites.
+- `places.county` is empty for PGC rows; fill it by intersecting with a county boundary layer (e.g. PASDA).
+- On the 2026-10-21 data, all 161 allocation game lands link to a place, but only 46 of 62 other properties do. The rest are named differently in the two PGC sources ("Prompton Army Corps" vs "Prompton State Park", "Mahoning Lake" vs "Mahoning Creek Lake") or are generic ("Various Hunter Access Properties"), so their `place_id` is null. A small alias table would close most of the gap.
 - Verify migratory bird licensing and Sunday hunting copy against current PGC pages.
 - eBird data needs written permission from Cornell for commercial use; hold the birdwatching section until that's settled.
