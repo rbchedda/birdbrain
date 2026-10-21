@@ -7,7 +7,9 @@ import { ScreenHeader } from '@/components/Screen';
 import { Button, Chip, Notice, SectionTitle, Stepper, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { useJournal, usePlaces, useSession } from '@/data/hooks';
+import { DiaryForm, diaryDraft } from '@/app/diary/new';
 import { addJournalEntry, type JournalEntry } from '@/data/journal';
+import { emptyDiaryDetails } from '@/data/types';
 import { allSpecies, placeTypeLabel, speciesLabel, type LocationVisibility, type Place, type PlaceCount, type Species } from '@/data/types';
 import { addDays, etParts, formatDay, formatTime, publicAfterET, todayET } from '@/lib/time';
 import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
@@ -47,6 +49,10 @@ export default function LogScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [done, setDone] = useState<'shared' | 'private' | null>(null);
+  // New entries default to the private diary; Post is the separate, opt-in social path.
+  const [mode, setMode] = useState<'log' | 'post'>('log');
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const [formKey, setFormKey] = useState(0);
 
   // Arriving from a place on the map pre-fills that place.
   useEffect(() => {
@@ -110,10 +116,59 @@ export default function LogScreen() {
 
   const empty = !caption.trim() && counts.length === 0;
 
+  const chooser = (
+    <View style={ui.row}>
+      <Chip label="Log hunt" icon="lock-closed-outline" active={mode === 'log'} onPress={() => setMode('log')} />
+      <Chip label="Post" icon="send-outline" active={mode === 'post'} onPress={() => setMode('post')} />
+    </View>
+  );
+
+  if (mode === 'log') {
+    const place = places.find((p) => p.id === placeId);
+    return (
+      <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScreenHeader title="Log a hunt" subtitle="Saves to your private Diary — not a post." />
+        <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+          {chooser}
+          {savedId && (
+            <Notice tone="success">Saved to your private diary on this device. It backs up to your account when you’re online.</Notice>
+          )}
+          {savedId && (
+            <View style={styles.row}>
+              <Button label="Open entry" onPress={() => router.push({ pathname: '/diary/[id]', params: { id: savedId } })} style={{ flex: 1 }} />
+              <Button label="Log another" onPress={() => setSavedId(null)} style={{ flex: 1 }} />
+            </View>
+          )}
+          {!savedId && (
+            <DiaryForm
+              key={`${formKey}-${place?.id ?? ""}`}
+              initial={{
+                huntedOn: todayET(),
+                place: place?.name ?? '',
+                notes: '',
+                details: { ...emptyDiaryDetails(), species: place && speciesForPlace(place) ? [speciesForPlace(place)!] : [] },
+              }}
+              submitLabel="Save to diary"
+              onSubmit={async (v) => {
+                const { draft, details } = diaryDraft(v);
+                if (place && draft.counts[0]?.placeName === place.name) draft.counts[0].placeId = place.id;
+                const e = await addJournalEntry(draft, { id: session?.userId ?? 'me', username: null, displayName: 'You' }, details);
+                setSavedId(e.id);
+                setFormKey((k) => k + 1);
+              }}
+            />
+          )}
+          <PrivateLog />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
+
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScreenHeader title="Log a hunt" subtitle="After the hunt: what you saw, where, and who sees it." />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+        {chooser}
         {done && (
           <Notice tone="success">
             {done === 'private'
@@ -127,8 +182,6 @@ export default function LogScreen() {
             <Button label="Log another" onPress={() => setDone(null)} style={{ flex: 1 }} />
           </View>
         )}
-
-        <Button label="Detailed diary entry" icon="book-outline" onPress={() => router.push('/diary/new')} />
 
         <SectionTitle>Species</SectionTitle>
         <View style={ui.row}>
