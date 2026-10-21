@@ -8,7 +8,7 @@ import { Tag } from '@/components/Tag';
 import { Chip, SectionTitle, ui } from '@/components/ui';
 import { birds, type BirdKey } from '@/data/birds';
 import { gear } from '@/data/gear';
-import { hoursZones, inSeasonRows, segmentsFor, shootingTimes, type Badge } from '@/data/guide';
+import { hoursZones, inSeasonRows, segmentsFor, shootingTimes, SPRING_GOBBLER_HOURS, type Badge } from '@/data/guide';
 import { regTopics } from '@/data/guideRegs';
 import { REGS } from '@/data/regs';
 import { allSpecies, speciesLabel } from '@/data/types';
@@ -144,6 +144,7 @@ export function HoursSection({ ymd, zone }: { ymd: Ymd; zone: number }) {
     <View style={styles.section}>
       <Header title={`Shooting times · Zone ${zone}`} testID="guide-hours" />
       <Text style={ui.muted}>From the official PGC hunting-hours table ({officialHours.version}). Never computed.</Text>
+      <Text style={ui.body} testID="hours-spring-gobbler">{SPRING_GOBBLER_HOURS}</Text>
       {rows.map((r, i) => (
         <View key={r.ymd} style={ui.card} testID={`hours-${r.ymd}`}>
           <Text style={styles.name}>
@@ -152,7 +153,7 @@ export function HoursSection({ ymd, zone }: { ymd: Ymd; zone: number }) {
             {r.sunday ? ' (Sunday)' : ''}
           </Text>
           <Text style={ui.body}>Pheasant, grouse, fall turkey: {span(r.smallGame)}</Text>
-          <Text style={ui.body}>Doves, waterfowl: {r.sunday ? 'closed Sundays' : span(r.migratory)}</Text>
+          <Text style={ui.body}>Doves, woodcock, waterfowl: {r.sunday ? 'closed Sundays' : span(r.migratory)}</Text>
         </View>
       ))}
     </View>

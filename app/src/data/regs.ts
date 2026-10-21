@@ -39,6 +39,8 @@ export const REGS: Regs = {
       daily: '2 (either sex)',
       possession: '6',
       sunday: 'open',
+      // Counted against digest p.7: junior Oct 10-18 = 2 Sundays; statewide Oct 24-Dec 24 = 9,
+      // Dec 26-Feb 28, 2027 = 10 (19 statewide).
       sundayNote: 'Sundays open: 19 statewide Sundays plus 2 in the junior season.',
     },
     grouse: {

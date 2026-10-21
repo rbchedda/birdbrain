@@ -70,7 +70,7 @@ export interface HoursRow {
   sunday: boolean;
   /** Pheasant, grouse, fall turkey: hunt_start – hunt_end. Null when the table has no row. */
   smallGame: { start: string; end: string } | null;
-  /** Doves and waterfowl: hunt_start – sunset. */
+  /** Doves, woodcock, waterfowl (also snipe, rails, gallinules): hunt_start – sunset. */
   migratory: { start: string; end: string } | null;
 }
 
@@ -91,3 +91,7 @@ export function shootingTimes(ymd: Ymd, zone: number, days = 8, table: HoursTabl
 
 /** Seasons listed for a species, for the bag section's segment labels. */
 export const segmentsFor = (species: Species) => seasons.filter((s) => s.species === species);
+
+/** Spring gobbler hours (digest p.10 note 3, p.35). A rule, not a computed time. */
+export const SPRING_GOBBLER_HOURS =
+  'Spring gobbler: ½ hour before sunrise to noon through May 15, then ½ hour before sunrise to ½ hour after sunset.';

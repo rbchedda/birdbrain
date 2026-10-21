@@ -5,7 +5,7 @@ import type { BirdKey } from './birds';
  * store links or marketplace. Legal requirements (orange, licenses, non-toxic
  * shot) point at the PGC digest, which is the final word.
  */
-export const GEAR_VERSION = '2026-27.1';
+export const GEAR_VERSION = '2026-27.2';
 
 export interface GearItem {
   label: string;
@@ -21,9 +21,9 @@ const basics: GearItem = { label: 'Eye and ear protection, water, map of the gam
 export const gear: Record<BirdKey, GearItem[]> = {
   pheasant: [
     license,
-    { label: 'Pheasant permit (adults)', required: true },
+    { label: 'Pheasant permit: paid for adults and some seniors, free for juniors and mentored hunters under 17 (signed and carried)', required: true },
     orange,
-    { label: '12 or 20 gauge; #5–#6 shot is common. Non-toxic shot where an SGL or field requires it' },
+    { label: '12 or 20 gauge; #5–#6 shot is common' },
     dogGear,
     basics,
   ],
@@ -38,7 +38,7 @@ export const gear: Record<BirdKey, GearItem[]> = {
   woodcock: [
     license,
     { label: 'Migratory game bird license (HIP)', required: true },
-    { label: 'Orange rules for migratory birds differ from small game: check the digest', required: true },
+    orange,
     { label: '20 or 12 gauge, open choke; #8–#9 shot is common' },
     dogGear,
     basics,
@@ -47,21 +47,22 @@ export const gear: Record<BirdKey, GearItem[]> = {
     license,
     { label: 'Migratory game bird license (HIP)', required: true },
     { label: 'Plug the shotgun to 3 shells (federal migratory bird rule)', required: true },
-    { label: '12 or 20 gauge; #7½–#8 shot is common. Non-toxic shot on fields that require it' },
+    { label: '12 or 20 gauge; #7½–#8 shot is common' },
+    { label: 'No fluorescent orange required for doves (recommended when moving)' },
     { label: 'Camo or drab clothing, stool, shade, plenty of water' },
     basics,
   ],
   turkey: [
     license,
     { label: 'Turkey tag(s) for the season', required: true },
-    { label: 'Orange rules for turkey differ from small game and by season: check the digest', required: true },
-    { label: 'Shotgun with turkey loads, or other legal sporting arm for the season and WMU (see digest)' },
-    { label: 'Calls, seat cushion, full camo (with orange where required)' },
+    { label: 'No fluorescent orange required in either turkey season (strongly recommended)' },
+    { label: 'Both seasons: shotgun (3-shell capacity), muzzleloading shotgun, or bow or crossbow (35 lb minimum draw). Fine shot no larger than #4 lead, #2 steel or #4 other non-toxic. No rifles, handguns or slugs', required: true },
+    { label: 'Calls, seat cushion, full camo' },
     basics,
   ],
   bobwhite: [
     license,
-    { label: 'Season, limits and open areas: check the digest before going', required: true },
+    { label: 'No limit. Statewide Sept 1–Dec 24 and Dec 26, 2026–Mar 31, 2027. Closed in the Letterkenny Army Depot Bobwhite Quail Recovery Area', required: true },
     orange,
     { label: '20 or 28 gauge, open choke; #7½–#8 shot is common' },
     dogGear,

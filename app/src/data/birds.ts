@@ -37,7 +37,8 @@ export const birds: BirdId[] = [
     ],
     lookAlikes: [
       'Ruffed grouse (shorter, fan-shaped tail with a dark band).',
-      'Hen pheasant vs. rooster in poor light: check the tail length and the white ring before you shoot where hens are not legal.',
+      'Hen pheasant vs. rooster in poor light: check the tail length and the white ring. Male and female pheasants may be taken in all WMUs.',
+      'Pheasant hunting is closed in Wild Pheasant Recovery Areas.',
     ],
   },
   {
@@ -106,7 +107,7 @@ export const birds: BirdId[] = [
       'Covey flush: many birds at once, low and fast.',
     ],
     lookAlikes: ['Released pen-raised quail.', 'Young ruffed grouse or hen pheasant chicks in summer (not in season).'],
-    regsNote: 'Bobwhite seasons and open areas are limited in Pennsylvania: check the PGC digest before hunting.',
+    regsNote: 'No limit. Statewide Sept 1–Dec 24 and Dec 26, 2026–Mar 31, 2027. No open season (and no quail release) in the Letterkenny Army Depot Bobwhite Quail Recovery Area. Verify with the PGC digest.',
   },
 ];
 

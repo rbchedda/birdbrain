@@ -256,7 +256,7 @@ describe('Guide tab', () => {
     }
     for (const id of ['season', 'regs', 'birds', 'gear', 'bag', 'hours']) expect(screen.getByTestId(`guide-${id}`)).toBeTruthy();
     // Digest link + regs version at the top and on every section.
-    expect(screen.getByTestId('guide-digest-top')).toHaveTextContent(/Verify with the PGC digest ↗ · regs v2026-27\.3\+guide\.1/);
+    expect(screen.getByTestId('guide-digest-top')).toHaveTextContent(/Verify with the PGC digest ↗ · regs v2026-27\.3\+guide\.2/);
     expect(screen.getAllByLabelText('Verify with the PGC digest').length).toBeGreaterThanOrEqual(7);
     expect(screen.getByLabelText('Open the PGC Hunting & Trapping Digest')).toBeTruthy();
   });
