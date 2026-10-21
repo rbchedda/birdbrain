@@ -11,7 +11,7 @@ const icons: Record<string, { on: IconName; off: IconName }> = {
   index: { on: 'map', off: 'map-outline' },
   feed: { on: 'newspaper', off: 'newspaper-outline' },
   groups: { on: 'people', off: 'people-outline' },
-  learn: { on: 'book', off: 'book-outline' },
+  plan: { on: 'calendar', off: 'calendar-outline' },
 };
 
 export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {

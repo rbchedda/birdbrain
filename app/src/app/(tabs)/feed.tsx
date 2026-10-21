@@ -6,7 +6,7 @@ import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Tex
 import { PostCard } from '@/components/PostCard';
 import { ScreenHeader } from '@/components/Screen';
 import { SignInPrompt } from '@/components/SignInPrompt';
-import { Notice, ui } from '@/components/ui';
+import { Button, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { useSession } from '@/data/hooks';
 import type { Post } from '@/data/types';
@@ -23,10 +23,27 @@ export default function FeedScreen() {
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
   const loadingMore = useRef(false);
+  // 'error' fails closed: no posts until we know the rules were accepted.
+  const [rules, setRules] = useState<'unknown' | 'accepted' | 'required' | 'error'>('unknown');
 
   const refresh = useCallback(async () => {
     if (!session) return;
     setRefreshing(true);
+    let ok: boolean;
+    try {
+      ok = await backend.rulesAccepted();
+    } catch (e) {
+      setRules('error');
+      setError(`Couldn’t check the community rules: ${(e as Error).message}`);
+      setRefreshing(false);
+      return;
+    }
+    setRules(ok ? 'accepted' : 'required');
+    if (!ok) {
+      setError(undefined);
+      setRefreshing(false);
+      return;
+    }
     try {
       const page = await backend.feed(null, PAGE);
       setPosts(page.posts);
@@ -77,6 +94,29 @@ export default function FeedScreen() {
     );
   }
 
+  if (rules === 'required' || rules === 'error') {
+    return (
+      <View style={styles.root}>
+        <ScreenHeader title="Feed" right={profileButton} />
+        <View style={styles.gate}>
+          {rules === 'required' && <Notice>Before you see or share posts, please read and accept the community rules.</Notice>}
+          {error && <Notice tone="error">{error}</Notice>}
+          {rules === 'error' && <Button label="Try again" icon="refresh-outline" busy={refreshing} onPress={refresh} />}
+          <Button label="Read community rules" icon="shield-checkmark-outline" variant="primary" onPress={() => router.push('/rules')} />
+        </View>
+      </View>
+    );
+  }
+
+  if (rules === 'unknown') {
+    return (
+      <View style={styles.root}>
+        <ScreenHeader title="Feed" right={profileButton} />
+        <ActivityIndicator color={colors.accent} style={{ margin: space.lg }} accessibilityLabel="Loading feed" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.root}>
       <ScreenHeader title="Feed" subtitle="Hunts from yesterday and before. Never live." right={profileButton} />
@@ -97,12 +137,15 @@ export default function FeedScreen() {
         ItemSeparatorComponent={() => <View style={{ height: space.lg }} />}
         ListHeaderComponent={
           <View style={{ gap: space.sm, marginBottom: notice || error ? space.lg : 0 }}>
+            <Pressable accessibilityRole="link" onPress={() => router.push('/rules')}>
+              <Text style={styles.rulesLink}>Community rules</Text>
+            </Pressable>
             {notice && <Notice tone="success">{notice}</Notice>}
             {error && <Notice tone="error">{error}</Notice>}
           </View>
         }
         ListEmptyComponent={
-          refreshing ? undefined : <Text style={ui.muted}>No posts yet. Log a hunt and it’ll show here after midnight.</Text>
+          refreshing ? undefined : <Text style={ui.muted}>No posts yet. Log a hunt and it’ll show here tomorrow (12h+ delay).</Text>
         }
         ListFooterComponent={loading ? <ActivityIndicator color={colors.accent} style={{ margin: space.lg }} /> : undefined}
         onEndReached={loadMore}
@@ -115,6 +158,8 @@ export default function FeedScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
+  gate: { padding: space.lg, gap: space.md },
+  rulesLink: { color: colors.accent, textDecorationLine: 'underline' },
   list: { paddingHorizontal: space.lg, paddingBottom: space.xxl },
   profile: { width: touchTarget, height: touchTarget, alignItems: 'center', justifyContent: 'center', marginRight: -space.sm },
 });

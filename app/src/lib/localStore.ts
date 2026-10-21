@@ -45,3 +45,10 @@ export function newClientId(): string {
   const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
+
+const AGE_GATE_KEY = 'birdbrain.ageGate.v1';
+export type AgeGateStatus = 'passed' | 'blocked' | null;
+
+/** Result of the 13+ age gate on this device; null until answered. */
+export const readAgeGate = () => readJson<AgeGateStatus>(AGE_GATE_KEY, null);
+export const writeAgeGate = (status: Exclude<AgeGateStatus, null>) => writeJson(AGE_GATE_KEY, status);

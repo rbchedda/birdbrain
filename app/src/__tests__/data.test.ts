@@ -62,7 +62,7 @@ describe('sample backend', () => {
     await b.setBlocked('sample-dana', false);
   });
 
-  it('delays new posts until the next midnight Eastern', async () => {
+  it('delays new posts until next midnight Eastern or 12 hours, whichever is later', async () => {
     const now = new Date('2026-10-21T22:30:00Z'); // 6:30 PM EDT
     const b = createSampleBackend(() => now);
     const post = await b.createPost({
@@ -75,7 +75,7 @@ describe('sample backend', () => {
       audience: 'shared',
       groupSlug: null,
     });
-    expect(post.publicAfter).toBe('2026-10-22T04:00:00.000Z');
+    expect(post.publicAfter).toBe('2026-10-22T10:30:00.000Z'); // 12h beats midnight
     expect(post.area).toBeNull();
     await b.deletePost(post.id);
   });

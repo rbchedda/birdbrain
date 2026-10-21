@@ -51,6 +51,10 @@ export function midnightET(ymd: Ymd): Date {
 
 export const nextMidnightET = (from: Date) => midnightET(addDays(etParts(from).ymd, 1));
 
+/** When a shared post goes public: the later of next-day midnight ET or 12 hours on. Mirrors public.min_public_delay(). */
+export const publicAfterET = (from: Date) =>
+  new Date(Math.max(nextMidnightET(from).getTime(), from.getTime() + 12 * 3600_000));
+
 const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', minute: '2-digit' });
 export const formatTime = (d: Date) => timeFmt.format(d);
 

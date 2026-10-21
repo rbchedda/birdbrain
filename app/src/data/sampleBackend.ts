@@ -1,9 +1,10 @@
 import { readJson, writeJson } from '@/lib/localStore';
-import { nextMidnightET } from '@/lib/time';
+import { publicAfterET } from '@/lib/time';
 
 import { blurPoint, postKind, sumCounts, type Backend, type FeedPage, type HuntLogUpload, type Session } from './backend';
 import { samplePlaces, sampleStocking } from './places';
 import { sampleAuthors, sampleComments, sampleMe, samplePosts } from './posts';
+import { containsObjectionable, OBJECTIONABLE_MESSAGE } from './moderation';
 import type { Author, Comment, Group, Post, Profile } from './types';
 
 const KEY = 'birdbrain.sample.v1';
@@ -19,6 +20,7 @@ interface State {
   members: string[];
   profile: Profile;
   reports: { target: string; reason: string }[];
+  rulesAcceptedAt: string | null;
 }
 
 const sampleGroups: Omit<Group, 'member'>[] = [
@@ -51,6 +53,7 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
       members: saved.members ?? [],
       profile: saved.profile ?? { id: sampleMe.id, username: sampleMe.username, displayName: sampleMe.displayName, hasDog: false },
       reports: saved.reports ?? [],
+      rulesAcceptedAt: saved.rulesAcceptedAt ?? null,
     };
     return state;
   }
@@ -66,6 +69,7 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
       members: s.members,
       profile: s.profile,
       reports: s.reports,
+      rulesAcceptedAt: s.rulesAcceptedAt,
     });
 
   const me = (s: State): Author => ({ id: sampleMe.id, username: s.profile.username, displayName: s.profile.displayName });
@@ -92,6 +96,11 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
     signUp: async () => ({ needsConfirmation: false }),
     signInAsGuest: async () => {},
     signOut: async () => {},
+    async deleteAccount() {
+      // Drop everything this device stored for the sample user and rebuild from seed data.
+      state = null;
+      await writeJson(KEY, {});
+    },
 
     listPlaces: async () => samplePlaces,
     placeDetail: async (id) => ({ stocking: sampleStocking.filter((e) => e.placeId === id), outline: null }),
@@ -128,6 +137,7 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
 
     async createPost(draft) {
       const s = await load();
+      if (containsObjectionable(draft.caption)) throw new Error(OBJECTIONABLE_MESSAGE);
       const created = now();
       const post: Post = {
         id: `local-${created.getTime().toString(36)}`,
@@ -137,7 +147,7 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
         species: draft.species,
         caption: draft.caption,
         createdAt: created.toISOString(),
-        publicAfter: nextMidnightET(created).toISOString(),
+        publicAfter: publicAfterET(created).toISOString(),
         huntedOn: draft.huntedOn,
         location: draft.location,
         area: draft.location === 'blurred' && draft.exact ? blurPoint(draft.exact) : null,
@@ -178,6 +188,7 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
 
     async addComment(postId, body) {
       const s = await load();
+      if (containsObjectionable(body)) throw new Error(OBJECTIONABLE_MESSAGE);
       const p = s.posts.find((x) => x.id === postId);
       // Same rule as the database: no comments until the post is visible to you.
       if (!p || !visible(s, p)) throw new Error('You can comment once this post is public.');
@@ -218,7 +229,21 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
 
     async report(target, reason) {
       const s = await load();
-      s.reports = [...s.reports, { target: `${target.kind}:${target.id}`, reason }];
+      const key = `${target.kind}:${target.id}`;
+      // Same rule as the database: one open report per reporter per target.
+      if (s.reports.some((r) => r.target === key)) throw new Error('You already reported this.');
+      s.reports = [...s.reports, { target: key, reason }];
+      await persist(s);
+    },
+
+    async rulesAccepted() {
+      const s = await load();
+      return !!s.rulesAcceptedAt;
+    },
+
+    async acceptRules() {
+      const s = await load();
+      s.rulesAcceptedAt ??= now().toISOString();
       await persist(s);
     },
 

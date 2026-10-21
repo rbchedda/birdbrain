@@ -300,6 +300,85 @@ async function assignSglByOverlap(db, config) {
   );
 }
 
+/**
+ * PA county boundaries from PGC's own "PA County" layer (PennDOT, US Census,
+ * PGC). Loaded into public.counties so places get a county by spatial join
+ * (see migration 20261024000000_place_counties). Ingest it before the place
+ * sources; the DB trigger fills county on every place insert/update, and
+ * assign_place_counties() backfills rows loaded earlier.
+ */
+export const COUNTIES = {
+  source: 'pgc:pa_counties',
+  layerUrl: `${PGC}/PA_Civic_Boundaries/FeatureServer/301`,
+  fields: ['cnty_name_title', 'fips_cnty', 'pgc_region', 'last_edited_date'],
+  /** PA has 67 counties; a short result means something upstream broke. */
+  expected: 67,
+};
+
+export function toCountyRows(features) {
+  const rows = new Map();
+  for (const f of features) {
+    const p = f.properties ?? {};
+    const name = pick(p, 'cnty_name_title');
+    const fips = pick(p, 'fips_cnty');
+    if (!f.geometry || name === null || fips === null) continue;
+    rows.set(String(name).trim(), {
+      name: String(name).trim(),
+      fips: String(fips).padStart(3, '0'),
+      pgc_region: pick(p, 'pgc_region'),
+      source_updated_at: epochToIso(pick(p, 'last_edited_date')),
+      geojson: JSON.stringify(f.geometry),
+    });
+  }
+  return [...rows.values()];
+}
+
+/** Replace public.counties and backfill place counties, in one transaction. */
+export async function upsertCounties(db, rows, { lastEditDate, minRows = COUNTIES.expected } = {}) {
+  if (rows.length < minRows) throw new Error(`${COUNTIES.source}: ${rows.length} counties, expected ${minRows}; refusing to load.`);
+  await db.query('begin');
+  try {
+    for (const r of rows) {
+      await db.query(
+        `insert into public.counties (name, fips, pgc_region, geom, source, source_updated_at, updated_at)
+         values ($1, $2, $3,
+           extensions.st_multi(extensions.st_collectionextract(extensions.st_makevalid(
+             extensions.st_setsrid(extensions.st_geomfromgeojson($4), 4326)), 3)),
+           $5, $6, now())
+         on conflict (name) do update set fips = excluded.fips, pgc_region = excluded.pgc_region, geom = excluded.geom,
+           source = excluded.source, source_updated_at = excluded.source_updated_at, updated_at = now()`,
+        [r.name, r.fips, r.pgc_region, r.geojson, COUNTIES.source, r.source_updated_at],
+      );
+    }
+    await db.query(`delete from public.counties where not (name = any($1::text[]))`, [rows.map((r) => r.name)]);
+    // Re-derive counties for places that got theirs from the join, then fill the rest.
+    await db.query(`update public.places set county = null where county is not null and county <> coalesce(public.county_at(geom), county)`);
+    const { rows: filled } = await db.query('select public.assign_place_counties() n');
+    await db.query(
+      `insert into public.ingest_state (source, layer_url, last_edit_date, feature_count, last_run_at)
+       values ($1, $2, $3, $4, now())
+       on conflict (source) do update set layer_url = excluded.layer_url,
+         last_edit_date = excluded.last_edit_date, feature_count = excluded.feature_count, last_run_at = now()`,
+      [COUNTIES.source, COUNTIES.layerUrl, lastEditDate ?? null, rows.length],
+    );
+    await db.query('commit');
+    return { upserted: rows.length, placesFilled: filled[0].n };
+  } catch (err) {
+    await db.query('rollback');
+    throw err;
+  }
+}
+
+export async function ingestCounties(db, { fetchImpl = fetch, force = false, minRows } = {}) {
+  const info = await fetchLayerInfo(COUNTIES.layerUrl, { fetchImpl });
+  if (!force && !(await needsRun(db, COUNTIES, info.lastEditDate))) {
+    return { source: COUNTIES.source, skipped: true, lastEditDate: info.lastEditDate };
+  }
+  const features = await fetchFeatures(COUNTIES.layerUrl, { fetchImpl, pageSize: Math.min(PAGE_SIZE, info.maxRecordCount || PAGE_SIZE) });
+  const result = await upsertCounties(db, toCountyRows(features), { lastEditDate: info.lastEditDate, minRows });
+  return { source: COUNTIES.source, features: features.length, ...result, lastEditDate: info.lastEditDate };
+}
+
 /** Whether the layer changed since the last recorded run. */
 export async function needsRun(db, config, lastEditDate) {
   if (!lastEditDate) return true; // layer doesn't report edits; always refresh
@@ -330,7 +409,9 @@ async function main() {
   const flag = (name) => args.includes(name);
   const outIndex = args.indexOf('--out');
   const names = args.filter((a, i) => !a.startsWith('--') && i !== outIndex + 1);
-  const selected = names.length ? names : Object.keys(SOURCES);
+  // 'counties' is not a place source; it runs first so new places get a county.
+  const withCounties = names.length === 0 || names.includes('counties');
+  const selected = names.length ? names.filter((n) => n !== 'counties') : Object.keys(SOURCES);
   for (const n of selected) if (!SOURCES[n]) throw new Error(`Unknown source "${n}". Known: ${Object.keys(SOURCES).join(', ')}`);
 
   if (flag('--describe')) {
@@ -374,6 +455,14 @@ async function main() {
   await client.connect();
   let failed = false;
   try {
+    if (withCounties) {
+      try {
+        console.log(JSON.stringify(await ingestCounties(client, { force: flag('--force') })));
+      } catch (err) {
+        failed = true;
+        console.error(`counties failed: ${err.message}`);
+      }
+    }
     for (const n of selected) {
       try {
         console.log(JSON.stringify(await ingestSource(client, SOURCES[n], { force: flag('--force') })));

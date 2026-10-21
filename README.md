@@ -33,7 +33,7 @@ off email confirmation if testers should sign up without checking email.
 | --- | --- |
 | Map | Pheasant Planner: game lands, stocking points and dove fields from `places`; "open today" per species from the season calendar (`app/src/data/seasons.ts`), legal hours from sunrise/sunset, Sunday rules; stocking windows from `stocking_events` |
 | Feed | Posts from `posts` (RLS applies the next-day delay and blocks), paginated, with likes, comments, report and block |
-| Log | After-the-hunt post: species, bird counts per place, notes. Shared posts are delayed until midnight ET; private entries never leave the device |
+| Log | After-the-hunt post: species, bird counts per place, notes. Shared posts are delayed until the later of next-day midnight ET or 12 hours after posting; private entries never leave the device |
 | Crew | Species groups (`groups`, `group_members`) |
 | Learn | Season dates, legal hours and the privacy model |
 
@@ -62,7 +62,7 @@ To use a hosted project: `npx supabase login`, `npx supabase link`, then
 Privacy and safety model:
 
 - A post's exact location is stored in `post_locations`, which only the author can read. Everyone else sees `posts.blurred_geom`, a trigger-derived point snapped to a ~5 km grid. Saved posts and saved spots are owner-only.
-- Posts are hidden from other users until midnight Eastern on the day after they are created (`posts.public_after`, set by trigger). PA law bars using phones to alert another hunter to live game, so nothing in BirdBrain is real-time. Comments and likes follow the post's visibility.
+- Posts are hidden from other users until the later of midnight Eastern on the day after they are created or 12 hours after posting (`posts.public_after`, set by trigger via `min_public_delay()`). PA law bars using phones to alert another hunter to live game, so nothing in BirdBrain is real-time. Comments and likes follow the post's visibility.
 - Which places a hunter logged and the per-place bird counts live in `post_place_counts`, author-only like `post_locations`. A trigger copies only the totals into `posts.counts`.
 - Users can block each other (`user_blocks`, hides posts and comments both ways) and report posts, comments or profiles (`reports`). Moderators work the `reports` queue with the service role. Apple requires both for apps with user content, TestFlight included.
 
@@ -77,23 +77,33 @@ Two jobs, both plain Node (no extra dependencies). Every network request has a t
 | `game_lands` | State_Game_Lands_Boundaries/300 | `game_land` | SGL number |
 | `pheasant_stocking` | Pheasant_Hunting_Pennsylvania/100 | `stocking` | `sgl:<n>` or `name:<slug>` |
 | `dove_fields` | Managed_Dove_Fields_(Public_View)/0 | `dove_field` | GlobalID |
+| `counties` | PA_Civic_Boundaries/301 ("PA County"; PennDOT, US Census, PGC) | → `public.counties` | county name |
+
+`counties` is not a place source. It loads `public.counties` (67 polygons; a run with fewer than 67 is refused and nothing is written) and backfills `places.county`. It runs first when no sources are named, or alone as `node ingest/arcgis.mjs counties`.
 
 Each run checks the layer's `editingInfo.lastEditDate` against `ingest_state` and skips unchanged layers. Re-runs are safe, features removed upstream are deleted, and a run that returns no usable rows fails instead of wiping the table.
 
 ```
 npm run ingest:describe                              # live fields (* = mapped), drift check, sample rows; no DB
-DATABASE_URL=postgres://... npm run ingest           # all sources
+DATABASE_URL=postgres://... npm run ingest           # counties, then all place sources
+DATABASE_URL=postgres://... node ingest/arcgis.mjs counties
 DATABASE_URL=postgres://... npm run ingest -- pheasant_stocking --force
 node ingest/arcgis.mjs --out data/raw                # fetch GeoJSON only
 ```
 
 The `SOURCES` mappings were checked against the live layers with `ingest:describe` on 2026-10-21. A full offline load into PGlite mapped every feature: 319 game lands, 216 stocking points and 83 dove fields. `ingest/fixtures/pgc-live-sample.json` holds the captured schemas and sample rows the tests run against. `ingest:describe` exits non-zero if a mapped field disappears upstream. Unmapped attributes are kept in `properties.raw`. Notes on the live data:
 
-- No layer has a county field, so `places.county` is null for PGC rows.
+- No place layer has a county field. `places.county` comes from a spatial join: a trigger sets it to the county containing the place's point on surface (`county_at()`, migration `20261024000000_place_counties`), and loading counties backfills existing rows (`assign_place_counties()`). A game land spanning counties gets one county. For pheasant release weeks use the `place_stocking_county` view, which prefers the county PGC's allocation lists the place under (some SGL stocking points sit across a county line from it).
 - Stocking points are keyed by property, not GlobalID, because PGC re-created every feature for the 2026-27 season; game lands come through as a bare number in `property_name` and are named `State Game Lands <n>`.
 - A dove field's game land comes from polygon overlap with `game_lands` (loaded first), not from `Project_Name`, which mixes SGL numbers with other codes (411, 414, 419 and 2425 aren't on game lands). Crops are pulled from the free-text `Description`.
 
-`.github/workflows/ingest.yml` runs the layer ingester hourly October to February and daily the rest of the year. Add a `DATABASE_URL` repository secret to enable it.
+`.github/workflows/ingest.yml` runs the layer ingester (step 1 below) hourly October to February and daily the rest of the year. It does not run step 2; run that by hand after a successful `arcgis.mjs` run. Add a `DATABASE_URL` repository secret to enable it.
+
+**Run order (required):**
+1. `node ingest/arcgis.mjs`: counties, then the place sources (game lands before dove fields).
+2. `node ingest/stocking_windows.mjs --load data/pgc/pheasant-allocation-<season>.json`.
+
+`--load` links allocation properties only to places that already exist, so it must run after step 1, or `place_stocking_county` falls back to the spatial county. Step 2 is a manual step for now.
 
 ### Pheasant allocation → `stocking_events` (`ingest/stocking_windows.mjs`)
 
@@ -110,7 +120,7 @@ node ingest/stocking_windows.mjs --from <dir>        # parse saved pages (overvi
 DATABASE_URL=postgres://... node ingest/stocking_windows.mjs --load data/pgc/pheasant-allocation-2026-27.json
 ```
 
-`--load` replaces that season's rows in one transaction, refuses an empty seed, and links properties to `places`. It isn't scheduled yet.
+`--load` replaces that season's rows in one transaction, refuses an empty seed, and links properties to `places`. It isn't scheduled: run it by hand after `arcgis.mjs` (see run order above).
 
 ### Data terms
 
@@ -125,10 +135,9 @@ The app's data page must show the citation and the "as is" disclaimer. BirdBrain
 
 ## Open items
 
-- No `DATABASE_URL` yet: nothing has been loaded into a hosted database. First load: run `ingest` (game lands before dove fields; `SOURCES` is already in that order), then `stocking_windows.mjs --load`.
-- Schedule the allocation scrape and load (for example weekly from September to February in `ingest.yml`), and decide whether a changed seed should open a PR or load directly.
+- No `DATABASE_URL` yet: nothing has been loaded into a hosted database. First load: run `ingest` (counties, then game lands before dove fields; already in that order), then `stocking_windows.mjs --load`.
+- Add `stocking_windows.mjs --load` after `arcgis.mjs` in `ingest.yml` (same `DATABASE_URL` secret, no new ones), schedule the allocation scrape, and decide whether a changed seed should open a PR or load directly.
 - Junior hunt stocking sites are published separately as a PDF (linked from the allocation page) and aren't scraped. `stocking_events` has the junior counts per county but not the sites.
-- `places.county` is empty for PGC rows; fill it by intersecting with a county boundary layer (e.g. PASDA).
 - On the 2026-10-21 data, all 161 allocation game lands link to a place, but only 46 of 62 other properties do. The rest are named differently in the two PGC sources ("Prompton Army Corps" vs "Prompton State Park", "Mahoning Lake" vs "Mahoning Creek Lake") or are generic ("Various Hunter Access Properties"), so their `place_id` is null. A small alias table would close most of the gap.
 - Verify migratory bird licensing and Sunday hunting copy against current PGC pages.
 - eBird data needs written permission from Cornell for commercial use; hold the birdwatching section until that's settled.

@@ -9,7 +9,7 @@ import { backend } from '@/data';
 import { useJournal, usePlaces, useSession } from '@/data/hooks';
 import { addJournalEntry, type JournalEntry } from '@/data/journal';
 import { allSpecies, placeTypeLabel, speciesLabel, type LocationVisibility, type Place, type PlaceCount, type Species } from '@/data/types';
-import { addDays, etParts, formatDay, formatTime, nextMidnightET, todayET } from '@/lib/time';
+import { addDays, etParts, formatDay, formatTime, publicAfterET, todayET } from '@/lib/time';
 import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
 
 const groupFor: Record<Species, string> = {
@@ -59,7 +59,7 @@ export default function LogScreen() {
 
   const firstPlace = places.find((p) => p.id === counts.find((c) => c.placeId)?.placeId);
   const exact = firstPlace?.center ?? null;
-  const publicAt = nextMidnightET(new Date());
+  const publicAt = publicAfterET(new Date());
   const today = todayET();
   const needsAccount = backend.mode === 'supabase' && !session;
 
@@ -230,7 +230,7 @@ export default function LogScreen() {
           </View>
         ) : (
           <Button
-            label={audience === 'private' ? 'Save privately' : 'Share after midnight'}
+            label={audience === 'private' ? 'Save privately' : 'Share tomorrow (12h+ delay)'}
             icon={audience === 'private' ? 'lock-closed' : 'send'}
             variant="primary"
             disabled={empty}
