@@ -1,4 +1,4 @@
-import { pgcSunTimes, type HuntingHoursRow } from '@/lib/sun';
+import { officialDay, officialHours, type HoursTable } from '@/lib/sun';
 import { formatDay, formatTime, midnightET, todayET, weekdayOf, type Ymd } from '@/lib/time';
 
 import { allSpecies, migratory, type Place, type Species } from './types';
@@ -84,14 +84,14 @@ export const seasons: Season[] = [
       ['2026-11-26', '2026-11-28'],
     ],
     hours: 'smallGame',
-    note: 'Most WMUs; several are closed or shorter. Check your WMU.',
+    note: 'Limit 1 per season. No fall season in WMUs 5C and 5D; other WMUs vary. Check your WMU.',
   },
   {
     species: 'turkey',
     label: 'Spring gobbler',
     windows: [['2027-05-01', '2027-05-31']],
     hours: 'springTurkey',
-    note: 'Hours extend past noon later in the season; check the digest.',
+    note: 'Limit 1 bearded bird per season. Noon close through May 15, then ½ hour after sunset.',
   },
   {
     species: 'waterfowl',
@@ -106,25 +106,27 @@ export const seasons: Season[] = [
 export const sundayClosed = (species: Species) => migratory.includes(species);
 
 export type SpeciesStatus =
-  | { kind: 'open'; season: Season; start: Date; end: Date }
+  /** start/end are null when the PGC table has no row for the date or zone: show "check the digest". */
+  | { kind: 'open'; season: Season; start: Date | null; end: Date | null }
   | { kind: 'sunday'; season: Season }
   | { kind: 'closed'; nextOpen: { season: Season; date: Ymd } | null }
   | { kind: 'check'; season: Season };
 
 const inWindow = (ymd: Ymd, [a, b]: [Ymd, Ymd]) => ymd >= a && ymd <= b;
 
-const HALF_HOUR = 30 * 60_000;
-
-export function legalHours(hours: Hours, ymd: Ymd, at: { lat: number; lng: number }, lookup?: HuntingHoursRow | null) {
-  const sun = pgcSunTimes(ymd, at, lookup);
-  if (!sun) return null;
-  const start = new Date(sun.sunrise.getTime() - HALF_HOUR);
-  const afterSunset = new Date(sun.sunset.getTime() + HALF_HOUR);
-  if (hours === 'migratory') return { start, end: sun.sunset, source: sun.source };
+/**
+ * Legal hours from the official PGC table. hunt_start/hunt_end are ½ hour
+ * before sunrise / after sunset (small and big game); migratory birds end at
+ * sunset; spring gobbler ends at noon through SPRING_NOON_UNTIL.
+ */
+export function legalHours(hours: Hours, ymd: Ymd, lng: number, table: HoursTable = officialHours) {
+  const day = officialDay(ymd, lng, table);
+  if (!day) return null;
+  if (hours === 'migratory') return { start: day.huntStart, end: day.sunset };
   if (hours === 'springTurkey' && ymd <= SPRING_NOON_UNTIL) {
-    return { start, end: new Date(midnightET(ymd).getTime() + 12 * 3600_000), source: sun.source };
+    return { start: day.huntStart, end: new Date(midnightET(ymd).getTime() + 12 * 3600_000) };
   }
-  return { start, end: afterSunset, source: sun.source };
+  return { start: day.huntStart, end: day.huntEnd };
 }
 
 /** Open/closed status for one species on a given ET date at a location. */
@@ -132,7 +134,7 @@ export function speciesStatus(
   species: Species,
   ymd: Ymd,
   at: { lat: number; lng: number },
-  lookup?: HuntingHoursRow | null,
+  table: HoursTable = officialHours,
 ): SpeciesStatus {
   const relevant = seasons.filter((s) => s.species === species);
   const isSunday = weekdayOf(ymd) === 0;
@@ -142,8 +144,8 @@ export function speciesStatus(
     .sort((a, b) => Number(!!a.youth) - Number(!!b.youth))[0];
   if (open) {
     if (isSunday && sundayClosed(species)) return { kind: 'sunday', season: open };
-    const hours = legalHours(open.hours, ymd, at, lookup);
-    if (hours) return { kind: 'open', season: open, start: hours.start, end: hours.end };
+    const hours = legalHours(open.hours, ymd, at.lng, table);
+    return { kind: 'open', season: open, start: hours?.start ?? null, end: hours?.end ?? null };
   }
   const unknown = relevant.find((s) => s.windows === null);
   if (unknown) return { kind: 'check', season: unknown };
@@ -178,8 +180,9 @@ export function placeToday(place: Place, now = new Date()): PlaceToday {
 export function describeStatus(status: SpeciesStatus, now = new Date()): string {
   switch (status.kind) {
     case 'open': {
-      const range = `${formatTime(status.start)} – ${formatTime(status.end)}`;
       const youth = status.season.youth ? 'Youth only · ' : '';
+      if (!status.start || !status.end) return `${youth}Open today · hours: check the PGC digest`;
+      const range = `${formatTime(status.start)} – ${formatTime(status.end)}`;
       if (now > status.end) return `${youth}Open today; legal hours ended ${formatTime(status.end)}`;
       return `${youth}Open today · ${range}`;
     }
