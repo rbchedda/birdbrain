@@ -1,68 +1,85 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useNavigation } from 'expo-router';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
-import { OpenToday } from '@/components/OpenToday';
+import { DEFAULT_AT } from '@/components/OpenToday';
+import { DigestLink } from '@/components/guide/DigestLink';
+import {
+  BagSection,
+  BirdIdSection,
+  GearSection,
+  HoursSection,
+  InSeasonSection,
+  RegsSection,
+} from '@/components/guide/GuideSections';
 import { ScreenHeader } from '@/components/Screen';
-import { Tag } from '@/components/Tag';
-import { SectionTitle, ui } from '@/components/ui';
-import { SEASON_YEAR, seasons, seasonWindows, sundayClosed } from '@/data/seasons';
+import { Chip } from '@/components/ui';
+import type { BirdKey } from '@/data/birds';
+import { GUIDE_SECTIONS, type GuideSection } from '@/data/guide';
+import { readJson, writeJson } from '@/lib/localStore';
+import { pgcHoursZone } from '@/lib/sun';
 import { todayET } from '@/lib/time';
-import { colors, fonts, space } from '@/theme/tokens';
+import { colors, space } from '@/theme/tokens';
 
-export default function PlanScreen() {
-  const today = todayET();
+const ZONE_KEY = 'guide.zone';
+const defaultZone = pgcHoursZone(DEFAULT_AT.lng)?.zone ?? 1;
+
+export default function GuideScreen() {
+  const navigation = useNavigation();
+  // The tab entry belongs to dev-1's _layout.tsx; set the label from here until it points at this screen.
+  useLayoutEffect(() => navigation.setOptions({ title: 'Guide' }), [navigation]);
+
+  const now = new Date();
+  const ymd = todayET(now);
+  const [zone, setZone] = useState(defaultZone);
+  const [bird, setBird] = useState<BirdKey>('pheasant');
+  const [active, setActive] = useState<GuideSection>('season');
+  const scroll = useRef<ScrollView>(null);
+  const offsets = useRef<Partial<Record<GuideSection, number>>>({});
+
+  useEffect(() => {
+    readJson<number>(ZONE_KEY, defaultZone).then(setZone);
+  }, []);
+  const pickZone = (z: number) => {
+    setZone(z);
+    writeJson(ZONE_KEY, z);
+  };
+  const jump = (key: GuideSection) => {
+    setActive(key);
+    scroll.current?.scrollTo({ y: offsets.current[key] ?? 0, animated: true });
+  };
+  const at = (key: GuideSection) => ({ onLayout: (e: { nativeEvent: { layout: { y: number } } }) => (offsets.current[key] = e.nativeEvent.layout.y) });
+
   return (
     <View style={styles.root}>
-      <ScreenHeader title="Guide" subtitle={`${SEASON_YEAR} seasons, hours and how BirdBrain keeps spots private`} />
-      <ScrollView contentContainerStyle={styles.body}>
-        <OpenToday />
-
-        <SectionTitle>Seasons</SectionTitle>
-        {seasons.map((s) => {
-          const windows = seasonWindows(s, today);
-          return (
-            <View key={s.label} style={ui.card}>
-              <View style={ui.row}>
-                <Text style={styles.name}>{s.label}</Text>
-                {windows.some((w) => w.current) && <Tag label="Open now" tone="accent" />}
-              </View>
-              {windows.length ? (
-                windows.map((w) => (
-                  <Text key={w.label} style={[ui.body, w.past && { color: colors.muted }]}>
-                    {w.label}
-                  </Text>
-                ))
-              ) : (
-                <Text style={ui.body}>Dates vary by zone.</Text>
-              )}
-              <Text style={ui.muted}>
-                {sundayClosed(s.species) ? 'No Sunday hunting. ' : 'Sundays included. '}
-                {s.note}
-              </Text>
-            </View>
-          );
-        })}
-
-        <SectionTitle>Legal hours</SectionTitle>
-        <Text style={ui.body}>
-          Pheasant, grouse and fall turkey: ½ hour before sunrise to ½ hour after sunset. Doves and waterfowl: ½ hour
-          before sunrise to sunset. Spring gobbler: ½ hour before sunrise to noon through May 15, then to ½ hour after
-          sunset. Times come from the official PGC hunting-hours table for your longitude zone, never computed; if a date
-          isn’t in the table, check the digest.
-        </Text>
-
-        <SectionTitle>Sharing without burning your spot</SectionTitle>
-        <Text style={ui.body}>
-          • Posts are delayed: others see them from midnight Eastern the day after you share, and never
-          sooner than 12 hours after. PA law bars using phones to
-          alert another hunter to live game.{'\n'}• Others only see a ~5 km area, never your spot. Which places you
-          hunted and your per-place counts are visible to you alone.{'\n'}• Private log entries never leave your phone.
-          {'\n'}• Block or report anyone from their post, comment or profile.
-        </Text>
-
-        <Text style={[ui.muted, { marginTop: space.lg }]}>
-          Statewide dates as approved by the Pennsylvania Game Commission. WMU, zone and bag rules vary; the PGC Hunting &
-          Trapping Digest is the final word. BirdBrain is not affiliated with the PGC.
-        </Text>
+      <ScreenHeader title="Guide" />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipBar}>
+        {GUIDE_SECTIONS.map((s) => (
+          <Chip key={s.key} label={s.label} active={active === s.key} onPress={() => jump(s.key)} />
+        ))}
+      </ScrollView>
+      <View style={styles.top}>
+        <DigestLink testID="guide-digest-top" />
+      </View>
+      <ScrollView ref={scroll} contentContainerStyle={styles.body}>
+        <View {...at('season')}>
+          <InSeasonSection ymd={ymd} zone={zone} now={now} onZone={pickZone} />
+        </View>
+        <View {...at('regs')}>
+          <RegsSection />
+        </View>
+        <View {...at('birds')}>
+          <BirdIdSection />
+        </View>
+        <View {...at('gear')}>
+          <GearSection bird={bird} onBird={setBird} />
+        </View>
+        <View {...at('bag')}>
+          <BagSection />
+        </View>
+        <View {...at('hours')}>
+          <HoursSection ymd={ymd} zone={zone} />
+        </View>
       </ScrollView>
     </View>
   );
@@ -70,6 +87,8 @@ export default function PlanScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
-  body: { paddingHorizontal: space.lg, paddingBottom: space.xxl, gap: space.sm },
-  name: { fontFamily: fonts.headingSemi, fontSize: 20, color: colors.text, flex: 1 },
+  chipBar: { flexGrow: 0 },
+  chips: { gap: space.sm, paddingHorizontal: space.lg, paddingVertical: space.xs },
+  top: { paddingHorizontal: space.lg },
+  body: { paddingHorizontal: space.lg, paddingBottom: space.xxl },
 });

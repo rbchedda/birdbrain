@@ -1,6 +1,6 @@
 import { Redirect } from 'expo-router';
 
-/** Old /learn links: the Guide tab replaced it (Navigation v2). */
-export default function LegacyLearn() {
+/** Old deep link: the Plan/Learn tab is now the Guide tab. */
+export default function OldGuideLink() {
   return <Redirect href="/guide" />;
 }
