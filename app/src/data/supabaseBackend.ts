@@ -1,6 +1,7 @@
 import type { Session as AuthSession, SupabaseClient } from '@supabase/supabase-js';
 
 import { parseGeometry, parsePoint, toEwkt } from '@/lib/geo';
+import { removeAllUnder, type StorageBucketApi } from '@/lib/storageCleanup';
 
 import { NotSignedInError, postKind, type Backend, type Session } from './backend';
 import placeDetailQuery from './placeDetailQuery.json';
@@ -127,10 +128,12 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
     },
     async deleteAccount() {
       const userId = await me();
-      // Hosted Storage may refuse SQL deletes, so remove photos via the API first.
-      const bucket = sb.storage.from('post-photos');
-      const { data: files } = await bucket.list(userId, { limit: 1000 });
-      if (files?.length) await bucket.remove(files.map((f) => `${userId}/${f.name}`));
+      // Hosted Storage refuses SQL deletes, so remove every photo (nested paths
+      // included) via the API first. Any failure stops here with the account intact,
+      // so the user can retry; removal is idempotent.
+      for (const bucket of ['post-photos', 'diary-photos']) {
+        await removeAllUnder(sb.storage.from(bucket) as unknown as StorageBucketApi, userId);
+      }
       check(await sb.rpc('delete_my_account'));
       await sb.auth.signOut({ scope: 'local' });
       blocked = new Set();
@@ -436,10 +439,8 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
 
     async deleteHuntLogEntry(clientId) {
       const userId = await me();
-      // Photos first (best-effort), then the row; diary_entries cascades. RLS limits both to the owner.
-      const bucket = sb.storage.from('diary-photos');
-      const { data: files } = await bucket.list(`${userId}/${clientId}`, { limit: 100 });
-      if (files?.length) await bucket.remove(files.map((f) => `${userId}/${clientId}/${f.name}`));
+      // Photos first (all nested files; a failure keeps the tombstone for retry), then the row; diary_entries cascades. RLS limits both to the owner.
+      await removeAllUnder(sb.storage.from('diary-photos') as unknown as StorageBucketApi, `${userId}/${clientId}`);
       check(await sb.from('hunt_log_entries').delete().eq('client_id', clientId));
     },
 
