@@ -17,11 +17,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomSheet } from '@/components/BottomSheet';
 import { PlaceMap } from '@/components/map/PlaceMap';
+import { StockingList, windowText } from '@/components/StockingList';
 import { pinColor, type Basemap } from '@/components/map/types';
 import { Tag } from '@/components/Tag';
 import { Button, Chip, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { loadPlaces, useAsync, usePlaces, useSession } from '@/data/hooks';
+import { STOCKING_SOURCE, windowsForCounty } from '@/data/places';
 import { PGC_DIGEST_URL } from '@/data/regs';
 import { describeStatus, placeToday, SEASON_YEAR } from '@/data/seasons';
 import { migratory, placeTypeLabel, speciesLabel, type Place, type PlaceType } from '@/data/types';
@@ -49,6 +51,13 @@ export default function MapScreen() {
   const [selectedId, setSelectedId] = useState<string>();
   const [expanded, setExpanded] = useState(false);
   const [focus, setFocus] = useState<{ center: Place['center']; key: number }>();
+  const [planner, setPlanner] = useState(false);
+  const session = useSession();
+  const [savedIds, setSavedIds] = useState<string[]>([]);
+  const refreshSaved = useCallback(() => {
+    backend.savedPlaceIds().then(setSavedIds, () => {});
+  }, []);
+  useEffect(refreshSaved, [refreshSaved, session]);
 
   // `today` is a dependency so open status rolls over at midnight ET.
   const today = todayET();
@@ -105,6 +114,16 @@ export default function MapScreen() {
           </Pressable>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+          <Chip
+            label="Stocking planner"
+            icon="calendar-outline"
+            active={planner}
+            onPress={() => {
+              setPlanner((v) => !v);
+              setSelectedId(undefined);
+              setExpanded(true);
+            }}
+          />
           <Chip label="Open today" icon="sunny-outline" active={openOnly} onPress={() => setOpenOnly((v) => !v)} />
           {filters.map((f) => (
             <Chip key={f.key} label={f.label} active={f.key === filter} onPress={() => setFilter(f.key)} />
@@ -119,11 +138,9 @@ export default function MapScreen() {
         expandedHeight={Math.min(560, height * 0.66)}
       >
         {selected ? (
-          <PlaceDetails
-            place={selected}
-            stocking={detail.data?.stocking ?? []}
-            onClose={() => setSelectedId(undefined)}
-          />
+          <PlaceDetails place={selected} onClose={() => setSelectedId(undefined)} onSavedChange={refreshSaved} />
+        ) : planner ? (
+          <StockingList places={all} savedIds={savedIds} onPick={pick} />
         ) : (
           <View style={{ flex: 1, gap: space.sm }}>
             <Text style={styles.sheetTitle}>
@@ -188,14 +205,16 @@ function PlaceRow({ place, open, onPress }: { place: Place; open: boolean; onPre
 
 function PlaceDetails({
   place,
-  stocking,
   onClose,
+  onSavedChange,
 }: {
   place: Place;
-  stocking: { id: string; windowStart: string; windowEnd: string; counts: Record<string, number> }[];
   onClose: () => void;
+  onSavedChange?: () => void;
 }) {
   const session = useSession();
+  // County release weeks from the PGC allocation seed; PGC doesn't publish per-property dates.
+  const stocking = place.type === 'stocking' ? windowsForCounty(place.county) : [];
   const today = placeToday(place);
   const needsMigratory = today.statuses.some((s) => migratory.includes(s.species) && s.status.kind !== 'closed');
   const [saved, setSaved] = useState(false);
@@ -215,6 +234,7 @@ function PlaceDetails({
       await backend.setPlaceSaved(place.id, !saved);
       setSaved(!saved);
       setSaveError(undefined);
+      onSavedChange?.();
     } catch (e) {
       setSaveError((e as Error).message);
     }
@@ -274,16 +294,23 @@ function PlaceDetails({
             <Text style={styles.calloutTitle}>Pheasant stocking</Text>
           </View>
           {stocking.length ? (
-            stocking.map((e) => (
-              <Text key={e.id} style={ui.body}>
-                {formatDay(e.windowStart)} – {formatDay(e.windowEnd)}
-                {e.counts.roosters ? ` · ${e.counts.roosters} roosters` : ''}
-                {e.counts.hens ? ` · ${e.counts.hens} hens` : ''}
-              </Text>
-            ))
+            <>
+              <Text style={ui.muted}>{place.county} County release weeks (county totals, not this spot):</Text>
+              {stocking.map((w) => (
+                <Text key={w.id} style={ui.body}>
+                  {windowText(w)} · {w.cocks} roosters · {w.hens} hens
+                </Text>
+              ))}
+            </>
           ) : (
-            <Text style={ui.muted}>No release windows posted yet. PGC publishes them by region before each season.</Text>
+            <Text style={ui.muted}>
+              {place.county
+                ? 'No release weeks listed for this county. '
+                : 'This point has no county in PGC’s data, so release weeks can’t be matched. '}
+              Check PGC’s pheasant allocation page.
+            </Text>
           )}
+          <Text style={styles.fine}>Unofficial summary of {STOCKING_SOURCE.citation} Always verify with PGC.</Text>
         </View>
       )}
 
