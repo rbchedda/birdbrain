@@ -301,14 +301,21 @@ export function formatSeed(seed) {
 // ---------------------------------------------------------------------------
 
 async function getText(url, fetchImpl, timeoutMs = FETCH_TIMEOUT_MS) {
-  const signal = AbortSignal.timeout(timeoutMs);
+  // A referenced timer, not AbortSignal.timeout: its unref'd timer lets the event
+  // loop drain while the fetch promise is pending on node 22, so the abort never
+  // fires before the process exits.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(new Error(`AbortError`)), timeoutMs);
   try {
-    const res = await fetchImpl(url, { signal });
+    const res = await fetchImpl(url, { signal: controller.signal });
+    if (controller.signal.aborted) throw new Error(`GET ${url} timed out after ${timeoutMs} ms`);
     if (!res.ok) throw new Error(`GET ${url} failed: ${res.status} ${res.statusText}`);
     return await res.text();
   } catch (err) {
-    if (signal.aborted) throw new Error(`GET ${url} timed out after ${timeoutMs} ms`);
+    if (controller.signal.aborted) throw new Error(`GET ${url} timed out after ${timeoutMs} ms`);
     throw err;
+  } finally {
+    clearTimeout(timer);
   }
 }
 

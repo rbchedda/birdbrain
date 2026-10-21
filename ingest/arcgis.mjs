@@ -135,16 +135,23 @@ export const SOURCES = {
 };
 
 async function getJson(url, fetchImpl, timeoutMs = FETCH_TIMEOUT_MS) {
-  const signal = AbortSignal.timeout(timeoutMs);
+  // A referenced timer, not AbortSignal.timeout: its unref'd timer lets the event
+  // loop drain while the fetch promise is pending on node 22, so the abort never
+  // fires before the process exits.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(new Error(`AbortError`)), timeoutMs);
   try {
-    const res = await fetchImpl(url, { signal });
+    const res = await fetchImpl(url, { signal: controller.signal });
+    if (controller.signal.aborted) throw new Error(`ArcGIS request timed out after ${timeoutMs} ms (${url})`);
     if (!res.ok) throw new Error(`ArcGIS request failed: ${res.status} ${res.statusText} (${url})`);
     const body = await res.json();
     if (body.error) throw new Error(`ArcGIS error: ${JSON.stringify(body.error)} (${url})`);
     return body;
   } catch (err) {
-    if (signal.aborted) throw new Error(`ArcGIS request timed out after ${timeoutMs} ms (${url})`);
+    if (controller.signal.aborted) throw new Error(`ArcGIS request timed out after ${timeoutMs} ms (${url})`);
     throw err;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
