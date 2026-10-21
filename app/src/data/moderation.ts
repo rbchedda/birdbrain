@@ -1,6 +1,6 @@
 /**
  * Mirror of public.blocklist_terms / contains_objectionable() in
- * supabase/migrations/20261023000000_moderation_e2e.sql, so the sample backend
+ * supabase/migrations/20261023000100_moderation_e2e.sql, so the sample backend
  * rejects the same text. The database is the source of truth.
  */
 export const blocklist = [
