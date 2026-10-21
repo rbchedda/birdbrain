@@ -92,3 +92,33 @@ describe('hunt log privacy (owner-only RLS)', () => {
     );
   });
 });
+
+describe('hunt log and account deletion', () => {
+  const carol = '00000000-0000-4000-8000-00000000000c';
+  const carolEntry = '33333333-3333-4333-8333-333333333333';
+
+  it('removes the user\'s hunt log entries when they delete their account', async () => {
+    await createUser(db, carol, 'carol@example.test');
+    await upsert(carol, carolEntry, null, 'carol hunt');
+    assert.equal(await rowCount(carolEntry), 1);
+
+    await as(db, 'authenticated', carol, (tx) => tx.query('select public.delete_my_account()'));
+
+    assert.equal(await rowCount(carolEntry), 0);
+    // Other users' entries are untouched.
+    assert.equal(await rowCount(entry), 1);
+  });
+});
+
+describe('hunt log function hardening', () => {
+  it('runs every hunt log function with an empty search_path', async () => {
+    const { rows } = await db.query(
+      `select proname, proconfig from pg_proc
+        where proname in ('upsert_hunt_log_entry', 'hunt_log_entries_guard') order by proname`,
+    );
+    assert.deepEqual(rows.map((r) => [r.proname, r.proconfig]), [
+      ['hunt_log_entries_guard', ['search_path=""']],
+      ['upsert_hunt_log_entry', ['search_path=""']],
+    ]);
+  });
+});
