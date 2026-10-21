@@ -142,3 +142,43 @@ describe('diary and account deletion', () => {
     assert.deepEqual(rows.map((r) => r.proconfig), [['search_path=""'], ['search_path=""']]);
   });
 });
+
+describe('owner-only delete of hunt log / diary entries', () => {
+  const dave = '00000000-0000-4000-8000-00000000000d';
+  const eve = '00000000-0000-4000-8000-00000000000e';
+  const daveEntry = '44444444-4444-4444-8444-444444444444';
+  const del = (user, id) =>
+    as(db, 'authenticated', user, (tx) => tx.query('delete from public.hunt_log_entries where client_id = $1', [id]));
+  const count = async (sql, args) => (await db.query(sql, args)).rows[0].n;
+
+  before(async () => {
+    await createUser(db, dave, 'dave@example.test');
+    await createUser(db, eve, 'eve@example.test');
+    await as(db, 'authenticated', dave, (tx) =>
+      tx.query('select * from public.upsert_diary_entry($1, null, $2, $3, $4, $5, $6)', [
+        daveEntry, 'dove', 'dove field', '2026-10-24', '[]', JSON.stringify({ shots: 3, photos: [] }),
+      ]),
+    );
+  });
+
+  it('does not let another user delete the entry', async () => {
+    assert.equal((await del(eve, daveEntry)).affectedRows, 0);
+    assert.equal(await count('select count(*)::int as n from public.hunt_log_entries where client_id = $1', [daveEntry]), 1);
+  });
+
+  it('does not let anon delete', async () => {
+    await assert.rejects(as(db, 'anon', null, (tx) => tx.query('delete from public.hunt_log_entries')), /permission denied/);
+  });
+
+  it('lets the owner delete, cascading the diary details, and is idempotent', async () => {
+    assert.equal((await del(dave, daveEntry)).affectedRows, 1);
+    assert.equal(await count('select count(*)::int as n from public.hunt_log_entries where client_id = $1', [daveEntry]), 0);
+    assert.equal(
+      await count(
+        'select count(*)::int as n from public.diary_entries d where not exists (select 1 from public.hunt_log_entries e where e.id = d.entry_id)',
+      ),
+      0,
+    );
+    assert.equal((await del(dave, daveEntry)).affectedRows, 0);
+  });
+});
