@@ -64,6 +64,17 @@ describe('Community rules', () => {
     expect(await backend.rulesAccepted()).toBe(true);
   });
 
+  it('fails closed with a retry when the rules check errors', async () => {
+    const spy = jest.spyOn(backend, 'rulesAccepted').mockRejectedValueOnce(new Error('network down'));
+    await open('/feed');
+    expect(await screen.findByText(/Couldn’t check the community rules: network down/)).toBeTruthy();
+    expect(screen.queryByText(samplePosts()[0].caption)).toBeNull();
+    expect(screen.queryByLabelText('Loading feed')).toBeNull();
+    await fireEvent.press(screen.getByText('Try again'));
+    expect(await screen.findByText(samplePosts()[0].caption)).toBeTruthy();
+    spy.mockRestore();
+  });
+
   it('is linked from the feed and shows it was accepted', async () => {
     await open('/feed');
     await fireEvent.press(await screen.findByText('Community rules'));
@@ -169,6 +180,14 @@ describe('Report and block on posts, comments and profiles', () => {
     expect(await screen.findByText(/Blocked\. Neither of you/)).toBeTruthy();
     expect(screen.queryByText(sam.caption)).toBeNull();
     await backend.setBlocked(sam.author.id, false);
+  });
+});
+
+describe('Plan tab', () => {
+  it('shows the Open today card with the PGC link', async () => {
+    await open('/plan');
+    expect(await screen.findByText('Open today?')).toBeTruthy();
+    expect(screen.getByLabelText('Open the PGC Hunting & Trapping Digest')).toBeTruthy();
   });
 });
 

@@ -23,15 +23,28 @@ export default function FeedScreen() {
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
   const loadingMore = useRef(false);
-  const [rulesOk, setRulesOk] = useState<boolean | null>(null);
+  // 'error' fails closed: no posts until we know the rules were accepted.
+  const [rules, setRules] = useState<'unknown' | 'accepted' | 'required' | 'error'>('unknown');
 
   const refresh = useCallback(async () => {
     if (!session) return;
     setRefreshing(true);
+    let ok: boolean;
     try {
-      const ok = await backend.rulesAccepted();
-      setRulesOk(ok);
-      if (!ok) return;
+      ok = await backend.rulesAccepted();
+    } catch (e) {
+      setRules('error');
+      setError(`Couldn’t check the community rules: ${(e as Error).message}`);
+      setRefreshing(false);
+      return;
+    }
+    setRules(ok ? 'accepted' : 'required');
+    if (!ok) {
+      setError(undefined);
+      setRefreshing(false);
+      return;
+    }
+    try {
       const page = await backend.feed(null, PAGE);
       setPosts(page.posts);
       setNext(page.next);
@@ -81,15 +94,25 @@ export default function FeedScreen() {
     );
   }
 
-  if (rulesOk === false) {
+  if (rules === 'required' || rules === 'error') {
     return (
       <View style={styles.root}>
         <ScreenHeader title="Feed" right={profileButton} />
         <View style={styles.gate}>
-          <Notice>Before you see or share posts, please read and accept the community rules.</Notice>
+          {rules === 'required' && <Notice>Before you see or share posts, please read and accept the community rules.</Notice>}
           {error && <Notice tone="error">{error}</Notice>}
+          {rules === 'error' && <Button label="Try again" icon="refresh-outline" busy={refreshing} onPress={refresh} />}
           <Button label="Read community rules" icon="shield-checkmark-outline" variant="primary" onPress={() => router.push('/rules')} />
         </View>
+      </View>
+    );
+  }
+
+  if (rules === 'unknown') {
+    return (
+      <View style={styles.root}>
+        <ScreenHeader title="Feed" right={profileButton} />
+        <ActivityIndicator color={colors.accent} style={{ margin: space.lg }} accessibilityLabel="Loading feed" />
       </View>
     );
   }
