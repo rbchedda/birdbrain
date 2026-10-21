@@ -6,7 +6,7 @@ import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Tex
 import { PostCard } from '@/components/PostCard';
 import { ScreenHeader } from '@/components/Screen';
 import { SignInPrompt } from '@/components/SignInPrompt';
-import { Notice, ui } from '@/components/ui';
+import { Button, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { useSession } from '@/data/hooks';
 import type { Post } from '@/data/types';
@@ -23,11 +23,15 @@ export default function FeedScreen() {
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
   const loadingMore = useRef(false);
+  const [rulesOk, setRulesOk] = useState<boolean | null>(null);
 
   const refresh = useCallback(async () => {
     if (!session) return;
     setRefreshing(true);
     try {
+      const ok = await backend.rulesAccepted();
+      setRulesOk(ok);
+      if (!ok) return;
       const page = await backend.feed(null, PAGE);
       setPosts(page.posts);
       setNext(page.next);
@@ -77,6 +81,19 @@ export default function FeedScreen() {
     );
   }
 
+  if (rulesOk === false) {
+    return (
+      <View style={styles.root}>
+        <ScreenHeader title="Feed" right={profileButton} />
+        <View style={styles.gate}>
+          <Notice>Before you see or share posts, please read and accept the community rules.</Notice>
+          {error && <Notice tone="error">{error}</Notice>}
+          <Button label="Read community rules" icon="shield-checkmark-outline" variant="primary" onPress={() => router.push('/rules')} />
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.root}>
       <ScreenHeader title="Feed" subtitle="Hunts from yesterday and before. Never live." right={profileButton} />
@@ -97,6 +114,9 @@ export default function FeedScreen() {
         ItemSeparatorComponent={() => <View style={{ height: space.lg }} />}
         ListHeaderComponent={
           <View style={{ gap: space.sm, marginBottom: notice || error ? space.lg : 0 }}>
+            <Pressable accessibilityRole="link" onPress={() => router.push('/rules')}>
+              <Text style={styles.rulesLink}>Community rules</Text>
+            </Pressable>
             {notice && <Notice tone="success">{notice}</Notice>}
             {error && <Notice tone="error">{error}</Notice>}
           </View>
@@ -115,6 +135,8 @@ export default function FeedScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
+  gate: { padding: space.lg, gap: space.md },
+  rulesLink: { color: colors.accent, textDecorationLine: 'underline' },
   list: { paddingHorizontal: space.lg, paddingBottom: space.xxl },
   profile: { width: touchTarget, height: touchTarget, alignItems: 'center', justifyContent: 'center', marginRight: -space.sm },
 });
