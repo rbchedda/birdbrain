@@ -32,7 +32,10 @@ const emptyCount = (place: Place | null): PlaceCount => ({
 });
 
 export default function LogScreen() {
-  const { placeId } = useLocalSearchParams<{ placeId?: string }>();
+  const { placeId, mode } = useLocalSearchParams<{ placeId?: string; mode?: string }>();
+  // "Log hunt" (the default, mode=diary) always saves privately and never creates a post.
+  // Only the chooser's "Post" (mode=post) offers delayed sharing.
+  const isPost = mode === 'post';
   const { places } = usePlaces();
   const session = useSession();
 
@@ -40,7 +43,8 @@ export default function LogScreen() {
   const [huntedOn, setHuntedOn] = useState(todayET());
   const [counts, setCounts] = useState<PlaceCount[]>([]);
   const [caption, setCaption] = useState('');
-  const [audience, setAudience] = useState<'shared' | 'private'>('shared');
+  const [chosenAudience, setAudience] = useState<'shared' | 'private'>('shared');
+  const audience = isPost ? chosenAudience : 'private';
   const [location, setLocation] = useState<LocationVisibility>('blurred');
   const [toGroup, setToGroup] = useState(false);
   const [picking, setPicking] = useState(false);
@@ -112,7 +116,11 @@ export default function LogScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScreenHeader title="Log a hunt" subtitle="After the hunt: what you saw, where, and who sees it." />
+      <ScreenHeader
+        title={isPost ? 'Post' : 'Log hunt'}
+        subtitle={isPost ? 'Share with hunters. Delayed, location blurred.' : 'Saves to your private Hunt Log. Not a post.'}
+        back
+      />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         {done && (
           <Notice tone="success">
@@ -191,10 +199,12 @@ export default function LogScreen() {
         </View>
 
         <SectionTitle>Who sees it</SectionTitle>
-        <View style={ui.row}>
-          <Chip label="Share (delayed)" icon="time-outline" active={audience === 'shared'} onPress={() => setAudience('shared')} />
-          <Chip label="Private" icon="lock-closed-outline" active={audience === 'private'} onPress={() => setAudience('private')} />
-        </View>
+        {isPost && (
+          <View style={ui.row}>
+            <Chip label="Share (delayed)" icon="time-outline" active={audience === 'shared'} onPress={() => setAudience('shared')} />
+            <Chip label="Private" icon="lock-closed-outline" active={audience === 'private'} onPress={() => setAudience('private')} />
+          </View>
+        )}
         {audience === 'private' ? (
           <Notice>Private: saved only on this device. Nothing is uploaded.</Notice>
         ) : (
