@@ -1,0 +1,35 @@
+# Pull PGC layers into Supabase. Layers that haven't changed since the last run
+# are skipped (editingInfo.lastEditDate), so frequent runs are cheap.
+# Requires repository secret DATABASE_URL (Supabase direct connection, postgres role).
+name: Ingest PGC data
+
+on:
+  schedule:
+    - cron: '15 * * 10-12,1-2 *' # hourly during bird season (Oct-Feb), UTC
+    - cron: '15 8 * 3-9 *'       # daily the rest of the year
+  workflow_dispatch:
+    inputs:
+      sources:
+        description: 'Space-separated sources (blank = all)'
+        required: false
+      force:
+        description: 'Ignore lastEditDate'
+        type: boolean
+        default: false
+
+concurrency: ingest
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --omit=dev
+      - run: node ingest/arcgis.mjs ${{ inputs.sources }} ${{ inputs.force && '--force' || '' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

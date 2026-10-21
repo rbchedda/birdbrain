@@ -85,6 +85,8 @@ describe('post location privacy', () => {
       );
       return rows[0].id;
     });
+    // Posts are hidden from others until the next day; age this one past the delay.
+    await db.query(`update public.posts set public_after = now() - interval '1 minute' where id = $1`, [postId]);
   });
 
   it('snaps the public location to a grid cell center', async () => {
