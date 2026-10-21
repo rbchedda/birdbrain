@@ -90,6 +90,11 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
     signUp: async () => ({ needsConfirmation: false }),
     signInAsGuest: async () => {},
     signOut: async () => {},
+    async deleteAccount() {
+      // Drop everything this device stored for the sample user and rebuild from seed data.
+      state = null;
+      await writeJson(KEY, {});
+    },
 
     listPlaces: async () => samplePlaces,
     placeDetail: async (id) => ({ stocking: sampleStocking.filter((e) => e.placeId === id), outline: null }),

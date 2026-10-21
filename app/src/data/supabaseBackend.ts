@@ -124,6 +124,16 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
       checkAuth(await sb.auth.signOut());
       blocked = new Set();
     },
+    async deleteAccount() {
+      const userId = await me();
+      // Hosted Storage may refuse SQL deletes, so remove photos via the API first.
+      const bucket = sb.storage.from('post-photos');
+      const { data: files } = await bucket.list(userId, { limit: 1000 });
+      if (files?.length) await bucket.remove(files.map((f) => `${userId}/${f.name}`));
+      check(await sb.rpc('delete_my_account'));
+      await sb.auth.signOut({ scope: 'local' });
+      blocked = new Set();
+    },
 
     async listPlaces() {
       const page = 1000;
