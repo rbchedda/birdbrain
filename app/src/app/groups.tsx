@@ -16,7 +16,7 @@ export default function GroupsScreen() {
 
   return (
     <View style={styles.root}>
-      <ScreenHeader title="Crew" subtitle="Species groups across Pennsylvania" />
+      <ScreenHeader title="Crew" subtitle="Species groups across Pennsylvania" back />
       {session === null ? (
         <SignInPrompt why="Sign in to join species groups and post to them." />
       ) : (
