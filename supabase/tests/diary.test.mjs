@@ -124,3 +124,21 @@ describe('diary photos are private', () => {
     assert.equal(del.affectedRows, 0);
   });
 });
+
+describe('diary and account deletion', () => {
+  it('removes diary details when the owner deletes their account', async () => {
+    await upsert(alice, 2, details({ shots: 7, caption: undefined }), 'opening day');
+    await as(db, 'authenticated', alice, (tx) => tx.query('select public.delete_my_account()'));
+    const { rows } = await db.query('select count(*)::int as n from public.diary_entries');
+    assert.equal(rows[0].n, 0);
+    const photos = await db.query(`select count(*)::int as n from storage.objects where bucket_id = 'diary-photos'`);
+    assert.equal(photos.rows[0].n, 0);
+  });
+
+  it('pins an empty search_path on diary functions', async () => {
+    const { rows } = await db.query(
+      `select proname, proconfig from pg_proc where proname in ('upsert_diary_entry', 'valid_diary_details') order by proname`,
+    );
+    assert.deepEqual(rows.map((r) => r.proconfig), [['search_path=""'], ['search_path=""']]);
+  });
+});
