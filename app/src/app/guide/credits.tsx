@@ -2,6 +2,7 @@ import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ScreenHeader } from '@/components/Screen';
 import { ui } from '@/components/ui';
+import { licenseLabel } from '@/data/birdImages';
 import credits from '../../../assets/birds/CREDITS.json';
 import { colors, fonts, space } from '@/theme/tokens';
 
@@ -24,8 +25,10 @@ export default function CreditsScreen() {
           <View key={c.file} style={ui.card} testID={`credit-${c.file}`}>
             <Text style={styles.title}>{c.title}</Text>
             <Text style={ui.body}>
-              {c.author || 'Public domain'} · {c.license}
+              {c.author ? `${c.author} · ` : ''}
+              {licenseLabel(c.license)}
             </Text>
+            <Text style={ui.muted}>File: {c.file}</Text>
             <Text style={ui.muted}>Changes: {c.changes} · retrieved {c.retrieved}</Text>
             <Text accessibilityRole="link" style={styles.link} onPress={() => Linking.openURL(c.sourceUrl)}>
               Source ↗

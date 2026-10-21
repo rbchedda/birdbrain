@@ -271,28 +271,36 @@ describe('Guide tab', () => {
     expect(screen.getByText(/Plug the shotgun to 3 shells/)).toBeTruthy();
   });
 
-  it('bird tiles open the species detail with placeholder photos and credit captions', async () => {
+  it('bird tiles open the species detail with licensed photos and credit captions', async () => {
     await open('/guide');
     await fireEvent.press(await screen.findByLabelText('Ring-necked pheasant details'));
     expect(await screen.findByTestId('bird-pheasant')).toBeTruthy();
-    expect(screen.getByLabelText('Rooster photo placeholder')).toBeTruthy();
-    expect(screen.getByLabelText('Hen photo placeholder')).toBeTruthy();
-    expect(screen.getAllByText('Placeholder · licensed photo coming').length).toBe(2);
+    expect(screen.getByLabelText('Rooster photo')).toBeTruthy();
+    expect(screen.getByLabelText('Hen photo')).toBeTruthy();
+    expect(screen.getAllByText('Photo: Charles J. Sharp · CC BY-SA 4.0').length).toBe(2);
+    expect(screen.queryByText('Placeholder · licensed photo coming')).toBeNull();
     expect(screen.getByText('Look-alikes')).toBeTruthy();
   });
 
   it('the credits screen lists every image in CREDITS.json', async () => {
-    const credits = require('../../assets/birds/CREDITS.json') as { file: string }[];
+    const credits = require('../../assets/birds/CREDITS.json') as { file: string; title: string; author: string }[];
     await open('/guide/credits');
     expect(await screen.findByText('Photo credits')).toBeTruthy();
-    for (const c of credits) expect(screen.getByTestId(`credit-${c.file}`)).toBeTruthy();
+    for (const c of credits) {
+      const card = screen.getByTestId(`credit-${c.file}`);
+      expect(card).toHaveTextContent(c.title, { exact: false });
+      expect(card).toHaveTextContent(c.author, { exact: false });
+    }
+    expect(credits.length).toBe(8);
+    expect(screen.getAllByText('Source ↗')).toHaveLength(8);
+    expect(screen.getAllByText('License ↗')).toHaveLength(8);
     if (credits.length === 0) expect(screen.getByTestId('credits-empty')).toBeTruthy();
   });
 
   it('Profile › Legal links to the photo credits', async () => {
     await open('/profile');
     await fireEvent.press(await screen.findByText('Photo credits'));
-    expect(await screen.findByText(/No bird photos are bundled yet|Source ↗/)).toBeTruthy();
+    expect(await screen.findByTestId('credit-mourning-dove.webp')).toBeTruthy();
   });
 
   it.each(['/learn', '/plan'])('%s redirects to /guide', async (url) => {

@@ -1,1 +1,90 @@
-[]
+[
+  {
+    "file": "pheasant-rooster.webp",
+    "species": "pheasant",
+    "title": "Common pheasant (Phasianus colchicus) male",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Common_pheasant_(Phasianus_colchicus)_male.jpg",
+    "author": "Charles J. Sharp",
+    "license": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-10-21",
+    "changes": "Downscaled to 800 px on the longest side and re-encoded as WebP (quality 78). No crop or other edits."
+  },
+  {
+    "file": "pheasant-hen.webp",
+    "species": "pheasant",
+    "title": "Common pheasant (Phasianus colchicus) female",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Common_pheasant_(Phasianus_colchicus)_female.jpg",
+    "author": "Charles J. Sharp",
+    "license": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-10-21",
+    "changes": "Downscaled to 800 px on the longest side and re-encoded as WebP (quality 78). No crop or other edits."
+  },
+  {
+    "file": "ruffed-grouse.webp",
+    "species": "grouse",
+    "title": "Ruffed grouse (80585)",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Ruffed_grouse_(80585).jpg",
+    "author": "Rhododendrites",
+    "license": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-10-21",
+    "changes": "Downscaled to 800 px on the longest side and re-encoded as WebP (quality 78). No crop or other edits."
+  },
+  {
+    "file": "american-woodcock.webp",
+    "species": "woodcock",
+    "title": "American woodcock (95252)",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:American_woodcock_(95252).jpg",
+    "author": "Rhododendrites",
+    "license": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-10-21",
+    "changes": "Downscaled to 800 px on the longest side and re-encoded as WebP (quality 78). No crop or other edits."
+  },
+  {
+    "file": "mourning-dove.webp",
+    "species": "dove",
+    "title": "Mourning dove perched (61179)",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Mourning_dove_perched_(61179).jpg",
+    "author": "Rhododendrites",
+    "license": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-10-21",
+    "changes": "Downscaled to 800 px on the longest side and re-encoded as WebP (quality 78). No crop or other edits."
+  },
+  {
+    "file": "wild-turkey-gobbler.webp",
+    "species": "turkey",
+    "title": "Male wild turkey (Meleagris gallopavo) strutting",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Male_wild_turkey_(Meleagris_gallopavo)_strutting.jpg",
+    "author": "Frank Schulenburg",
+    "license": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-10-21",
+    "changes": "Downscaled to 800 px on the longest side and re-encoded as WebP (quality 78). No crop or other edits."
+  },
+  {
+    "file": "wild-turkey-hen.webp",
+    "species": "turkey",
+    "title": "Female Wild Turkey (7780117060)",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Female_Wild_Turkey_(7780117060).jpg",
+    "author": "CheepShot",
+    "license": "CC-BY-2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+    "retrieved": "2026-10-21",
+    "changes": "Downscaled to 800 px on the longest side and re-encoded as WebP (quality 78). No crop or other edits."
+  },
+  {
+    "file": "northern-bobwhite.webp",
+    "species": "bobwhite",
+    "title": "Colinus virginianus USFWS",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Colinus_virginianus_USFWS.jpg",
+    "author": "Steve Maslowski/USFWS",
+    "license": "CC-BY-2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+    "retrieved": "2026-10-21",
+    "changes": "Downscaled to 800 px on the longest side and re-encoded as WebP (quality 78). No crop or other edits."
+  }
+]

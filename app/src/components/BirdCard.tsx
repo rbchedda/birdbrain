@@ -1,32 +1,56 @@
-import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { router } from "expo-router";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { ui } from '@/components/ui';
-import type { BirdId } from '@/data/birds';
-import credits from '../../assets/birds/CREDITS.json';
-import { colors, fonts, radius, space } from '@/theme/tokens';
+import { ui } from "@/components/ui";
+import type { BirdId } from "@/data/birds";
+import { birdImages, licenseLabel } from "@/data/birdImages";
+import credits from "../../assets/birds/CREDITS.json";
+import { colors, fonts, radius, space } from "@/theme/tokens";
 
 type Credit = { file: string; author: string; license: string };
-const creditFor = (file: string) => (credits as Credit[]).find((c) => c.file === file) ?? null;
+const creditFor = (file: string) =>
+  (credits as Credit[]).find((c) => c.file === file) ?? null;
 
 /** Credit caption for a photo slot; placeholders say so until feat/guide-bird-photos adds licensed images. */
 export function creditLine(file: string) {
   const c = creditFor(file);
-  return c ? `© ${c.author || 'Public domain'} · ${c.license}` : 'Placeholder · licensed photo coming';
+  if (!c) return "Placeholder · licensed photo coming";
+  return c.author
+    ? `Photo: ${c.author} · ${licenseLabel(c.license)}`
+    : `Photo: ${licenseLabel(c.license)}`;
 }
 
-/** Grey placeholder in place of a bird photo. No real or generated images in this PR. */
-export function PhotoSlot({ label, file, size = 'tile' }: { label: string; file: string; size?: 'tile' | 'full' }) {
+/** A bird photo with its credit caption, or a grey placeholder when the slot has no licensed image yet. */
+export function PhotoSlot({
+  label,
+  file,
+  size = "tile",
+}: {
+  label: string;
+  file: string;
+  size?: "tile" | "full";
+}) {
+  const source = creditFor(file) ? birdImages[file] : undefined;
   return (
     <View style={styles.slotWrap}>
-      <View
-        style={[styles.slot, size === 'full' && styles.slotFull]}
-        accessible
-        accessibilityLabel={`${label} photo placeholder`}
-        testID={`photo-${file}`}
-      >
-        <Text style={styles.slotText}>PHOTO</Text>
-      </View>
+      {source ? (
+        <Image
+          source={source}
+          resizeMode="cover"
+          accessibilityLabel={`${label} photo`}
+          testID={`photo-${file}`}
+          style={[styles.slot, size === "full" && styles.slotFull]}
+        />
+      ) : (
+        <View
+          style={[styles.slot, size === "full" && styles.slotFull]}
+          accessible
+          accessibilityLabel={`${label} photo placeholder`}
+          testID={`photo-${file}`}
+        >
+          <Text style={styles.slotText}>PHOTO</Text>
+        </View>
+      )}
       <Text style={styles.caption} numberOfLines={2}>
         {creditLine(file)}
       </Text>
@@ -35,8 +59,14 @@ export function PhotoSlot({ label, file, size = 'tile' }: { label: string; file:
 }
 
 /** Bird ID tile (Guide) or full card (species detail): photo, field marks, look-alikes, credit. */
-export function BirdCard({ bird, variant = 'tile' }: { bird: BirdId; variant?: 'tile' | 'full' }) {
-  if (variant === 'tile') {
+export function BirdCard({
+  bird,
+  variant = "tile",
+}: {
+  bird: BirdId;
+  variant?: "tile" | "full";
+}) {
+  if (variant === "tile") {
     const photo = bird.photos[0];
     return (
       <Pressable
@@ -46,7 +76,11 @@ export function BirdCard({ bird, variant = 'tile' }: { bird: BirdId; variant?: '
         style={styles.tile}
       >
         <PhotoSlot label={photo.label} file={photo.file} />
-        <Text style={styles.tileName}>{bird.photos.length > 1 ? bird.photos.map((p) => p.label).join('/') : bird.name}</Text>
+        <Text style={styles.tileName}>
+          {bird.photos.length > 1
+            ? bird.photos.map((p) => p.label).join("/")
+            : bird.name}
+        </Text>
       </Pressable>
     );
   }
@@ -86,12 +120,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surfaceRaised,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   slotFull: { height: 160 },
-  slotText: { fontFamily: fonts.bodySemi, fontSize: 12, color: colors.muted, letterSpacing: 1 },
+  slotText: {
+    fontFamily: fonts.bodySemi,
+    fontSize: 12,
+    color: colors.muted,
+    letterSpacing: 1,
+  },
   caption: { fontFamily: fonts.body, fontSize: 12, color: colors.muted },
-  photos: { flexDirection: 'row', gap: space.sm },
-  heading: { fontFamily: fonts.headingSemi, fontSize: 18, color: colors.text, marginTop: space.sm },
+  photos: { flexDirection: "row", gap: space.sm },
+  heading: {
+    fontFamily: fonts.headingSemi,
+    fontSize: 18,
+    color: colors.text,
+    marginTop: space.sm,
+  },
 });
