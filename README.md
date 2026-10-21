@@ -97,13 +97,13 @@ The `SOURCES` mappings were checked against the live layers with `ingest:describ
 - Stocking points are keyed by property, not GlobalID, because PGC re-created every feature for the 2026-27 season; game lands come through as a bare number in `property_name` and are named `State Game Lands <n>`.
 - A dove field's game land comes from polygon overlap with `game_lands` (loaded first), not from `Project_Name`, which mixes SGL numbers with other codes (411, 414, 419 and 2425 aren't on game lands). Crops are pulled from the free-text `Description`.
 
-`.github/workflows/ingest.yml` runs the layer ingester hourly October to February and daily the rest of the year, then loads the committed allocation seed (below). Add a `DATABASE_URL` repository secret to enable it.
+`.github/workflows/ingest.yml` runs the layer ingester (step 1 below) hourly October to February and daily the rest of the year. It does not run step 2; run that by hand after a successful `arcgis.mjs` run. Add a `DATABASE_URL` repository secret to enable it.
 
 **Run order (required):**
 1. `node ingest/arcgis.mjs`: counties, then the place sources (game lands before dove fields).
 2. `node ingest/stocking_windows.mjs --load data/pgc/pheasant-allocation-<season>.json`.
 
-`--load` links allocation properties only to places that already exist, so it must run after step 1, or `place_stocking_county` falls back to the spatial county. The workflow runs both in this order, and step 2 is skipped if step 1 fails.
+`--load` links allocation properties only to places that already exist, so it must run after step 1, or `place_stocking_county` falls back to the spatial county. Step 2 is a manual step for now.
 
 ### Pheasant allocation → `stocking_events` (`ingest/stocking_windows.mjs`)
 
@@ -120,7 +120,7 @@ node ingest/stocking_windows.mjs --from <dir>        # parse saved pages (overvi
 DATABASE_URL=postgres://... node ingest/stocking_windows.mjs --load data/pgc/pheasant-allocation-2026-27.json
 ```
 
-`--load` replaces that season's rows in one transaction, refuses an empty seed, and links properties to `places`. The ingest workflow runs it after `arcgis.mjs` on every run, from the committed seed (no scraping, no extra secrets). The scrape itself isn't scheduled.
+`--load` replaces that season's rows in one transaction, refuses an empty seed, and links properties to `places`. It isn't scheduled: run it by hand after `arcgis.mjs` (see run order above).
 
 ### Data terms
 
@@ -136,7 +136,7 @@ The app's data page must show the citation and the "as is" disclaimer. BirdBrain
 ## Open items
 
 - No `DATABASE_URL` yet: nothing has been loaded into a hosted database. First load: run `ingest` (counties, then game lands before dove fields; already in that order), then `stocking_windows.mjs --load`.
-- Schedule the allocation scrape (the load of the committed seed already runs in `ingest.yml`), and decide whether a changed seed should open a PR or load directly.
+- Add `stocking_windows.mjs --load` after `arcgis.mjs` in `ingest.yml` (same `DATABASE_URL` secret, no new ones), schedule the allocation scrape, and decide whether a changed seed should open a PR or load directly.
 - Junior hunt stocking sites are published separately as a PDF (linked from the allocation page) and aren't scraped. `stocking_events` has the junior counts per county but not the sites.
 - On the 2026-10-21 data, all 161 allocation game lands link to a place, but only 46 of 62 other properties do. The rest are named differently in the two PGC sources ("Prompton Army Corps" vs "Prompton State Park", "Mahoning Lake" vs "Mahoning Creek Lake") or are generic ("Various Hunter Access Properties"), so their `place_id` is null. A small alias table would close most of the gap.
 - Verify migratory bird licensing and Sunday hunting copy against current PGC pages.
