@@ -22,6 +22,8 @@ const pairs: [string, keyof typeof colors, keyof typeof colors][] = [
   ['muted on raised surface', 'muted', 'surfaceRaised'],
   ['label on accent', 'onAccent', 'accent'],
   ['accent on surface (active tab)', 'accent', 'surface'],
+  ['accent link on ground (Guide digest link)', 'accent', 'ground'],
+  ['accent link on raised surface (Guide cards)', 'accent', 'surfaceRaised'],
   ['label on dove tag', 'onDove', 'dove'],
   ['danger on raised surface', 'danger', 'surfaceRaised'],
   ['success on raised surface', 'success', 'surfaceRaised'],

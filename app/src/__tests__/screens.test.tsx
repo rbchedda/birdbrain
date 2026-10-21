@@ -246,11 +246,60 @@ describe('Report and block on posts, comments and profiles', () => {
   });
 });
 
-describe('Plan tab', () => {
-  it('shows the Open today card with the PGC link', async () => {
-    await open('/plan');
+describe('Guide tab', () => {
+  it('labels the tab "Guide", renders all 6 chips and keeps the Open today card', async () => {
+    await open('/guide');
     expect(await screen.findByText('Open today?')).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Guide' })).toBeTruthy();
+    for (const label of ['In season', 'Regs', 'Bird ID', 'Gear', 'Bag', 'Hours']) {
+      expect(screen.getByRole('button', { name: label })).toBeTruthy();
+    }
+    for (const id of ['season', 'regs', 'birds', 'gear', 'bag', 'hours']) expect(screen.getByTestId(`guide-${id}`)).toBeTruthy();
+    // Digest link + regs version at the top and on every section.
+    expect(screen.getByTestId('guide-digest-top')).toHaveTextContent(/Verify with the PGC digest ↗ · regs v2026-27\.3\+guide\.1/);
+    expect(screen.getAllByLabelText('Verify with the PGC digest').length).toBeGreaterThanOrEqual(7);
     expect(screen.getByLabelText('Open the PGC Hunting & Trapping Digest')).toBeTruthy();
+  });
+
+  it('switches zone and gear species', async () => {
+    await open('/guide');
+    await fireEvent.press(await screen.findByRole('button', { name: 'Zone 7' }));
+    expect(await screen.findByText('In season now · Zone 7')).toBeTruthy();
+    expect(screen.getByText('Shooting times · Zone 7')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Mourning dove' }));
+    expect(screen.getByText('Gear needed · Mourning dove')).toBeTruthy();
+    expect(screen.getByText(/Plug the shotgun to 3 shells/)).toBeTruthy();
+  });
+
+  it('bird tiles open the species detail with placeholder photos and credit captions', async () => {
+    await open('/guide');
+    await fireEvent.press(await screen.findByLabelText('Ring-necked pheasant details'));
+    expect(await screen.findByTestId('bird-pheasant')).toBeTruthy();
+    expect(screen.getByLabelText('Rooster photo placeholder')).toBeTruthy();
+    expect(screen.getByLabelText('Hen photo placeholder')).toBeTruthy();
+    expect(screen.getAllByText('Placeholder · licensed photo coming').length).toBe(2);
+    expect(screen.getByText('Look-alikes')).toBeTruthy();
+  });
+
+  it('the credits screen lists every image in CREDITS.json', async () => {
+    const credits = require('../../assets/birds/CREDITS.json') as { file: string }[];
+    await open('/guide/credits');
+    expect(await screen.findByText('Photo credits')).toBeTruthy();
+    for (const c of credits) expect(screen.getByTestId(`credit-${c.file}`)).toBeTruthy();
+    if (credits.length === 0) expect(screen.getByTestId('credits-empty')).toBeTruthy();
+  });
+
+  it('Profile › Legal links to the photo credits', async () => {
+    await open('/profile');
+    await fireEvent.press(await screen.findByText('Photo credits'));
+    expect(await screen.findByText(/No bird photos are bundled yet|Source ↗/)).toBeTruthy();
+  });
+
+  it.each(['/learn', '/plan'])('%s redirects to /guide', async (url) => {
+    await open(url);
+    // The Guide screen (not a 404 or the old Plan screen) renders for the old deep link.
+    expect(await screen.findByTestId('guide-digest-top')).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Guide', selected: true })).toBeTruthy();
   });
 });
 
