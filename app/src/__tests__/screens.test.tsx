@@ -42,7 +42,9 @@ describe('Map (Pheasant Planner)', () => {
   it('shows stocking windows for stocking points', async () => {
     await open('/');
     await fireEvent.press(await screen.findByLabelText('Pheasant stocking (sample B)'));
-    expect(await screen.findByText(/Oct 19 – .*Oct 23 · 400 roosters/)).toBeTruthy();
+    // Lancaster County, 1st in-season release, from the PGC allocation seed.
+    expect(await screen.findByText(/1st in-season · Tue, Oct 27 – Fri, Oct 30 · 880 roosters · 330 hens/)).toBeTruthy();
+    expect(screen.getByText(/county totals, not this spot/)).toBeTruthy();
   });
 
   it('filters by place type and searches by county', async () => {
@@ -56,6 +58,39 @@ describe('Map (Pheasant Planner)', () => {
     await fireEvent.changeText(screen.getByLabelText('Search places'), 'clinton');
     expect(screen.getByLabelText('State Game Lands (sample F)')).toBeTruthy();
     expect(screen.queryByLabelText('State Game Lands (sample A)')).toBeNull();
+  });
+});
+
+describe('Stocking planner', () => {
+  it('opens from the map with the disclaimer, PGC link, points, dove fields and tips', async () => {
+    await open('/');
+    await screen.findByText('6 public spots');
+    await fireEvent.press(screen.getByText('Stocking planner'));
+    expect(await screen.findByTestId('stocking-disclaimer')).toHaveTextContent(/Always verify with PGC/);
+    expect(screen.getByRole('link', { name: 'Open PGC pheasant allocation' })).toBeTruthy();
+    expect(screen.getByTestId('stocking-row-stock-sample-1')).toBeTruthy();
+    expect(screen.getByTestId('stocking-row-stock-sample-2')).toBeTruthy();
+    expect(screen.getByText('Managed dove field (sample C)')).toBeTruthy();
+    expect(screen.getByText('Crowding tips')).toBeTruthy();
+    expect(screen.getByText(/BirdBrain never uses your live location/)).toBeTruthy();
+  });
+
+  it('saves a site, which persists and becomes a distance origin', async () => {
+    await open('/');
+    await fireEvent.press(await screen.findByLabelText('Pheasant stocking (sample E)'));
+    await fireEvent.press(await screen.findByText('Save privately'));
+    expect(await screen.findByText('Saved')).toBeTruthy();
+    const stored = JSON.parse((await AsyncStorage.getItem('birdbrain.sample.v1'))!);
+    expect(stored.saved).toContain('stock-sample-2');
+
+    await fireEvent.press(screen.getByLabelText('Back to list'));
+    await fireEvent.press(screen.getByText('Stocking planner'));
+    await fireEvent.press(await screen.findByText('Saved only'));
+    expect(screen.getByTestId('stocking-row-stock-sample-2')).toBeTruthy();
+    expect(screen.queryByTestId('stocking-row-stock-sample-1')).toBeNull();
+    await fireEvent.press(screen.getByText('Saved only'));
+    expect(screen.getAllByText('Pheasant stocking (sample E)').length).toBeGreaterThan(1); // row + Near chip
+    await backend.setPlaceSaved('stock-sample-2', false);
   });
 });
 
