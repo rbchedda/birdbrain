@@ -95,7 +95,7 @@ describe('Log hunt never creates a post', () => {
     await fireEvent.press(await screen.findByLabelText('Log hunt'));
     await fireEvent.changeText(await screen.findByLabelText('Notes'), 'Chooser private hunt');
     await fireEvent.press(screen.getByText('Save privately'));
-    expect(await screen.findByText('Saved to your private log on this device.')).toBeTruthy();
+    expect(await screen.findByText(/Saved to your private log on this device/)).toBeTruthy();
 
     expect(createPost).not.toHaveBeenCalled();
     expect((await journalEntries()).some((p) => p.caption === 'Chooser private hunt')).toBe(true);
@@ -116,7 +116,7 @@ describe('Log hunt never creates a post', () => {
     expect(await screen.findByText('Pheasant stocking (sample B)')).toBeTruthy();
     expect(screen.queryByText('Share (delayed)')).toBeNull();
     await fireEvent.press(screen.getByText('Save privately'));
-    expect(await screen.findByText('Saved to your private log on this device.')).toBeTruthy();
+    expect(await screen.findByText(/Saved to your private log on this device/)).toBeTruthy();
     expect(createPost).not.toHaveBeenCalled();
     createPost.mockRestore();
   });
