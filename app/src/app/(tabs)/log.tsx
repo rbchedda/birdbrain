@@ -6,8 +6,8 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text
 import { ScreenHeader } from '@/components/Screen';
 import { Button, Chip, Notice, SectionTitle, Stepper, ui } from '@/components/ui';
 import { backend } from '@/data';
-import { usePlaces, useSession } from '@/data/hooks';
-import { addJournalEntry } from '@/data/journal';
+import { useJournal, usePlaces, useSession } from '@/data/hooks';
+import { addJournalEntry, type JournalEntry } from '@/data/journal';
 import { allSpecies, placeTypeLabel, speciesLabel, type LocationVisibility, type Place, type PlaceCount, type Species } from '@/data/types';
 import { addDays, etParts, formatDay, formatTime, nextMidnightET, todayET } from '@/lib/time';
 import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
@@ -117,7 +117,7 @@ export default function LogScreen() {
         {done && (
           <Notice tone="success">
             {done === 'private'
-              ? 'Saved to your private log on this device.'
+              ? 'Saved to your private log on this device. It backs up when you’re online.'
               : `Posted. Others will see it from ${formatDay(etParts(publicAt).ymd)} at ${formatTime(publicAt)} ET.`}
           </Notice>
         )}
@@ -196,7 +196,7 @@ export default function LogScreen() {
           <Chip label="Private" icon="lock-closed-outline" active={audience === 'private'} onPress={() => setAudience('private')} />
         </View>
         {audience === 'private' ? (
-          <Notice>Private: saved only on this device. Nothing is uploaded.</Notice>
+          <Notice>Private: saved on this device first, then backed up to your account where only you can see it. Never shared.</Notice>
         ) : (
           <>
             <Notice>
@@ -238,8 +238,45 @@ export default function LogScreen() {
             onPress={submit}
           />
         )}
+
+        <PrivateLog />
       </ScrollView>
     </KeyboardAvoidingView>
+  );
+}
+
+const syncLabel = (e: JournalEntry, signedOut: boolean) => {
+  if (e.sync.status === 'synced') return { text: 'Backed up', icon: 'cloud-done-outline' as const, color: colors.success };
+  if (e.sync.conflict) return { text: 'Conflict: changed elsewhere', icon: 'git-compare-outline' as const, color: colors.danger };
+  if (e.sync.status === 'failed') return { text: 'Not backed up yet · will retry', icon: 'cloud-offline-outline' as const, color: colors.danger };
+  return { text: signedOut ? 'On this device · sign in to back up' : 'Waiting to back up', icon: 'cloud-upload-outline' as const, color: colors.muted };
+};
+
+function PrivateLog() {
+  const { data, retry } = useJournal();
+  const session = useSession();
+  const signedOut = backend.mode === 'supabase' && !session;
+  if (!data?.length) return null;
+  const stuck = data.some((e) => e.sync.status === 'failed' && !e.sync.conflict);
+  return (
+    <View style={{ gap: space.sm }} testID="private-log">
+      <SectionTitle>Your private log</SectionTitle>
+      {data.slice(0, 20).map((e) => {
+        const s = syncLabel(e, signedOut);
+        return (
+          <View key={e.id} style={ui.card} testID={`journal-${e.clientId}`}>
+            <Text style={styles.placeName} numberOfLines={1}>
+              {e.caption || (e.species ? speciesLabel[e.species] : 'Hunt')} {e.huntedOn ? ` · ${formatDay(e.huntedOn)}` : ''}
+            </Text>
+            <View style={styles.row} accessibilityLabel={`Sync status: ${s.text}`}>
+              <Ionicons name={s.icon} size={16} color={s.color} />
+              <Text style={[ui.muted, { color: s.color }]}>{s.text}</Text>
+            </View>
+          </View>
+        );
+      })}
+      {stuck && <Button label="Retry backup now" icon="refresh" onPress={() => void retry()} />}
+    </View>
   );
 }
 
