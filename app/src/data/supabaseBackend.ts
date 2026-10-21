@@ -160,8 +160,25 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
             acres: r.acres === null ? null : Number(r.acres),
           });
         }
-        if (!rows || rows.length < page) return out;
+        if (!rows || rows.length < page) break;
       }
+      // Allocation county for stocking points (game lands straddling a county line). Optional: on error keep the spatial county.
+      const sc = placeDetailQuery.stockingCounty;
+      const byId = new Map(out.map((p) => [p.id, p]));
+      for (let from = 0; ; from += page) {
+        const res = await sb.from(sc.table).select('place_id, county').order('place_id').range(from, from + page - 1);
+        if (res.error) {
+          console.warn(`listPlaces: ${sc.table} read failed, using spatial counties: ${res.error.message}`);
+          break;
+        }
+        const rows = (res.data ?? []) as Row[];
+        for (const r of rows) {
+          const p = byId.get(r.place_id);
+          if (p) p.stockingCounty = r.county;
+        }
+        if (rows.length < page) break;
+      }
+      return out;
     },
 
     async placeDetail(id) {
@@ -169,12 +186,20 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
       const { place: pq, stocking: sq } = placeDetailQuery;
       const place = check(await sb.from(pq.table).select(pq.columns.join(', ')).eq(pq.key, id).maybeSingle()) as Row | null;
       let stocking: StockingEvent[] = [];
-      // stocking_events is per county (PGC publishes county allocations), so match on the place's county.
-      if (place?.type === 'stocking' && place.county) {
-        const events = await sb.from(sq.table).select(sq.columns.join(', ')).eq(sq.filter, place.county).order(sq.order);
+      // stocking_events is per county (PGC publishes county allocations). Match on the
+      // allocation county from place_stocking_county, falling back to the spatial county.
+      let county: string | null = place?.county ?? null;
+      if (place?.type === 'stocking') {
+        const sc = placeDetailQuery.stockingCounty;
+        const v = await sb.from(sc.table).select(sc.columns.join(', ')).eq(sc.key, id).maybeSingle();
+        if (v.error) console.warn(`placeDetail: ${sc.table} read failed for place ${id}, using spatial county ${county}: ${v.error.message}`);
+        else if ((v.data as Row | null)?.county) county = (v.data as Row).county;
+      }
+      if (place?.type === 'stocking' && county) {
+        const events = await sb.from(sq.table).select(sq.columns.join(', ')).eq(sq.filter, county).order(sq.order);
         // A stocking read failure must not cost the outline, but say so.
         if (events.error) {
-          console.warn(`placeDetail: stocking_events read failed for place ${id} (county ${place.county}): ${events.error.message}`);
+          console.warn(`placeDetail: stocking_events read failed for place ${id} (county ${county}): ${events.error.message}`);
         }
         stocking = ((events.error ? [] : events.data) as Row[])
           .filter((r) => r.cocks + r.hens > 0)
