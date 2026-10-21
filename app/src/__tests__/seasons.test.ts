@@ -1,6 +1,6 @@
 import { describeStatus, placeToday, speciesStatus } from '@/data/seasons';
 import type { Place } from '@/data/types';
-import { sunTimes } from '@/lib/sun';
+import { officialDay } from '@/lib/sun';
 import { ago, etParts, formatTime, midnightET, nextMidnightET, publicAfterET } from '@/lib/time';
 
 const harrisburg = { lat: 40.27, lng: -76.88 };
@@ -31,24 +31,14 @@ describe('time helpers', () => {
   });
 });
 
-describe('sunrise and sunset', () => {
-  it('is close to published times for Harrisburg', () => {
-    // NOAA: Oct 21 2026 sunrise ~7:21 AM, sunset ~6:22 PM EDT.
-    const sun = sunTimes('2026-10-21', harrisburg.lat, harrisburg.lng)!;
-    const minutes = (d: Date) => etParts(d).hour * 60 + etParts(d).minute;
-    expect(Math.abs(minutes(sun.sunrise) - (7 * 60 + 21))).toBeLessThanOrEqual(4);
-    expect(Math.abs(minutes(sun.sunset) - (18 * 60 + 22))).toBeLessThanOrEqual(4);
-  });
-});
-
 describe('season status', () => {
-  it('opens pheasant on the general opener with legal hours half an hour before sunrise', () => {
+  it('opens pheasant on the general opener with the official PGC hunt start/end', () => {
     const s = speciesStatus('pheasant', '2026-10-24', harrisburg);
     expect(s.kind).toBe('open');
     if (s.kind !== 'open') return;
-    const sun = sunTimes('2026-10-24', harrisburg.lat, harrisburg.lng)!;
-    expect(sun.sunrise.getTime() - s.start.getTime()).toBe(30 * 60_000);
-    expect(s.end).toEqual(sun.sunset);
+    const day = officialDay('2026-10-24', harrisburg.lng)!;
+    expect(s.start).toEqual(day.huntStart);
+    expect(s.end).toEqual(day.huntEnd);
   });
 
   it('treats the junior week as youth-only', () => {

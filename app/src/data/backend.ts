@@ -38,6 +38,8 @@ export interface Backend {
   signUp(email: string, password: string): Promise<{ needsConfirmation: boolean }>;
   signInAsGuest(): Promise<void>;
   signOut(): Promise<void>;
+  /** Permanently delete the signed-in account and everything it owns, then sign out. */
+  deleteAccount(): Promise<void>;
 
   listPlaces(): Promise<Place[]>;
   placeDetail(id: string): Promise<PlaceDetail>;
@@ -59,6 +61,9 @@ export interface Backend {
   blockedUsers(): Promise<Author[]>;
   setBlocked(userId: string, blocked: boolean): Promise<void>;
   report(target: ReportTarget, reason: ReportReason, details?: string): Promise<void>;
+  /** Whether the signed-in user has accepted the community rules (once, ever). */
+  rulesAccepted(): Promise<boolean>;
+  acceptRules(): Promise<void>;
 
   groups(): Promise<Group[]>;
   setMember(groupId: string, member: boolean): Promise<void>;

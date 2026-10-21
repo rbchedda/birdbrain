@@ -1,0 +1,9 @@
+{
+  "place": { "table": "places", "columns": ["geom", "county", "type"], "key": "id" },
+  "stocking": {
+    "table": "stocking_events",
+    "columns": ["id", "county", "release", "window_start", "window_end", "cocks", "hens"],
+    "filter": "county",
+    "order": "window_start"
+  }
+}

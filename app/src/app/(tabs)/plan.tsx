@@ -1,5 +1,6 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { OpenToday } from '@/components/OpenToday';
 import { ScreenHeader } from '@/components/Screen';
 import { Tag } from '@/components/Tag';
 import { SectionTitle, ui } from '@/components/ui';
@@ -7,12 +8,14 @@ import { SEASON_YEAR, seasons, seasonWindows, sundayClosed } from '@/data/season
 import { todayET } from '@/lib/time';
 import { colors, fonts, space } from '@/theme/tokens';
 
-export default function LearnScreen() {
+export default function PlanScreen() {
   const today = todayET();
   return (
     <View style={styles.root}>
-      <ScreenHeader title="Learn" subtitle={`${SEASON_YEAR} seasons, hours and how BirdBrain keeps spots private`} />
+      <ScreenHeader title="Plan" subtitle={`${SEASON_YEAR} seasons, hours and how BirdBrain keeps spots private`} />
       <ScrollView contentContainerStyle={styles.body}>
+        <OpenToday />
+
         <SectionTitle>Seasons</SectionTitle>
         {seasons.map((s) => {
           const windows = seasonWindows(s, today);
@@ -41,8 +44,10 @@ export default function LearnScreen() {
 
         <SectionTitle>Legal hours</SectionTitle>
         <Text style={ui.body}>
-          Small game, including pheasant, grouse and dove: ½ hour before sunrise to sunset. Spring gobbler: ½ hour before
-          sunrise to noon early in the season. The map computes sunrise and sunset for each spot.
+          Pheasant, grouse and fall turkey: ½ hour before sunrise to ½ hour after sunset. Doves and waterfowl: ½ hour
+          before sunrise to sunset. Spring gobbler: ½ hour before sunrise to noon through May 15, then to ½ hour after
+          sunset. Times come from the official PGC hunting-hours table for your longitude zone, never computed; if a date
+          isn’t in the table, check the digest.
         </Text>
 
         <SectionTitle>Sharing without burning your spot</SectionTitle>
