@@ -3,6 +3,7 @@ declare const __dirname: string;
 declare function require(name: 'fs'): { readdirSync(path: string): string[] };
 const { readdirSync } = require('fs');
 
+import { creditLine } from '@/components/BirdCard';
 import { birds } from '@/data/birds';
 
 import credits from '../../assets/birds/CREDITS.json';
@@ -70,6 +71,24 @@ describe('bird photo credits (lint, runs in npm test)', () => {
       expect(c.sourceUrl).toMatch(/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/);
       expect(c.author.trim()).not.toBe('');
     }
+  });
+
+  it('PD-USFWS (US federal work) is allowed but still needs an author and a licenseUrl; bobwhite stays CC BY 2.0', () => {
+    const fws = { ...ok, license: 'PD-USFWS', author: 'Steve Maslowski/USFWS', licenseUrl: 'https://commons.wikimedia.org/wiki/Template:PD-USGov-FWS' };
+    expect(licenseAllowed('PD-USFWS')).toBe(true);
+    expect(checkCredits(['mourning-dove.webp'], [fws])).toEqual([]);
+    expect(checkCredits(['mourning-dove.webp'], [{ ...fws, author: '' }])).toEqual(['mourning-dove.webp: missing author']);
+    expect(checkCredits(['mourning-dove.webp'], [{ ...fws, licenseUrl: '' }])).toContain('mourning-dove.webp: missing licenseUrl');
+    const bob = (credits as BirdCredit[]).find((c) => c.file === 'northern-bobwhite.webp')!;
+    // Maslowski is an independent photographer (© Steve and Dave Maslowski): PD isn't established, so use the
+    // CC BY 2.0 grant on the USFWS HQ Flickr upload (FlickreviewR-verified on Commons).
+    expect(bob).toMatchObject({
+      license: 'CC-BY-2.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by/2.0/',
+      author: 'Steve Maslowski/USFWS',
+      sourceUrl: 'https://commons.wikimedia.org/wiki/File:Colinus_virginianus_USFWS.jpg',
+    });
+    expect(creditLine('northern-bobwhite.webp')).toBe('Photo: Steve Maslowski/USFWS · CC BY 2.0');
   });
 
   it('ignores non-image files such as CREDITS.json', () => {

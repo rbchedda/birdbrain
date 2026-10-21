@@ -22,6 +22,7 @@ export function licenseLabel(license: string) {
   const m = /^CC-(BY(?:-SA)?)-(\d\.\d)$/.exec(license);
   if (m) return `CC ${m[1]} ${m[2]}`;
   if (license === 'CC0-1.0') return 'CC0 1.0';
+  if (/^PD-US/.test(license)) return 'Public domain (US government work)';
   if (license.startsWith('PD')) return 'Public domain';
   return license;
 }

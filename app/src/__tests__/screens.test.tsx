@@ -282,6 +282,13 @@ describe('Guide tab', () => {
     expect(screen.getByText('Look-alikes')).toBeTruthy();
   });
 
+  it('tapping a photo caption opens the photo credits', async () => {
+    await open('/guide/bird/grouse');
+    const caption = await screen.findByRole('link', { name: 'Photo credits: Photo: Rhododendrites · CC BY-SA 4.0' });
+    await fireEvent.press(caption);
+    expect(await screen.findByTestId('credit-ruffed-grouse.webp')).toBeTruthy();
+  });
+
   it('the credits screen lists every image in CREDITS.json', async () => {
     const credits = require('../../assets/birds/CREDITS.json') as { file: string; title: string; author: string }[];
     await open('/guide/credits');
