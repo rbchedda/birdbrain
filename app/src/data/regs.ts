@@ -31,7 +31,7 @@ export interface Regs {
 }
 
 export const REGS: Regs = {
-  version: '2026-27.1',
+  version: '2026-27.2',
   asOf: '2026-10-21',
   season: '2026-27',
   species: {
@@ -39,7 +39,7 @@ export const REGS: Regs = {
       daily: '2 (either sex)',
       possession: '6',
       sunday: 'open',
-      sundayNote: 'All 21 Sundays in the pheasant season are open.',
+      sundayNote: 'Sundays open: 19 statewide Sundays plus 2 in the junior season.',
     },
     grouse: {
       daily: '2',
@@ -48,10 +48,10 @@ export const REGS: Regs = {
       sundayNote: 'Sundays open in 2026-27.',
     },
     turkey: {
-      daily: '1 per license year (fall); spring 1, or 2 with a second tag',
-      possession: 'Same as the season limit',
-      sunday: 'check',
-      sundayNote: 'Sunday turkey hunting varies by season and WMU; check the digest.',
+      daily: 'Fall 1 per season (no fall season in WMUs 5C and 5D); spring 1 bearded bird per season',
+      possession: 'Season limit',
+      sunday: 'open',
+      sundayNote: 'Sundays open, spring and fall.',
     },
     dove: {
       daily: '15',
@@ -69,3 +69,25 @@ export const REGS: Regs = {
 };
 
 export const regsFor = (species: Species) => REGS.species[species];
+
+/** WMUs with no fall turkey season in 2026-27. */
+export const NO_FALL_TURKEY_WMUS = ['5C', '5D'];
+
+/**
+ * Digest p.4: every season includes Sundays except migratory birds. Exception:
+ * state parks and preserves in these counties allow Sunday hunting only on
+ * SE_PARK_SUNDAYS.
+ */
+export const SE_PARK_SUNDAY_COUNTIES = ['Bucks', 'Chester', 'Delaware', 'Montgomery', 'Philadelphia'];
+export const SE_PARK_SUNDAYS = ['2026-11-15', '2026-11-22', '2026-11-29'];
+export const SE_PARK_SUNDAY_NOTE =
+  'State parks and preserves in Bucks, Chester, Delaware, Montgomery and Philadelphia counties: Sundays only on Nov 15, 22 and 29.';
+
+/** Whether Sunday hunting is allowed for a species on a Sunday, optionally in a SE state park/preserve. */
+export function sundayAllowed(species: Species, ymd: string, opts: { county?: string; stateParkOrPreserve?: boolean } = {}) {
+  if (REGS.species[species].sunday === 'closed') return false;
+  if (opts.stateParkOrPreserve && opts.county && SE_PARK_SUNDAY_COUNTIES.includes(opts.county)) {
+    return SE_PARK_SUNDAYS.includes(ymd);
+  }
+  return true;
+}
