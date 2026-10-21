@@ -1,5 +1,5 @@
 import { readJson, writeJson } from '@/lib/localStore';
-import { nextMidnightET } from '@/lib/time';
+import { publicAfterET } from '@/lib/time';
 
 import { blurPoint, postKind, sumCounts, type Backend, type FeedPage, type Session } from './backend';
 import { samplePlaces, sampleStocking } from './places';
@@ -135,7 +135,7 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
         species: draft.species,
         caption: draft.caption,
         createdAt: created.toISOString(),
-        publicAfter: nextMidnightET(created).toISOString(),
+        publicAfter: publicAfterET(created).toISOString(),
         huntedOn: draft.huntedOn,
         location: draft.location,
         area: draft.location === 'blurred' && draft.exact ? blurPoint(draft.exact) : null,

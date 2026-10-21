@@ -104,7 +104,7 @@ describe('After-the-hunt log', () => {
     await fireEvent.changeText(screen.getByLabelText('Notes'), 'Two flushes on the creek edge');
     expect(screen.getByText(/Delayed: only you see it until/)).toBeTruthy();
 
-    await fireEvent.press(screen.getByText('Share after midnight'));
+    await fireEvent.press(screen.getByText('Share tomorrow (12h+ delay)'));
     expect(await screen.findByText(/Posted\. Others will see it from/)).toBeTruthy();
 
     const page = await backend.feed(null, 20);

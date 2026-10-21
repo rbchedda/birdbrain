@@ -47,7 +47,8 @@ export default function LearnScreen() {
 
         <SectionTitle>Sharing without burning your spot</SectionTitle>
         <Text style={ui.body}>
-          • Posts are delayed: others see them from midnight Eastern the day after you share. PA law bars using phones to
+          • Posts are delayed: others see them from midnight Eastern the day after you share, and never
+          sooner than 12 hours after. PA law bars using phones to
           alert another hunter to live game.{'\n'}• Others only see a ~5 km area, never your spot. Which places you
           hunted and your per-place counts are visible to you alone.{'\n'}• Private log entries never leave your phone.
           {'\n'}• Block or report anyone from their post, comment or profile.

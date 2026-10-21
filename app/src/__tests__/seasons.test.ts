@@ -1,11 +1,15 @@
 import { describeStatus, placeToday, speciesStatus } from '@/data/seasons';
 import type { Place } from '@/data/types';
 import { sunTimes } from '@/lib/sun';
-import { ago, etParts, formatTime, midnightET, nextMidnightET } from '@/lib/time';
+import { ago, etParts, formatTime, midnightET, nextMidnightET, publicAfterET } from '@/lib/time';
 
 const harrisburg = { lat: 40.27, lng: -76.88 };
 
 describe('time helpers', () => {
+  it('applies the 12-hour minimum delay', () => {
+    expect(publicAfterET(new Date('2026-11-14T23:59:00-05:00')).toISOString()).toBe('2026-11-15T16:59:00.000Z');
+    expect(publicAfterET(new Date('2026-11-14T08:00:00-05:00')).toISOString()).toBe('2026-11-15T05:00:00.000Z');
+  });
   it('finds midnight Eastern across DST', () => {
     expect(midnightET('2026-07-02').toISOString()).toBe('2026-07-02T04:00:00.000Z');
     expect(midnightET('2026-11-15').toISOString()).toBe('2026-11-15T05:00:00.000Z');
