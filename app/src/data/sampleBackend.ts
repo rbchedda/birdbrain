@@ -1,12 +1,14 @@
 import { readJson, writeJson } from '@/lib/localStore';
 import { nextMidnightET } from '@/lib/time';
 
-import { blurPoint, postKind, sumCounts, type Backend, type FeedPage, type Session } from './backend';
+import { blurPoint, postKind, sumCounts, type Backend, type FeedPage, type HuntLogUpload, type Session } from './backend';
 import { samplePlaces, sampleStocking } from './places';
 import { sampleAuthors, sampleComments, sampleMe, samplePosts } from './posts';
 import type { Author, Comment, Group, Post, Profile } from './types';
 
 const KEY = 'birdbrain.sample.v1';
+/** Stand-in for the server's hunt_log_entries table. */
+export const HUNT_LOG_KEY = 'birdbrain.sample.huntlog.v1';
 
 interface State {
   posts: Post[];
@@ -229,6 +231,25 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
       const s = await load();
       s.members = member ? [...new Set([...s.members, groupId])] : s.members.filter((x) => x !== groupId);
       await persist(s);
+    },
+
+    // Mirrors public.upsert_hunt_log_entry: idempotent by client id, conflict on a stale base version.
+    async upsertHuntLogEntry(e) {
+      const rows = await readJson<Record<string, HuntLogUpload & { version: number }>>(HUNT_LOG_KEY, {});
+      const cur = rows[e.clientId];
+      const body = (x: HuntLogUpload) => JSON.stringify([x.species, x.caption, x.huntedOn, x.placeCounts]);
+      if (!cur) {
+        rows[e.clientId] = { ...e, baseVersion: null, version: 1 };
+        await writeJson(HUNT_LOG_KEY, rows);
+        return { version: 1, conflict: false };
+      }
+      if (body(cur) === body(e)) return { version: cur.version, conflict: false };
+      if (e.baseVersion !== null && e.baseVersion === cur.version) {
+        rows[e.clientId] = { ...e, baseVersion: null, version: cur.version + 1 };
+        await writeJson(HUNT_LOG_KEY, rows);
+        return { version: cur.version + 1, conflict: false };
+      }
+      return { version: cur.version, conflict: true };
     },
   };
 }
