@@ -3,6 +3,7 @@ import { fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-li
 
 import { backend } from '@/data';
 import { samplePosts } from '@/data/posts';
+import { resetShareToCommunityCache, setShareToCommunity } from '@/lib/shareToCommunity';
 
 const appDir = './src/app';
 const metrics = { frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } };
@@ -21,7 +22,7 @@ it('falls back to sample data when Supabase env vars are unset', () => {
 
 describe('Map (Pheasant Planner)', () => {
   it('lists places and shows land info and today’s status for a selection', async () => {
-    await open('/');
+    await open('/map');
     expect(await screen.findByText('6 public spots')).toBeTruthy();
     expect(screen.getByTestId('place-map')).toBeTruthy();
 
@@ -32,13 +33,13 @@ describe('Map (Pheasant Planner)', () => {
   });
 
   it('shows stocking windows for stocking points', async () => {
-    await open('/');
+    await open('/map');
     await fireEvent.press(await screen.findByLabelText('Pheasant stocking (sample B)'));
     expect(await screen.findByText(/Oct 19 – .*Oct 23 · 400 roosters/)).toBeTruthy();
   });
 
   it('filters by place type and searches by county', async () => {
-    await open('/');
+    await open('/map');
     await screen.findByText('6 public spots');
     await fireEvent.press(screen.getByText('Dove Fields'));
     expect(screen.getByText('1 public spot')).toBeTruthy();
@@ -172,15 +173,17 @@ describe('Report and block on posts, comments and profiles', () => {
   });
 });
 
-describe('After-the-hunt log', () => {
+describe('Diary (after-the-hunt log)', () => {
   it('shares a delayed post with per-place counts that stay private', async () => {
-    await open('/log?placeId=stock-sample-1');
+    await setShareToCommunity(true);
+    await open('/diary?placeId=stock-sample-1');
     expect(await screen.findByText('Pheasant stocking (sample B)')).toBeTruthy();
     await fireEvent.press(screen.getByLabelText('More flushed'));
     await fireEvent.press(screen.getByLabelText('More flushed'));
     await fireEvent.press(screen.getByLabelText('More roosters'));
     await fireEvent.press(screen.getByLabelText('More harvested'));
     await fireEvent.changeText(screen.getByLabelText('Notes'), 'Two flushes on the creek edge');
+    await fireEvent.press(screen.getByText('Share (delayed)'));
     expect(screen.getByText(/Delayed: only you see it until/)).toBeTruthy();
 
     await fireEvent.press(screen.getByText('Share after midnight'));
@@ -201,10 +204,12 @@ describe('After-the-hunt log', () => {
     await open('/feed');
     expect(await screen.findByText('Two flushes on the creek edge')).toBeTruthy();
     expect(screen.getByText(/Delayed · others see it/)).toBeTruthy();
+    await setShareToCommunity(false);
+    resetShareToCommunityCache();
   });
 
   it('saves a private entry to the device only', async () => {
-    await open('/log');
+    await open('/diary');
     await fireEvent.changeText(await screen.findByLabelText('Notes'), 'Scouting only');
     await fireEvent.press(screen.getByText('Private'));
     expect(screen.getByText(/Nothing is uploaded/)).toBeTruthy();
