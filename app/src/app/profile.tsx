@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { CommunityOptIn } from '@/components/CommunityOptIn';
 import { LegalLinks } from '@/components/LegalLinks';
 import { PostCard } from '@/components/PostCard';
 import { ScreenHeader } from '@/components/Screen';
@@ -104,6 +105,9 @@ export default function ProfileScreen() {
             <Button label="Save profile" variant="primary" busy={saving} onPress={save} />
           </>
         )}
+
+        <SectionTitle>Share to community</SectionTitle>
+        <CommunityOptIn />
 
         <SectionTitle>My hunts</SectionTitle>
         {posts.length === 0 && <Text style={ui.muted}>Nothing logged yet.</Text>}
