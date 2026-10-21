@@ -1,6 +1,7 @@
 import type {
   Author,
   Comment,
+  DiaryDetails,
   Group,
   Place,
   PlaceCount,
@@ -39,6 +40,8 @@ export interface HuntLogUpload {
   caption: string;
   huntedOn: string | null;
   placeCounts: PlaceCount[];
+  /** Rich diary fields (spec §3.2); photos carry only their storage path. null = plain entry. */
+  details?: DiaryDetails | null;
 }
 
 export interface HuntLogUpsertResult {
@@ -89,6 +92,8 @@ export interface Backend {
 
   /** Idempotent upsert of a private hunt log entry by its client UUID (owner-only). */
   upsertHuntLogEntry(entry: HuntLogUpload): Promise<HuntLogUpsertResult>;
+  /** Upload a private diary photo (idempotent by path); returns its storage path. */
+  uploadDiaryPhoto(clientId: string, photo: { id: string; localUri: string }): Promise<string>;
 }
 
 export class NotSignedInError extends Error {
