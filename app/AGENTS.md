@@ -39,3 +39,17 @@ Docs: https://docs.expo.dev/eas/index.md
 - If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
 - Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
 - Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
+
+## BirdBrain specifics
+
+- Must keep running in Expo Go and on web. No native modules outside Expo Go; the map is MapLibre GL JS in a WebView/iframe behind `src/components/map/types.ts`.
+- Screens talk only to `backend` from `src/data` (`src/data/backend.ts` interface). It's Supabase when `EXPO_PUBLIC_SUPABASE_*` is set, else `sampleBackend.ts`, which mirrors the database's privacy rules. Change both together.
+- Privacy is enforced in `../supabase/migrations` (RLS, triggers); the app only displays it. Never show exact post locations or a post's places to anyone but the author.
+- Tests: `renderRouter('./src/app', { initialUrl })` from `expo-router/testing-library`; `fireEvent` is async (await it). jest-expo stubs global `fetch`.
+
+## Maintaining this file
+
+Keep this file for knowledge useful to almost every future agent session in this project.
+Do not repeat what the codebase already shows; point to the authoritative file or command instead.
+Prefer rewriting or pruning existing entries over appending new ones.
+When updating this file, preserve this bar for all agents and keep entries concise.

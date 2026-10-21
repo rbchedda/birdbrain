@@ -16,13 +16,33 @@ returning hunters find public land, learn the rules, and build a community.
 ```sh
 cd app
 npm install
-npm run web        # or: npm run ios / npm run android
+npm run web        # or: npm start, then scan the QR code with Expo Go
 npm test           # jest
 npm run typecheck
 ```
 
-The map is a placeholder drawing for now. MapLibre needs a development build
-(it isn't in Expo Go), so it comes in a later step.
+Runs in Expo Go and in a desktop browser with no setup: without Supabase keys
+it uses built-in sample places and posts, and your own posts stay on the device.
+To use Supabase, copy the `EXPO_PUBLIC_SUPABASE_*` lines from `.env.example`
+into `app/.env` (anon or publishable key only) and restart Expo. In the
+Supabase dashboard, enable anonymous sign-ins for "Continue as guest", and turn
+off email confirmation if testers should sign up without checking email.
+
+| Tab | What |
+| --- | --- |
+| Map | Pheasant Planner: game lands, stocking points and dove fields from `places`; "open today" per species from the season calendar (`app/src/data/seasons.ts`), legal hours from sunrise/sunset, Sunday rules; stocking windows from `stocking_events` |
+| Feed | Posts from `posts` (RLS applies the next-day delay and blocks), paginated, with likes, comments, report and block |
+| Log | After-the-hunt post: species, bird counts per place, notes. Shared posts are delayed until midnight ET; private entries never leave the device |
+| Crew | Species groups (`groups`, `group_members`) |
+| Learn | Season dates, legal hours and the privacy model |
+
+The map is MapLibre GL JS with USGS National Map tiles, inside a WebView on
+iOS/Android and an iframe on web, so it works in Expo Go. A MapLibre Native
+development build can replace it as `app/src/components/map/PlaceMap.native.tsx`
+with the same props (`app/src/components/map/types.ts`).
+
+Season dates in `seasons.ts` are statewide 2026-27 dates; update them each
+license year and verify against the PGC digest.
 
 ## Database
 
@@ -42,6 +62,7 @@ Privacy and safety model:
 
 - A post's exact location is stored in `post_locations`, which only the author can read. Everyone else sees `posts.blurred_geom`, a trigger-derived point snapped to a ~5 km grid. Saved posts and saved spots are owner-only.
 - Posts are hidden from other users until midnight Eastern on the day after they are created (`posts.public_after`, set by trigger). PA law bars using phones to alert another hunter to live game, so nothing in BirdBrain is real-time. Comments and likes follow the post's visibility.
+- Which places a hunter logged and the per-place bird counts live in `post_place_counts`, author-only like `post_locations`. A trigger copies only the totals into `posts.counts`.
 - Users can block each other (`user_blocks`, hides posts and comments both ways) and report posts, comments or profiles (`reports`). Moderators work the `reports` queue with the service role. Apple requires both for apps with user content, TestFlight included.
 
 ## Ingestion

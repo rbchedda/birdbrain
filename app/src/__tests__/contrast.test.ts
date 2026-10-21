@@ -23,6 +23,8 @@ const pairs: [string, keyof typeof colors, keyof typeof colors][] = [
   ['label on accent', 'onAccent', 'accent'],
   ['accent on surface (active tab)', 'accent', 'surface'],
   ['label on dove tag', 'onDove', 'dove'],
+  ['danger on raised surface', 'danger', 'surfaceRaised'],
+  ['success on raised surface', 'success', 'surfaceRaised'],
 ];
 
 describe('design tokens meet 4.5:1 contrast', () => {
