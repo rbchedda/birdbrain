@@ -31,7 +31,7 @@ export interface Regs {
 }
 
 export const REGS: Regs = {
-  version: '2026-27.2',
+  version: '2026-27.3',
   asOf: '2026-10-21',
   season: '2026-27',
   species: {
@@ -61,7 +61,7 @@ export const REGS: Regs = {
     },
     waterfowl: {
       daily: 'Varies by species and zone',
-      possession: '3 × daily',
+      possession: 'See digest (federal exceptions)',
       sunday: 'closed',
       sundayNote: 'Closed Sundays (migratory birds).',
     },
