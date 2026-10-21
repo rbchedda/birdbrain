@@ -13,6 +13,12 @@ export interface Place {
   name: string;
   type: PlaceType;
   county: string | null;
+  /**
+   * Stocking points only: the county PGC's allocation lists this point under
+   * (public.place_stocking_county), which can differ from the spatial county for
+   * game lands that straddle a county line. Release weeks match on this when set.
+   */
+  stockingCounty?: string | null;
   /** Empty for game lands, which are open to every species in season. */
   species: Species[];
   /** Point on the surface (places.centroid). Pins only; outlines load on demand. */

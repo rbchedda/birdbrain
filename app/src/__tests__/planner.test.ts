@@ -11,6 +11,7 @@ import {
   plannerRows,
   samplePlaces,
   sampleStocking,
+  stockingCountyOf,
   stockingFor,
   stockingWindows,
   windowsForCounty,
@@ -87,6 +88,28 @@ describe('planner sorting', () => {
   it('lists dove fields by distance', () => {
     const d = (id: string, lng: number): Place => ({ ...point(id, 'York', lng, 40), type: 'dove_field', species: ['dove'] });
     expect(doveFields([d('far', -80), d('near', -76.8), york], york.center).map((x) => x.place.id)).toEqual(['near', 'far']);
+  });
+});
+
+describe('straddling game lands use the allocation county (place_stocking_county)', () => {
+  // A game land whose point sits in Centre but which PGC's allocation lists under Clinton.
+  const sgl: Place = { ...point('sgl', 'Centre', -77.6, 41.0), stockingCounty: 'Clinton' };
+
+  it('Centre and Clinton have different release weeks in the seed (so the test can tell them apart)', () => {
+    expect(windowsForCounty('Clinton')).not.toEqual(windowsForCounty('Centre'));
+  });
+
+  it('stockingCountyOf prefers the allocation county, else the spatial one', () => {
+    expect(stockingCountyOf(sgl)).toBe('Clinton');
+    expect(stockingCountyOf(point('x', 'York', 0, 0))).toBe('York');
+    expect(stockingCountyOf({ county: 'York', stockingCounty: null })).toBe('York');
+  });
+
+  it('planner and detail windows come from Clinton, not Centre', () => {
+    const [row] = plannerRows([sgl], { today: '2026-10-01' });
+    expect(row.next).toEqual(windowsForCounty('Clinton').find((w) => w.windowEnd >= '2026-10-01'));
+    expect(stockingFor(sgl).map((e) => e.id)).toEqual(windowsForCounty('Clinton').map((w) => w.id));
+    expect(row.place.county).toBe('Centre');
   });
 });
 

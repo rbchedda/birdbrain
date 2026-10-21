@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
+import { AppState, Platform } from 'react-native';
+
 import type { Session } from './backend';
+import { journalEntries, onJournalChange, startJournalSync, syncJournal } from './journal';
 import { backend } from './index';
 import type { Place } from './types';
 
@@ -83,4 +86,34 @@ export function usePlaces() {
     () => places,
     () => places,
   );
+}
+
+// Private hunt log: one background sync for the whole app, started on first use.
+let journalSyncStarted = false;
+function startJournalSyncOnce() {
+  if (journalSyncStarted) return;
+  journalSyncStarted = true;
+  startJournalSync(backend, {
+    onForeground: (cb) => {
+      const sub = AppState.addEventListener('change', (s) => s === 'active' && cb());
+      return () => sub.remove();
+    },
+    onReconnect: (cb) => {
+      // Web exposes connectivity events; on native, foreground + backoff timers cover retries.
+      const w = globalThis as { addEventListener?: (e: string, f: () => void) => void; removeEventListener?: (e: string, f: () => void) => void };
+      if (Platform.OS !== 'web' || !w.addEventListener) return () => {};
+      w.addEventListener('online', cb);
+      return () => w.removeEventListener?.('online', cb);
+    },
+  });
+}
+
+/** Private hunt log entries with live sync status. */
+export function useJournal() {
+  startJournalSyncOnce();
+  const state = useAsync(journalEntries, []);
+  const { reload } = state;
+  useEffect(() => onJournalChange(reload), [reload]);
+  const retry = useCallback(() => syncJournal(backend, { force: true }).then(() => undefined), []);
+  return { ...state, retry };
 }

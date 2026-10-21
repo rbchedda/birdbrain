@@ -119,6 +119,9 @@ export const stockedProperties: { county: string; name: string; sgl: number | nu
 
 const norm = (c: string | null | undefined) => (c ?? '').trim().toLowerCase();
 
+/** The county whose PGC release weeks apply to a stocking point: the allocation county if known, else the spatial one. */
+export const stockingCountyOf = (place: Pick<Place, 'county' | 'stockingCounty'>) => place.stockingCounty ?? place.county;
+
 /** A county's release weeks with birds allocated (PGC lists some releases with 0 for a county). */
 export const windowsForCounty = (county: string | null | undefined) =>
   stockingWindows
@@ -128,7 +131,7 @@ export const windowsForCounty = (county: string | null | undefined) =>
 /** County windows for a stocking point, in the PlaceDetail shape. Empty if the county isn't in PGC's table. */
 export function stockingFor(place: Place): StockingEvent[] {
   if (place.type !== 'stocking') return [];
-  return windowsForCounty(place.county).map((w) => ({
+  return windowsForCounty(stockingCountyOf(place)).map((w) => ({
     id: w.id,
     placeId: place.id,
     windowStart: w.windowStart,
@@ -173,7 +176,7 @@ export function plannerRows(
   const rows = places
     .filter((p) => p.type === 'stocking' && (!opts.savedOnly || saved.has(p.id)))
     .map((place) => {
-      const next = windowsForCounty(place.county).find((w) => w.windowEnd >= opts.today) ?? null;
+      const next = windowsForCounty(stockingCountyOf(place)).find((w) => w.windowEnd >= opts.today) ?? null;
       return {
         place,
         next,

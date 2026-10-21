@@ -23,7 +23,7 @@ import { Tag } from '@/components/Tag';
 import { Button, Chip, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { loadPlaces, useAsync, usePlaces, useSession } from '@/data/hooks';
-import { STOCKING_SOURCE, windowsForCounty } from '@/data/places';
+import { STOCKING_SOURCE, stockingCountyOf, windowsForCounty } from '@/data/places';
 import { PGC_DIGEST_URL } from '@/data/regs';
 import { describeStatus, placeToday, SEASON_YEAR } from '@/data/seasons';
 import { migratory, placeTypeLabel, speciesLabel, type Place, type PlaceType } from '@/data/types';
@@ -214,7 +214,8 @@ function PlaceDetails({
 }) {
   const session = useSession();
   // County release weeks from the PGC allocation seed; PGC doesn't publish per-property dates.
-  const stocking = place.type === 'stocking' ? windowsForCounty(place.county) : [];
+  const stockingCounty = stockingCountyOf(place);
+  const stocking = place.type === 'stocking' ? windowsForCounty(stockingCounty) : [];
   const today = placeToday(place);
   const needsMigratory = today.statuses.some((s) => migratory.includes(s.species) && s.status.kind !== 'closed');
   const [saved, setSaved] = useState(false);
@@ -295,7 +296,7 @@ function PlaceDetails({
           </View>
           {stocking.length ? (
             <>
-              <Text style={ui.muted}>{place.county} County release weeks (county totals, not this spot):</Text>
+              <Text style={ui.muted}>{stockingCounty} County release weeks (county totals, not this spot):</Text>
               {stocking.map((w) => (
                 <Text key={w.id} style={ui.body}>
                   {windowText(w)} · {w.cocks} roosters · {w.hens} hens
@@ -304,7 +305,7 @@ function PlaceDetails({
             </>
           ) : (
             <Text style={ui.muted}>
-              {place.county
+              {stockingCounty
                 ? 'No release weeks listed for this county. '
                 : 'This point has no county in PGC’s data, so release weeks can’t be matched. '}
               Check PGC’s pheasant allocation page.

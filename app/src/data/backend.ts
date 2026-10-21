@@ -3,12 +3,14 @@ import type {
   Comment,
   Group,
   Place,
+  PlaceCount,
   PlaceDetail,
   Post,
   PostDraft,
   Profile,
   ReportReason,
   ReportTarget,
+  Species,
 } from './types';
 
 export interface Session {
@@ -28,6 +30,23 @@ export interface FeedPage {
  * (when EXPO_PUBLIC_SUPABASE_* is set) and an offline sample backend that
  * mimics the same privacy rules so the app runs in Expo Go with no setup.
  */
+/** One private hunt log entry as uploaded to the owner-only hunt_log_entries table. */
+export interface HuntLogUpload {
+  clientId: string;
+  /** Server version this device last synced, or null if it never has. */
+  baseVersion: number | null;
+  species: Species | null;
+  caption: string;
+  huntedOn: string | null;
+  placeCounts: PlaceCount[];
+}
+
+export interface HuntLogUpsertResult {
+  version: number;
+  /** The server copy changed since baseVersion; nothing was written. */
+  conflict: boolean;
+}
+
 export interface Backend {
   mode: 'sample' | 'supabase';
 
@@ -67,6 +86,9 @@ export interface Backend {
 
   groups(): Promise<Group[]>;
   setMember(groupId: string, member: boolean): Promise<void>;
+
+  /** Idempotent upsert of a private hunt log entry by its client UUID (owner-only). */
+  upsertHuntLogEntry(entry: HuntLogUpload): Promise<HuntLogUpsertResult>;
 }
 
 export class NotSignedInError extends Error {
