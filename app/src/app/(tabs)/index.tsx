@@ -339,7 +339,7 @@ function PlaceDetails({
       <Button
         label="Log a hunt here"
         icon="create-outline"
-        onPress={() => router.push({ pathname: '/log', params: { placeId: place.id } })}
+        onPress={() => router.push({ pathname: '/new/log', params: { placeId: place.id } })}
       />
       {saveError && <Notice tone="error">{saveError}</Notice>}
     </ScrollView>

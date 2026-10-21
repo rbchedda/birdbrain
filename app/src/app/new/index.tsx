@@ -33,7 +33,7 @@ const choices: Choice[] = [
 /** ＋ chooser: "Log hunt" (private diary, never a post) or "Post" (delayed social post). */
 export default function NewChooser() {
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
-  const pick = (mode: Choice['mode']) => router.replace({ pathname: '/log', params: { mode } });
+  const pick = (mode: Choice['mode']) => router.replace(mode === 'post' ? '/new/post' : '/new/log');
 
   return (
     <View style={styles.backdrop}>
