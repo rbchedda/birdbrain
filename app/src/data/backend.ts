@@ -1,0 +1,87 @@
+import type {
+  Author,
+  Comment,
+  Group,
+  Place,
+  PlaceDetail,
+  Post,
+  PostDraft,
+  Profile,
+  ReportReason,
+  ReportTarget,
+} from './types';
+
+export interface Session {
+  userId: string;
+  email: string | null;
+  anonymous: boolean;
+}
+
+export interface FeedPage {
+  posts: Post[];
+  /** created_at cursor for the next page, or null at the end. */
+  next: string | null;
+}
+
+/**
+ * Everything the screens need from a server. Two implementations: Supabase
+ * (when EXPO_PUBLIC_SUPABASE_* is set) and an offline sample backend that
+ * mimics the same privacy rules so the app runs in Expo Go with no setup.
+ */
+export interface Backend {
+  mode: 'sample' | 'supabase';
+
+  getSession(): Promise<Session | null>;
+  onSessionChange(cb: (s: Session | null) => void): () => void;
+  signIn(email: string, password: string): Promise<void>;
+  /** Resolves needsConfirmation when the project requires email confirmation first. */
+  signUp(email: string, password: string): Promise<{ needsConfirmation: boolean }>;
+  signInAsGuest(): Promise<void>;
+  signOut(): Promise<void>;
+
+  listPlaces(): Promise<Place[]>;
+  placeDetail(id: string): Promise<PlaceDetail>;
+  savedPlaceIds(): Promise<string[]>;
+  setPlaceSaved(id: string, saved: boolean): Promise<void>;
+
+  feed(cursor: string | null, limit: number): Promise<FeedPage>;
+  post(id: string): Promise<Post | null>;
+  postsBy(userId: string): Promise<Post[]>;
+  /** Shared posts only; private entries never reach a backend. */
+  createPost(draft: PostDraft): Promise<Post>;
+  deletePost(id: string): Promise<void>;
+  setLiked(postId: string, liked: boolean): Promise<void>;
+  comments(postId: string): Promise<Comment[]>;
+  addComment(postId: string, body: string): Promise<Comment>;
+
+  profile(id: string): Promise<Profile | null>;
+  updateProfile(patch: Partial<Omit<Profile, 'id'>>): Promise<Profile>;
+  blockedUsers(): Promise<Author[]>;
+  setBlocked(userId: string, blocked: boolean): Promise<void>;
+  report(target: ReportTarget, reason: ReportReason, details?: string): Promise<void>;
+
+  groups(): Promise<Group[]>;
+  setMember(groupId: string, member: boolean): Promise<void>;
+}
+
+export class NotSignedInError extends Error {
+  constructor() {
+    super('Sign in to do that.');
+  }
+}
+
+/** Same grid as public.blur_point: snap to the center of a 0.05° cell. */
+export const blurPoint = ({ lng, lat }: { lng: number; lat: number }) => ({
+  lng: Math.round((Math.floor(lng / 0.05) * 0.05 + 0.025) * 1e6) / 1e6,
+  lat: Math.round((Math.floor(lat / 0.05) * 0.05 + 0.025) * 1e6) / 1e6,
+});
+
+export const sumCounts = (rows: { flushed: number; roosters: number; harvested: number }[]) =>
+  rows.length
+    ? rows.reduce(
+        (t, r) => ({ flushed: t.flushed + r.flushed, roosters: t.roosters + r.roosters, harvested: t.harvested + r.harvested }),
+        { flushed: 0, roosters: 0, harvested: 0 },
+      )
+    : null;
+
+export const postKind = (draft: PostDraft) => (draft.counts.some((c) => c.harvested > 0) ? 'harvest' : 'hunt');

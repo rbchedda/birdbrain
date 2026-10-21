@@ -5,3 +5,14 @@ jest.mock('@expo/vector-icons', () => {
   Icon.glyphMap = {};
   return { Ionicons: Icon };
 });
+
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+
+// The map page runs MapLibre GL JS inside the WebView; tests drive the list instead.
+jest.mock('react-native-webview', () => {
+  const { View } = require('react-native');
+  const WebView = () => <View testID="webview" />;
+  return { WebView, default: WebView };
+});

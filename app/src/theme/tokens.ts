@@ -9,6 +9,8 @@ export const colors = {
   onAccent: '#0E1A13',
   dove: '#E8C468',
   onDove: '#0E1A13',
+  danger: '#FF8A80',
+  success: '#8FD19E',
 } as const;
 
 export const fonts = {

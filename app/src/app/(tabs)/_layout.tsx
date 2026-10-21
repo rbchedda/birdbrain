@@ -12,7 +12,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="index" options={{ title: 'Map' }} />
       <Tabs.Screen name="feed" options={{ title: 'Feed' }} />
       <Tabs.Screen name="log" options={{ title: 'Log' }} />
-      <Tabs.Screen name="groups" options={{ title: 'Groups' }} />
+      <Tabs.Screen name="groups" options={{ title: 'Crew' }} />
       <Tabs.Screen name="learn" options={{ title: 'Learn' }} />
     </Tabs>
   );
