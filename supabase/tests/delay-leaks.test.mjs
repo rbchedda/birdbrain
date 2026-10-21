@@ -115,3 +115,44 @@ describe('edit lock after public_after', () => {
     await q(bob, 'insert into public.likes (post_id, user_id) values ($1, $2)', [p, bob]);
   });
 });
+
+describe('post-photos storage reads', () => {
+  const seesPhoto = async (user, name) =>
+    (await q(user, `select 1 from storage.objects where bucket_id = 'post-photos' and name = $1`, [name])).rows.length === 1;
+  const upload = (user, name) =>
+    q(user, `insert into storage.objects (bucket_id, name, owner) values ('post-photos', $1, $2)`, [name, user]);
+
+  it('hides a photo until its post is public, except from the uploader', async () => {
+    const name = `${alice}/rooster.jpg`;
+    await upload(alice, name);
+    const p = await post(alice, 'photo post', name);
+    assert.equal(await seesPhoto(alice, name), true);
+    assert.equal(await seesPhoto(bob, name), false);
+    await agePost(p);
+    assert.equal(await seesPhoto(bob, name), true);
+  });
+
+  it('hides orphan uploads not attached to any post', async () => {
+    const name = `${alice}/orphan.jpg`;
+    await upload(alice, name);
+    assert.equal(await seesPhoto(bob, name), false);
+  });
+
+  it('ignores posts that point photo_path at another user\'s upload', async () => {
+    const name = `${alice}/private-draft.jpg`;
+    await upload(alice, name);
+    const p = await post(carol, 'borrowed photo', name);
+    await agePost(p);
+    assert.equal(await seesPhoto(bob, name), false);
+  });
+
+  it('respects blocks in both directions', async () => {
+    const name = `${carol}/dog.jpg`;
+    await upload(carol, name);
+    const p = await post(carol, 'dog work', name);
+    await agePost(p);
+    // bob blocked carol earlier in this file
+    assert.equal(await seesPhoto(bob, name), false);
+    assert.equal(await seesPhoto(alice, name), true);
+  });
+});
