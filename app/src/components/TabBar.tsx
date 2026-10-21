@@ -14,15 +14,17 @@ const icons: Record<string, { on: IconName; off: IconName }> = {
   more: { on: 'ellipsis-horizontal-circle', off: 'ellipsis-horizontal-circle-outline' },
 };
 
+// Routes that exist in the tab navigator but never get a button: the home
+// redirect and the community feed (reached from Crew after opt-in).
+const hiddenRoutes = new Set(['index', 'feed']);
+
 export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
 
   return (
     <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
       {state.routes.map((route, index) => {
-        // Routes with href: null (redirect home, Community feed) stay off the bar.
-        const options = descriptors[route.key].options as { href?: unknown };
-        if (options.href === null) return null;
+        if (hiddenRoutes.has(route.name)) return null;
         const focused = state.index === index;
         const label = descriptors[route.key].options.title ?? route.name;
 
