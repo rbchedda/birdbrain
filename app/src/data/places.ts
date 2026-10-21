@@ -1,4 +1,6 @@
-import type { Place, StockingEvent } from './types';
+import allocation from './pgcStocking.json';
+
+import type { LngLat, Place, StockingEvent } from './types';
 
 /**
  * Offline sample places, used when Supabase isn't configured. Names and
@@ -67,26 +69,136 @@ export const samplePlaces: Place[] = [
   },
 ];
 
-export const sampleStocking: StockingEvent[] = [
-  {
-    id: 'se-1',
-    placeId: 'stock-sample-1',
-    windowStart: '2026-10-19',
-    windowEnd: '2026-10-23',
-    counts: { roosters: 400 },
-  },
-  {
-    id: 'se-2',
-    placeId: 'stock-sample-1',
-    windowStart: '2026-11-02',
-    windowEnd: '2026-11-06',
-    counts: { roosters: 250, hens: 50 },
-  },
-  {
-    id: 'se-3',
-    placeId: 'stock-sample-2',
-    windowStart: '2026-10-26',
-    windowEnd: '2026-10-30',
-    counts: { roosters: 300 },
-  },
+/**
+ * PGC pheasant stocking windows, from the committed ingest seed
+ * data/pgc/pheasant-allocation-2026-27.json (ingest/stocking_windows.mjs; copied
+ * into the app by scripts/sync-stocking.mjs; the
+ * same file loads public.stocking_events). PGC publishes a shipping week per
+ * county and release, not a day or a property, so the app never shows more
+ * precision than that.
+ */
+export const STOCKING_SOURCE = {
+  url: allocation.source,
+  citation: allocation.citation,
+  season: allocation.season,
+};
+
+export interface StockingWindow {
+  id: string;
+  region: string;
+  county: string;
+  release: string;
+  /** As published, e.g. "1ST IN- SEASON". */
+  label: string;
+  junior: boolean;
+  /** As published, e.g. "Nov. 3-6". */
+  shipWeek: string;
+  windowStart: string;
+  windowEnd: string;
+  cocks: number;
+  hens: number;
+}
+
+export const stockingWindows: StockingWindow[] = allocation.events.map((e) => ({
+  id: `${e.county}:${e.release}`,
+  region: e.region,
+  county: e.county,
+  release: e.release,
+  label: e.label,
+  junior: e.junior,
+  shipWeek: e.ship_week,
+  windowStart: e.window_start,
+  windowEnd: e.window_end,
+  cocks: e.cocks,
+  hens: e.hens,
+}));
+
+/** Properties PGC lists as stocked, per county. */
+export const stockedProperties: { county: string; name: string; sgl: number | null; winterLate: boolean }[] =
+  allocation.properties.map((p) => ({ county: p.county, name: p.name, sgl: p.sgl, winterLate: p.winter_late }));
+
+const norm = (c: string | null | undefined) => (c ?? '').trim().toLowerCase();
+
+export const windowsForCounty = (county: string | null | undefined) =>
+  stockingWindows.filter((w) => norm(w.county) === norm(county)).sort((a, b) => a.windowStart.localeCompare(b.windowStart));
+
+/** County windows for a stocking point, in the PlaceDetail shape. Empty if the county isn't in PGC's table. */
+export function stockingFor(place: Place): StockingEvent[] {
+  if (place.type !== 'stocking') return [];
+  return windowsForCounty(place.county).map((w) => ({
+    id: w.id,
+    placeId: place.id,
+    windowStart: w.windowStart,
+    windowEnd: w.windowEnd,
+    counts: { roosters: w.cocks, hens: w.hens },
+  }));
+}
+
+/** Sample-mode detail data, derived from the real PGC windows for each sample place's county. */
+export const sampleStocking: StockingEvent[] = samplePlaces.flatMap(stockingFor);
+
+/** Great-circle distance in km. */
+export function distanceKm(a: LngLat, b: LngLat) {
+  const r = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * r;
+  const dLng = (b.lng - a.lng) * r;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
+}
+
+export interface PlannerRow {
+  place: Place;
+  /** Current or next window for the place's county, or null if none remain this season. */
+  next: StockingWindow | null;
+  current: boolean;
+  km: number | null;
+  saved: boolean;
+}
+
+export type PlannerSort = 'window' | 'distance';
+
+/**
+ * Stocking points with their current/next county window, optionally filtered
+ * to saved sites, sorted by window then distance, or distance then window.
+ * Distance is from a place the user picked (never their live location).
+ */
+export function plannerRows(
+  places: Place[],
+  opts: { today: string; origin?: LngLat | null; savedIds?: string[]; savedOnly?: boolean; sort?: PlannerSort },
+): PlannerRow[] {
+  const saved = new Set(opts.savedIds ?? []);
+  const rows = places
+    .filter((p) => p.type === 'stocking' && (!opts.savedOnly || saved.has(p.id)))
+    .map((place) => {
+      const next = windowsForCounty(place.county).find((w) => w.windowEnd >= opts.today) ?? null;
+      return {
+        place,
+        next,
+        current: !!next && next.windowStart <= opts.today,
+        km: opts.origin ? distanceKm(opts.origin, place.center) : null,
+        saved: saved.has(place.id),
+      };
+    });
+  const byWindow = (a: PlannerRow, b: PlannerRow) =>
+    (a.next?.windowStart ?? '9999').localeCompare(b.next?.windowStart ?? '9999');
+  const byKm = (a: PlannerRow, b: PlannerRow) => (a.km ?? Infinity) - (b.km ?? Infinity);
+  const byName = (a: PlannerRow, b: PlannerRow) => a.place.name.localeCompare(b.place.name);
+  return rows.sort((a, b) =>
+    opts.sort === 'distance' ? byKm(a, b) || byWindow(a, b) || byName(a, b) : byWindow(a, b) || byKm(a, b) || byName(a, b),
+  );
+}
+
+/** Dove fields sorted by distance from the picked origin (or by name). */
+export const doveFields = (places: Place[], origin?: LngLat | null) =>
+  places
+    .filter((p) => p.type === 'dove_field')
+    .map((place) => ({ place, km: origin ? distanceKm(origin, place.center) : null }))
+    .sort((a, b) => (a.km ?? Infinity) - (b.km ?? Infinity) || a.place.name.localeCompare(b.place.name));
+
+/** General crowding tips. Not tied to any date or place. */
+export const crowdingTips = [
+  'Release days and the first Saturday after are the busiest. Weekdays are quieter.',
+  'Later in the day, after the early crowd has left, birds that held tight are still there.',
+  'Walk past the first field from the lot; most pressure is within a few hundred yards of parking.',
+  'Late-season winter releases (bold-underlined game lands on PGC’s list) see far fewer hunters.',
 ];
