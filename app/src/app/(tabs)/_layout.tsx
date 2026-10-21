@@ -3,7 +3,7 @@ import { Tabs } from 'expo-router/js-tabs';
 import { TabBar } from '@/components/TabBar';
 import { colors } from '@/theme/tokens';
 
-// Map (launch) | Feed | ＋ New | Learn | Profile.
+// Map (launch) | Feed | ＋ New | Guide | Profile.
 // The center ＋ is not a tab: TabBar renders it and it opens the /new chooser modal.
 export default function TabsLayout() {
   return (
@@ -14,7 +14,7 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="index" options={{ title: 'Map' }} />
       <Tabs.Screen name="feed" options={{ title: 'Feed' }} />
-      <Tabs.Screen name="learn" options={{ title: 'Learn' }} />
+      <Tabs.Screen name="guide" options={{ title: 'Guide' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
     </Tabs>
   );

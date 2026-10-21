@@ -12,7 +12,7 @@ type IconName = keyof typeof Ionicons.glyphMap;
 const icons: Record<string, { on: IconName; off: IconName }> = {
   index: { on: 'map', off: 'map-outline' },
   feed: { on: 'newspaper', off: 'newspaper-outline' },
-  learn: { on: 'book', off: 'book-outline' },
+  guide: { on: 'book', off: 'book-outline' },
   profile: { on: 'person-circle', off: 'person-circle-outline' },
 };
 
