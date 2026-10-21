@@ -44,7 +44,7 @@ describe('season status', () => {
     if (s.kind !== 'open') return;
     const sun = sunTimes('2026-10-24', harrisburg.lat, harrisburg.lng)!;
     expect(sun.sunrise.getTime() - s.start.getTime()).toBe(30 * 60_000);
-    expect(s.end).toEqual(sun.sunset);
+    expect(s.end.getTime() - sun.sunset.getTime()).toBe(30 * 60_000);
   });
 
   it('treats the junior week as youth-only', () => {

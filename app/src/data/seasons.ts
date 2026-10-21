@@ -1,4 +1,4 @@
-import { sunTimes } from '@/lib/sun';
+import { pgcSunTimes, type HuntingHoursRow } from '@/lib/sun';
 import { formatDay, formatTime, midnightET, todayET, weekdayOf, type Ymd } from '@/lib/time';
 
 import { allSpecies, migratory, type Place, type Species } from './types';
@@ -11,7 +11,20 @@ import { allSpecies, migratory, type Place, type Species } from './types';
  */
 export const SEASON_YEAR = '2026-27';
 
-type Hours = 'smallGame' | 'springTurkey';
+/**
+ * Hours rules from the 2026-27 digest (Hunting Hours Table, p. 12; Migratory
+ * Game Bird Hunting Hours, p. 44):
+ * - smallGame: ½ hour before sunrise to ½ hour after sunset (pheasant, grouse, fall turkey).
+ * - migratory: ½ hour before sunrise to sunset (doves, waterfowl).
+ * - springTurkey: ½ hour before sunrise to noon through SPRING_NOON_UNTIL, then to ½ hour after sunset.
+ */
+export type Hours = 'smallGame' | 'migratory' | 'springTurkey';
+
+/**
+ * Last day of noon-only spring gobbler hours. The digest says May 15; PGC's
+ * Apr 11, 2026 release says May 16. Using the digest until PGC confirms.
+ */
+export const SPRING_NOON_UNTIL: Ymd = '2027-05-15';
 
 export interface Season {
   species: Species;
@@ -60,7 +73,7 @@ export const seasons: Season[] = [
       ['2026-09-01', '2026-11-27'],
       ['2026-12-18', '2027-01-02'],
     ],
-    hours: 'smallGame',
+    hours: 'migratory',
     note: 'Daily limit 15. Migratory bird license required.',
   },
   {
@@ -84,7 +97,7 @@ export const seasons: Season[] = [
     species: 'waterfowl',
     label: 'Ducks and geese',
     windows: null,
-    hours: 'smallGame',
+    hours: 'migratory',
     note: 'Dates vary by zone. Federal duck stamp and migratory bird license required.',
   },
 ];
@@ -100,16 +113,27 @@ export type SpeciesStatus =
 
 const inWindow = (ymd: Ymd, [a, b]: [Ymd, Ymd]) => ymd >= a && ymd <= b;
 
-function legalHours(hours: Hours, ymd: Ymd, lat: number, lng: number) {
-  const sun = sunTimes(ymd, lat, lng);
+const HALF_HOUR = 30 * 60_000;
+
+export function legalHours(hours: Hours, ymd: Ymd, at: { lat: number; lng: number }, lookup?: HuntingHoursRow | null) {
+  const sun = pgcSunTimes(ymd, at, lookup);
   if (!sun) return null;
-  const start = new Date(sun.sunrise.getTime() - 30 * 60_000);
-  if (hours === 'springTurkey') return { start, end: new Date(midnightET(ymd).getTime() + 12 * 3600_000) };
-  return { start, end: sun.sunset };
+  const start = new Date(sun.sunrise.getTime() - HALF_HOUR);
+  const afterSunset = new Date(sun.sunset.getTime() + HALF_HOUR);
+  if (hours === 'migratory') return { start, end: sun.sunset, source: sun.source };
+  if (hours === 'springTurkey' && ymd <= SPRING_NOON_UNTIL) {
+    return { start, end: new Date(midnightET(ymd).getTime() + 12 * 3600_000), source: sun.source };
+  }
+  return { start, end: afterSunset, source: sun.source };
 }
 
 /** Open/closed status for one species on a given ET date at a location. */
-export function speciesStatus(species: Species, ymd: Ymd, at: { lat: number; lng: number }): SpeciesStatus {
+export function speciesStatus(
+  species: Species,
+  ymd: Ymd,
+  at: { lat: number; lng: number },
+  lookup?: HuntingHoursRow | null,
+): SpeciesStatus {
   const relevant = seasons.filter((s) => s.species === species);
   const isSunday = weekdayOf(ymd) === 0;
   // Prefer the general season over the youth season when both apply.
@@ -118,8 +142,8 @@ export function speciesStatus(species: Species, ymd: Ymd, at: { lat: number; lng
     .sort((a, b) => Number(!!a.youth) - Number(!!b.youth))[0];
   if (open) {
     if (isSunday && sundayClosed(species)) return { kind: 'sunday', season: open };
-    const hours = legalHours(open.hours, ymd, at.lat, at.lng);
-    if (hours) return { kind: 'open', season: open, ...hours };
+    const hours = legalHours(open.hours, ymd, at, lookup);
+    if (hours) return { kind: 'open', season: open, start: hours.start, end: hours.end };
   }
   const unknown = relevant.find((s) => s.windows === null);
   if (unknown) return { kind: 'check', season: unknown };
