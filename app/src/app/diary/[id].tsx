@@ -1,11 +1,11 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ScreenHeader } from '@/components/Screen';
 import { Button, Notice, SectionTitle, ui } from '@/components/ui';
 import { useJournal } from '@/data/hooks';
-import { editJournalEntry, type JournalEntry } from '@/data/journal';
+import { editJournalEntry, removeJournalEntry, type JournalEntry } from '@/data/journal';
 import { coverLabel, speciesLabel } from '@/data/types';
 import { formatDay } from '@/lib/time';
 import { colors, fonts, space } from '@/theme/tokens';
@@ -34,6 +34,7 @@ export default function DiaryEntryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, loading, retry } = useJournal();
   const [editing, setEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const e = data?.find((x) => x.id === id);
 
   if (!e) {
@@ -106,6 +107,23 @@ export default function DiaryEntryScreen() {
             {e.caption ? <Text style={ui.body}>{e.caption}</Text> : null}
             {d?.photos.length ? <Row label="Photos" value={`${d.photos.length} private`} /> : null}
             <Button label="Edit entry" icon="create-outline" onPress={() => setEditing(true)} />
+            {!confirmDelete ? (
+              <Button label="Delete entry" icon="trash-outline" variant="danger" onPress={() => setConfirmDelete(true)} />
+            ) : (
+              <>
+                <Notice tone="error">Deletes this entry from this device and from your account backup.</Notice>
+                <Button
+                  label="Yes, delete entry"
+                  variant="danger"
+                  onPress={async () => {
+                    await removeJournalEntry(e.id);
+                    if (router.canGoBack()) router.back();
+                    else router.replace('/profile/hunt-log');
+                  }}
+                />
+                <Button label="Keep it" onPress={() => setConfirmDelete(false)} />
+              </>
+            )}
           </>
         )}
       </ScrollView>
