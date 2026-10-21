@@ -103,3 +103,14 @@ describe('Guide content', () => {
     for (const t of regTopics) expect(t.url).toMatch(/^https:\/\/www\.pa\.gov\//);
   });
 });
+
+describe('grouse field marks', () => {
+  it('drumming is the spring courtship/territory display, not the flush', () => {
+    const marks = birds.find((b) => b.key === 'grouse')!.fieldMarks;
+    const drum = marks.filter((m) => /drum/i.test(m));
+    expect(drum).toHaveLength(1);
+    expect(drum[0]).toMatch(/spring courtship and territory display/);
+    expect(drum[0]).toMatch(/not the flush/);
+    expect(marks.some((m) => /drumming flush/i.test(m))).toBe(false);
+  });
+});

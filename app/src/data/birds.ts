@@ -49,7 +49,8 @@ export const birds: BirdId[] = [
     fieldMarks: [
       'Chicken-sized, gray or red-brown phases, with a small crest.',
       'Fan-shaped tail with a broad dark band near the tip.',
-      'Dark "ruff" feathers on the neck; explosive, drumming flush in young forest.',
+      'Dark "ruff" feathers on the neck. Flushes with a loud, explosive whir of wings in young forest.',
+      'Drumming (a low, accelerating thump) is the male’s spring courtship and territory display from a log, not the flush sound.',
     ],
     lookAlikes: ['Hen pheasant (much longer, pointed tail; open fields rather than woods).', 'Woodcock (far smaller, long bill).'],
   },
