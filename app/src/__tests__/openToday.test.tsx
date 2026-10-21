@@ -100,6 +100,9 @@ describe('OpenToday card', () => {
     const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
     await render(<OpenToday now={now} />);
     expect(screen.getByText(/Regulations as of Wed, Oct 21, 2026/)).toBeTruthy();
+    expect(screen.getByTestId('open-today-disclaimer')).toHaveTextContent(/^Verify with the PGC digest before you hunt\./);
+    expect(screen.getByRole('link', { name: 'Open the PGC Hunting & Trapping Digest' })).toBeTruthy();
+    expect(screen.getByText('PGC Hunting & Trapping Digest')).toBeTruthy();
     await fireEvent.press(screen.getByLabelText('Open the PGC Hunting & Trapping Digest'));
     expect(open).toHaveBeenCalledWith(PGC_DIGEST_URL);
   });

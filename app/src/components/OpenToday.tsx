@@ -59,9 +59,11 @@ export function OpenToday({
           </View>
         );
       })}
+      <Text style={styles.disclaimer} testID="open-today-disclaimer">
+        Verify with the PGC digest before you hunt. Seasons, hours and limits here are entered by hand and may be wrong.
+      </Text>
       <Text style={ui.muted} testID="open-today-asof">
-        Regulations as of {formatDay(REGS.asOf)}, {REGS.asOf.slice(0, 4)} (v{REGS.version}). Entered by hand; the PGC digest is the
-        final word.
+        Regulations as of {formatDay(REGS.asOf)}, {REGS.asOf.slice(0, 4)} (v{REGS.version}).
       </Text>
       <Pressable
         accessibilityRole="link"
@@ -80,6 +82,7 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.headingSemi, fontSize: 22, color: colors.text },
   row: { gap: 2, paddingVertical: space.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   species: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text, flex: 1 },
+  disclaimer: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.dove },
   link: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingVertical: space.sm },
   linkText: { color: colors.accent, fontFamily: fonts.bodySemi },
 });
