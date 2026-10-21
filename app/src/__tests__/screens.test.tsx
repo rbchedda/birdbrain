@@ -203,13 +203,14 @@ describe('After-the-hunt log', () => {
     expect(screen.getByText(/Delayed · others see it/)).toBeTruthy();
   });
 
-  it('saves a private entry to the device only', async () => {
+  it('saves a private entry locally first and shows its backup status', async () => {
     await open('/log');
     await fireEvent.changeText(await screen.findByLabelText('Notes'), 'Scouting only');
     await fireEvent.press(screen.getByText('Private'));
-    expect(screen.getByText(/Nothing is uploaded/)).toBeTruthy();
+    expect(screen.getByText(/only you can see it/)).toBeTruthy();
     await fireEvent.press(screen.getByText('Save privately'));
-    expect(await screen.findByText('Saved to your private log on this device.')).toBeTruthy();
+    expect(await screen.findByText(/Saved to your private log on this device/)).toBeTruthy();
+    expect(await screen.findByText('Backed up')).toBeTruthy();
 
     const page = await backend.feed(null, 20);
     expect(page.posts.some((p) => p.caption === 'Scouting only')).toBe(false);
