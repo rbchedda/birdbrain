@@ -34,6 +34,11 @@ export interface JournalEntry extends Post {
   sync: SyncState;
   /** Rich diary fields; absent on quick log entries. */
   details?: DiaryDetails;
+  /**
+   * Tombstone: the user deleted this entry. It is hidden everywhere but kept
+   * on the device until the server confirms the delete through the queue.
+   */
+  deleted?: boolean;
 }
 
 export const BACKOFF_BASE_MS = 2_000;
@@ -73,9 +78,20 @@ export function resetJournalForRestart() {
   migrated = null;
 }
 
-export async function journalEntries(): Promise<JournalEntry[]> {
+/** Every stored entry, tombstones included (the sync queue's view). */
+async function allEntries(): Promise<JournalEntry[]> {
   await migrate();
   return readJson<JournalEntry[]>(KEY, []);
+}
+
+/** Entries the user sees; deleted ones are hidden while their delete syncs. */
+export async function journalEntries(): Promise<JournalEntry[]> {
+  return (await allEntries()).filter((e) => !e.deleted);
+}
+
+/** Test/diagnostic hook: deletes still waiting for the server. */
+export async function pendingDeletes(): Promise<JournalEntry[]> {
+  return (await allEntries()).filter((e) => e.deleted);
 }
 
 const update = async (fn: (cur: JournalEntry[]) => JournalEntry[]) => {
@@ -137,9 +153,14 @@ export async function editJournalEntry(id: string, edit: JournalEdit) {
 }
 
 /** Removes the entry from this device. (Server-side deletion is not part of P0.8.) */
+/**
+ * Delete an entry everywhere. It becomes a tombstone that the sync queue
+ * deletes on the server (owner-only RLS, idempotent); only then is it dropped
+ * from the device. Nothing is lost if the app closes or is offline meanwhile.
+ */
 export async function removeJournalEntry(id: string) {
-  await update((cur) => cur.filter((e) => e.id !== id));
-  notify();
+  await update((cur) => cur.map((e) => (e.id === id ? { ...e, deleted: true, sync: { ...fresh(e.sync.rev + 1), version: e.sync.version } } : e)));
+  notify(true);
 }
 
 const toUpload = (e: JournalEntry): HuntLogUpload => ({
@@ -220,11 +241,17 @@ export function syncJournal(backend: Backend, opts: SyncOptions = {}): Promise<S
 
 async function runSync(backend: Backend, { now = Date.now, force = false }: SyncOptions): Promise<SyncReport> {
   const report: SyncReport = { synced: 0, failed: 0, conflicts: 0, skipped: 0 };
-  const due = (await journalEntries()).filter(
-    (e) => e.sync.status !== 'synced' && !e.sync.conflict && (force || e.sync.nextAttemptAt <= now()),
+  const due = (await allEntries()).filter(
+    (e) => e.sync.status !== 'synced' && (e.deleted || !e.sync.conflict) && (force || e.sync.nextAttemptAt <= now()),
   );
   for (const e of due) {
     try {
+      if (e.deleted) {
+        await backend.deleteHuntLogEntry(e.clientId);
+        report.synced++;
+        await update((cur) => cur.filter((x) => !(x.id === e.id && x.deleted)));
+        continue;
+      }
       const ready = await uploadPhotos(backend, e);
       const res = await backend.upsertHuntLogEntry(toUpload(ready));
       if (res.conflict) {
@@ -294,7 +321,7 @@ export function startJournalSync(backend: Backend, triggers: SyncTriggers): () =
     if (timer) clearTimeout(timer);
     timer = null;
     if (stopped) return;
-    const waiting = (await journalEntries()).filter((e) => e.sync.status === 'failed' && !e.sync.conflict);
+    const waiting = (await allEntries()).filter((e) => e.sync.status === 'failed' && (e.deleted || !e.sync.conflict));
     if (!waiting.length || stopped) return;
     const next = Math.min(...waiting.map((e) => e.sync.nextAttemptAt));
     timer = setTimeout(run, Math.max(0, next - Date.now()));

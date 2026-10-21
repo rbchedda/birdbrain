@@ -7,6 +7,8 @@ import {
   backoffMs,
   editJournalEntry,
   journalIdle,
+  pendingDeletes,
+  removeJournalEntry,
   journalEntries,
   resetJournalForRestart,
   startJournalSync,
@@ -287,3 +289,54 @@ async function waitFor(check: () => Promise<boolean>, tries = 50) {
   }
   throw new Error('condition not met');
 }
+
+describe('server-side delete via tombstones', () => {
+  function deletableServer() {
+    const s = fakeServer();
+    let offline = false;
+    const deleted: string[] = [];
+    (s.backend as unknown as { deleteHuntLogEntry: (id: string) => Promise<void> }).deleteHuntLogEntry = jest.fn(async (id: string) => {
+      if (offline) throw new Error('Network request failed');
+      deleted.push(id);
+      s.rows.delete(id);
+    });
+    return { ...s, deleted, setDeleteOffline: (v: boolean) => (offline = v) };
+  }
+
+  it('hides a deleted entry at once, keeps a tombstone offline and across restarts, then deletes on the server', async () => {
+    const server = deletableServer();
+    const e = await addJournalEntry(draft('to delete'), me);
+    await syncJournal(server.backend);
+    expect(server.rows.has(e.clientId)).toBe(true);
+
+    server.setDeleteOffline(true);
+    await removeJournalEntry(e.id);
+    expect(await journalEntries()).toEqual([]);
+    await syncJournal(server.backend, { force: true });
+    expect((await pendingDeletes()).map((x) => x.sync.status)).toEqual(['failed']);
+
+    resetJournalForRestart();
+    expect(await journalEntries()).toEqual([]);
+    expect(await pendingDeletes()).toHaveLength(1);
+
+    server.setDeleteOffline(false);
+    await syncJournal(server.backend, { force: true });
+    expect(server.rows.has(e.clientId)).toBe(false);
+    expect(await pendingDeletes()).toEqual([]);
+    // Repeating the delete is harmless (idempotent).
+    await server.backend.deleteHuntLogEntry(e.clientId);
+  });
+
+  it('deletes an entry that never synced without uploading it first', async () => {
+    const server = deletableServer();
+    server.setOffline(true);
+    const e = await addJournalEntry(draft('never synced'), me);
+    await syncJournal(server.backend);
+    await removeJournalEntry(e.id);
+    server.setOffline(false);
+    await syncJournal(server.backend, { force: true });
+    expect(server.calls).toHaveLength(1); // only the failed upload, no re-upload
+    expect(server.deleted).toEqual([e.clientId]);
+    expect(await pendingDeletes()).toEqual([]);
+  });
+});
