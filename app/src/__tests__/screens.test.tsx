@@ -236,7 +236,7 @@ describe('Learn tab', () => {
 
 describe('After-the-hunt log', () => {
   it('shares a delayed post with per-place counts that stay private', async () => {
-    await open('/log?mode=post&placeId=stock-sample-1');
+    await open('/new/post?placeId=stock-sample-1');
     expect(await screen.findByText('Pheasant stocking (sample B)')).toBeTruthy();
     await fireEvent.press(screen.getByLabelText('More flushed'));
     await fireEvent.press(screen.getByLabelText('More flushed'));

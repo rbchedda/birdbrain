@@ -34,6 +34,8 @@ describe('Five-tab nav', () => {
     ['/learn', /Open today\?/],
     ['/profile', /Log a hunt/],
     ['/log', /Saves to your private Hunt Log/],
+    ['/new/log', /Saves to your private Hunt Log/],
+    ['/new/post', /Share with hunters\. Delayed/],
     ['/groups', /Species groups across Pennsylvania/],
     ['/new', /What are you adding\?/],
   ])('deep link %s opens its screen', async (url, text) => {
@@ -91,6 +93,12 @@ describe('Log hunt never creates a post', () => {
     const page = await backend.feed(null, 50);
     expect(page.posts.some((p) => p.caption === 'Chooser private hunt')).toBe(false);
     createPost.mockRestore();
+  });
+
+  it('/new/log ignores a mode=post param', async () => {
+    await open('/new/log?mode=post');
+    expect(await screen.findByText(/Saves to your private Hunt Log/)).toBeTruthy();
+    expect(screen.queryByText('Share (delayed)')).toBeNull();
   });
 
   it('a /log deep link with a place is still private', async () => {
