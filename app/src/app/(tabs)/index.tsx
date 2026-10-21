@@ -22,6 +22,7 @@ import { Tag } from '@/components/Tag';
 import { Button, Chip, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { loadPlaces, useAsync, usePlaces, useSession } from '@/data/hooks';
+import { PGC_DIGEST_URL } from '@/data/regs';
 import { describeStatus, placeToday, SEASON_YEAR } from '@/data/seasons';
 import { migratory, placeTypeLabel, speciesLabel, type Place, type PlaceType } from '@/data/types';
 import { formatDay, todayET } from '@/lib/time';
@@ -252,10 +253,18 @@ function PlaceDetails({
             <Text style={[ui.muted, status.kind === 'open' && { color: colors.text }]}>{describeStatus(status)}</Text>
           </View>
         ))}
-        <Text style={styles.fine}>
-          Legal hours: ½ hour before sunrise to sunset, computed for this spot. {SEASON_YEAR} statewide dates; WMU and
-          zone rules vary. Verify in the PGC Hunting & Trapping Digest.
+        <Text style={styles.fine} testID="place-hours-note">
+          Legal hours come from the official PGC hunting-hours table for this spot’s zone, with each species’ rules (the
+          same as the Open today card on Plan). Where the table has no time, check the digest. {SEASON_YEAR} statewide
+          dates; WMU and zone rules vary.
         </Text>
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel="Open the PGC Hunting & Trapping Digest"
+          onPress={() => Linking.openURL(PGC_DIGEST_URL).catch(() => {})}
+        >
+          <Text style={[styles.fine, { color: colors.accent }]}>Verify in the PGC Hunting & Trapping Digest</Text>
+        </Pressable>
       </View>
 
       {place.type === 'stocking' && (
