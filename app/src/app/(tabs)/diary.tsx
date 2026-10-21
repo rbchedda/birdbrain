@@ -9,6 +9,7 @@ import { backend } from '@/data';
 import { usePlaces, useSession } from '@/data/hooks';
 import { addJournalEntry } from '@/data/journal';
 import { allSpecies, placeTypeLabel, speciesLabel, type LocationVisibility, type Place, type PlaceCount, type Species } from '@/data/types';
+import { useShareToCommunity } from '@/lib/shareToCommunity';
 import { addDays, etParts, formatDay, formatTime, nextMidnightET, todayET } from '@/lib/time';
 import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
 
@@ -31,22 +32,28 @@ const emptyCount = (place: Place | null): PlaceCount => ({
   harvested: 0,
 });
 
-export default function LogScreen() {
+export default function DiaryScreen() {
   const { placeId } = useLocalSearchParams<{ placeId?: string }>();
   const { places } = usePlaces();
   const session = useSession();
+  const sharing = useShareToCommunity();
 
   const [species, setSpecies] = useState<Species | null>(null);
   const [huntedOn, setHuntedOn] = useState(todayET());
   const [counts, setCounts] = useState<PlaceCount[]>([]);
   const [caption, setCaption] = useState('');
-  const [audience, setAudience] = useState<'shared' | 'private'>('shared');
+  const [audience, setAudience] = useState<'shared' | 'private'>('private');
   const [location, setLocation] = useState<LocationVisibility>('blurred');
   const [toGroup, setToGroup] = useState(false);
   const [picking, setPicking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [done, setDone] = useState<'shared' | 'private' | null>(null);
+
+  // Delayed sharing is only offered after the user opts in to the community.
+  useEffect(() => {
+    if (!sharing) setAudience('private');
+  }, [sharing]);
 
   // Arriving from a place on the map pre-fills that place.
   useEffect(() => {
@@ -94,7 +101,7 @@ export default function LogScreen() {
       groupSlug: toGroup && species ? groupFor[species] : null,
     };
     try {
-      if (audience === 'private') {
+      if (audience === 'private' || !sharing) {
         await addJournalEntry(draft, { id: session?.userId ?? 'me', username: null, displayName: 'You' });
       } else {
         await backend.createPost(draft);
@@ -112,7 +119,7 @@ export default function LogScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScreenHeader title="Log a hunt" subtitle="After the hunt: what you saw, where, and who sees it." />
+      <ScreenHeader title="Diary" subtitle="Log every flush. Private unless you choose to share." />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         {done && (
           <Notice tone="success">
@@ -192,9 +199,16 @@ export default function LogScreen() {
 
         <SectionTitle>Who sees it</SectionTitle>
         <View style={ui.row}>
-          <Chip label="Share (delayed)" icon="time-outline" active={audience === 'shared'} onPress={() => setAudience('shared')} />
           <Chip label="Private" icon="lock-closed-outline" active={audience === 'private'} onPress={() => setAudience('private')} />
+          {sharing && (
+            <Chip label="Share (delayed)" icon="time-outline" active={audience === 'shared'} onPress={() => setAudience('shared')} />
+          )}
         </View>
+        {!sharing && (
+          <Text style={ui.muted}>
+            Sharing is off. Turn on “Share to community” in your profile to post delayed, blurred entries.
+          </Text>
+        )}
         {audience === 'private' ? (
           <Notice>Private: saved only on this device. Nothing is uploaded.</Notice>
         ) : (
