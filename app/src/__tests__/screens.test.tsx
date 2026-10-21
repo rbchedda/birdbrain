@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
+import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 
 import { backend } from '@/data';
+import { loadPlaces } from '@/data/hooks';
 import { samplePosts } from '@/data/posts';
 
 const appDir = './src/app';
@@ -55,12 +56,14 @@ describe('Map (Pheasant Planner)', () => {
       },
     ]);
     try {
+      await loadPlaces(true); // places are cached across screens; reload with the mock
       await open('/');
       await fireEvent.press(await screen.findByLabelText('State Game Lands 999'));
       expect(await screen.findByText(/Clinton County release weeks \(county totals, not this spot\)/)).toBeTruthy();
       expect(screen.queryByText(/Centre County release weeks/)).toBeNull();
     } finally {
       spy.mockRestore();
+      await act(() => loadPlaces(true));
     }
   });
 
