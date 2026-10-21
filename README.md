@@ -33,7 +33,7 @@ off email confirmation if testers should sign up without checking email.
 | --- | --- |
 | Map | Pheasant Planner: game lands, stocking points and dove fields from `places`; "open today" per species from the season calendar (`app/src/data/seasons.ts`), legal hours from sunrise/sunset, Sunday rules; stocking windows from `stocking_events` |
 | Feed | Posts from `posts` (RLS applies the next-day delay and blocks), paginated, with likes, comments, report and block |
-| Log | After-the-hunt post: species, bird counts per place, notes. Shared posts are delayed until midnight ET; private entries never leave the device |
+| Log | After-the-hunt post: species, bird counts per place, notes. Shared posts are delayed until the later of next-day midnight ET or 12 hours after posting; private entries never leave the device |
 | Crew | Species groups (`groups`, `group_members`) |
 | Learn | Season dates, legal hours and the privacy model |
 
@@ -62,7 +62,7 @@ To use a hosted project: `npx supabase login`, `npx supabase link`, then
 Privacy and safety model:
 
 - A post's exact location is stored in `post_locations`, which only the author can read. Everyone else sees `posts.blurred_geom`, a trigger-derived point snapped to a ~5 km grid. Saved posts and saved spots are owner-only.
-- Posts are hidden from other users until midnight Eastern on the day after they are created (`posts.public_after`, set by trigger). PA law bars using phones to alert another hunter to live game, so nothing in BirdBrain is real-time. Comments and likes follow the post's visibility.
+- Posts are hidden from other users until the later of midnight Eastern on the day after they are created or 12 hours after posting (`posts.public_after`, set by trigger via `min_public_delay()`). PA law bars using phones to alert another hunter to live game, so nothing in BirdBrain is real-time. Comments and likes follow the post's visibility.
 - Which places a hunter logged and the per-place bird counts live in `post_place_counts`, author-only like `post_locations`. A trigger copies only the totals into `posts.counts`.
 - Users can block each other (`user_blocks`, hides posts and comments both ways) and report posts, comments or profiles (`reports`). Moderators work the `reports` queue with the service role. Apple requires both for apps with user content, TestFlight included.
 

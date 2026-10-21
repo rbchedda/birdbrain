@@ -145,7 +145,7 @@ export default function FeedScreen() {
           </View>
         }
         ListEmptyComponent={
-          refreshing ? undefined : <Text style={ui.muted}>No posts yet. Log a hunt and it’ll show here after midnight.</Text>
+          refreshing ? undefined : <Text style={ui.muted}>No posts yet. Log a hunt and it’ll show here tomorrow (12h+ delay).</Text>
         }
         ListFooterComponent={loading ? <ActivityIndicator color={colors.accent} style={{ margin: space.lg }} /> : undefined}
         onEndReached={loadMore}

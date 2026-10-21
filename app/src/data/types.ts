@@ -60,7 +60,8 @@ export type LocationVisibility = 'hidden' | 'blurred';
 
 /**
  * private: kept on this device only, never uploaded.
- * delayed: posted, but others can't see it until midnight ET (posts.public_after).
+ * delayed: posted, but others can't see it until the later of next-day midnight ET or
+ *          12 hours after posting (posts.public_after, min_public_delay()).
  * public:  visible to signed-in users who haven't blocked or been blocked by the author.
  */
 export type Visibility = 'private' | 'delayed' | 'public';
