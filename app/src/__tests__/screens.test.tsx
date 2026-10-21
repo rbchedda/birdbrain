@@ -279,6 +279,6 @@ describe('After-the-hunt log', () => {
 
     await open('/profile');
     expect(await screen.findByText('Scouting only')).toBeTruthy();
-    expect(screen.getByText('Private · only on this device')).toBeTruthy();
+    expect(screen.getByText('Private · only you · backed up to your account')).toBeTruthy();
   });
 });

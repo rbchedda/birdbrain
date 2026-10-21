@@ -73,7 +73,7 @@ export default function ProfileScreen() {
       />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         {session === null ? (
-          <SignInPrompt why="Sign in to set up your profile. Your private log below stays on this device either way." />
+          <SignInPrompt why="Sign in to set up your profile. Private entries save on this device and back up to your account once you sign in." />
         ) : (
           <>
             <SectionTitle>About you</SectionTitle>

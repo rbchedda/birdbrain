@@ -59,7 +59,8 @@ export interface Author {
 export type LocationVisibility = 'hidden' | 'blurred';
 
 /**
- * private: kept on this device only, never uploaded.
+ * private: hunt log entry. Saved on the device first, then backed up to the owner's
+ *          account (owner-only RLS). Never shared or public.
  * delayed: posted, but others can't see it until the later of next-day midnight ET or
  *          12 hours after posting (posts.public_after, min_public_delay()).
  * public:  visible to signed-in users who haven't blocked or been blocked by the author.
