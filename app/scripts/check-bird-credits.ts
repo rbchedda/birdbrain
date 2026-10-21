@@ -32,9 +32,17 @@ export function checkCredits(files: string[], credits: BirdCredit[]): string[] {
   for (const c of credits) {
     const id = c.file || '(no file)';
     if (!images.includes(c.file)) errors.push(`${id}: listed in CREDITS.json but the file is missing`);
-    for (const k of FIELDS) if (k !== 'author' && typeof c[k] !== 'string') errors.push(`${id}: missing ${k}`);
+    for (const k of FIELDS) {
+      const v = c[k];
+      const optional = k === 'author' && /^PD/.test(c.license ?? '');
+      if (!optional && (typeof v !== 'string' || !v.trim())) errors.push(`${id}: missing ${k}`);
+    }
+    if (c.sourceUrl && !/^https:\/\//.test(c.sourceUrl)) errors.push(`${id}: sourceUrl must be an https URL`);
+    if (/^CC/.test(c.license ?? '') && !/^https:\/\/creativecommons\.org\/(licenses|publicdomain)\//.test(c.licenseUrl ?? '')) {
+      errors.push(`${id}: licenseUrl must be the creativecommons.org deed`);
+    }
+    if (c.retrieved && !/^\d{4}-\d{2}-\d{2}$/.test(c.retrieved)) errors.push(`${id}: retrieved must be YYYY-MM-DD`);
     if (!licenseAllowed(c.license ?? '')) errors.push(`${id}: license "${c.license}" is not allowed`);
-    if (/^CC-BY/.test(c.license ?? '') && !c.author?.trim()) errors.push(`${id}: CC BY license needs an author`);
     if (BANNED_HOSTS.test(c.sourceUrl ?? '')) errors.push(`${id}: eBird / Macaulay Library sources are not allowed`);
   }
   return errors;

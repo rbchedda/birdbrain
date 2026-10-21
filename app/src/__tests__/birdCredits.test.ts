@@ -3,6 +3,8 @@ declare const __dirname: string;
 declare function require(name: 'fs'): { readdirSync(path: string): string[] };
 const { readdirSync } = require('fs');
 
+import { birds } from '@/data/birds';
+
 import credits from '../../assets/birds/CREDITS.json';
 import { checkCredits, licenseAllowed, type BirdCredit } from '../../scripts/check-bird-credits';
 
@@ -36,12 +38,37 @@ describe('bird photo credits (lint, runs in npm test)', () => {
     expect(checkCredits(['mourning-dove.webp'], [{ ...ok, license: 'CC-BY-NC-4.0' }])).toEqual([
       'mourning-dove.webp: license "CC-BY-NC-4.0" is not allowed',
     ]);
-    expect(checkCredits(['mourning-dove.webp'], [{ ...ok, author: ' ' }])).toEqual(['mourning-dove.webp: CC BY license needs an author']);
+    expect(checkCredits(['mourning-dove.webp'], [{ ...ok, author: ' ' }])).toEqual(['mourning-dove.webp: missing author']);
     expect(checkCredits(['mourning-dove.webp'], [{ ...ok, license: 'PD', author: '' }])).toEqual([]);
     for (const url of ['https://ebird.org/species/moudov', 'https://search.macaulaylibrary.org/catalog?taxonCode=moudov', 'https://cdn.download.ams.birds.cornell.edu.macaulaylibrary.org/x']) {
       expect(checkCredits(['mourning-dove.webp'], [{ ...ok, sourceUrl: url }])).toEqual([
         'mourning-dove.webp: eBird / Macaulay Library sources are not allowed',
       ]);
+    }
+  });
+
+  it('requires every field, an https source and a creativecommons.org license URL for CC', () => {
+    for (const k of ['species', 'title', 'sourceUrl', 'license', 'licenseUrl', 'retrieved', 'changes'] as const) {
+      expect(checkCredits(['mourning-dove.webp'], [{ ...ok, [k]: '' }])).toContain(`mourning-dove.webp: missing ${k}`);
+    }
+    expect(checkCredits(['mourning-dove.webp'], [{ ...ok, sourceUrl: 'http://example.org/x' }])).toEqual([
+      'mourning-dove.webp: sourceUrl must be an https URL',
+    ]);
+    expect(checkCredits(['mourning-dove.webp'], [{ ...ok, licenseUrl: 'https://example.org/license' }])).toEqual([
+      'mourning-dove.webp: licenseUrl must be the creativecommons.org deed',
+    ]);
+    expect(checkCredits(['mourning-dove.webp'], [{ ...ok, retrieved: 'Oct 21' }])).toEqual(['mourning-dove.webp: retrieved must be YYYY-MM-DD']);
+  });
+
+  it('bundled credits: one per Guide photo slot, matching species, all from Commons with real authors', () => {
+    const list = credits as BirdCredit[];
+    const slots = birds.flatMap((b) => b.photos.map((p) => ({ file: p.file, species: b.key })));
+    const covered = slots.filter((s) => list.some((c) => c.file === s.file));
+    for (const s of covered) expect(list.find((c) => c.file === s.file)!.species).toBe(s.species);
+    for (const c of list) {
+      expect(slots.map((s) => s.file)).toContain(c.file);
+      expect(c.sourceUrl).toMatch(/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/);
+      expect(c.author.trim()).not.toBe('');
     }
   });
 
