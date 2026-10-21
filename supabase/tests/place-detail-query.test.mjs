@@ -59,3 +59,46 @@ describe('placeDetail query shape matches the current schema', () => {
     await assert.rejects(db.query(`select place_id from public.stocking_events`), /column "place_id" does not exist/);
   });
 });
+
+describe('placeDetail / listPlaces read the allocation county from place_stocking_county', () => {
+  let sglId;
+  before(async () => {
+    // A straddling game land: its point is in Centre (spatial), but PGC's allocation lists it under Clinton.
+    const { rows } = await db.query(
+      `insert into public.places (name, type, county, species, geom, source, source_id)
+       values ('State Game Lands 999', 'stocking', 'Centre', '{pheasant}',
+               extensions.st_geomfromtext('POINT(-77.6 41.0)', 4326), 'test', 'sgl:999')
+       returning id`,
+    );
+    sglId = rows[0].id;
+    await db.query(
+      `insert into public.stocking_properties (season, region, county, name, sgl, place_id, source)
+       values ('2026-27', 'Northcentral', 'Clinton', 'State Game Lands 999', 999, $1, 'test')`,
+      [sglId],
+    );
+  });
+
+  for (const role of ['anon', 'authenticated']) {
+    it(`straddling SGL resolves to the allocation county and its events, as ${role}`, async () => {
+      const uid = role === 'anon' ? null : alice;
+      const { rows } = await as(db, role, uid, (tx) => tx.query(select(q.stockingCounty, q.stockingCounty.key), [sglId]));
+      assert.deepEqual(rows, [{ county: 'Clinton', basis: 'allocation' }]);
+      const ev = await as(db, role, uid, (tx) => tx.query(select(q.stocking, q.stocking.filter, q.stocking.order), [rows[0].county]));
+      assert.deepEqual(ev.rows.map((r) => [r.county, r.cocks, r.hens]), [['Clinton', 99, 9]]);
+    });
+
+    it(`a point with no allocation row falls back to its spatial county, as ${role}`, async () => {
+      const uid = role === 'anon' ? null : alice;
+      const { rows } = await as(db, role, uid, (tx) => tx.query(select(q.stockingCounty, q.stockingCounty.key), [placeId]));
+      assert.deepEqual(rows, [{ county: 'Centre', basis: 'spatial' }]);
+    });
+
+    it(`listPlaces' view read (place_id, county) works for ${role}`, async () => {
+      const uid = role === 'anon' ? null : alice;
+      const { rows } = await as(db, role, uid, (tx) =>
+        tx.query(`select "place_id", "county" from public.${q.stockingCounty.table} order by "place_id"`),
+      );
+      assert.equal(rows.find((r) => r.place_id === sglId).county, 'Clinton');
+    });
+  }
+});

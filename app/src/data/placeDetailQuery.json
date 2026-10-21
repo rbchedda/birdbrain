@@ -1,8 +1,32 @@
 {
-  "place": { "table": "places", "columns": ["geom", "county", "type"], "key": "id" },
+  "place": {
+    "table": "places",
+    "columns": [
+      "geom",
+      "county",
+      "type"
+    ],
+    "key": "id"
+  },
+  "stockingCounty": {
+    "table": "place_stocking_county",
+    "columns": [
+      "county",
+      "basis"
+    ],
+    "key": "place_id"
+  },
   "stocking": {
     "table": "stocking_events",
-    "columns": ["id", "county", "release", "window_start", "window_end", "cocks", "hens"],
+    "columns": [
+      "id",
+      "county",
+      "release",
+      "window_start",
+      "window_end",
+      "cocks",
+      "hens"
+    ],
     "filter": "county",
     "order": "window_start"
   }
