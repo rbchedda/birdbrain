@@ -3,10 +3,10 @@ import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Tag } from '@/components/Tag';
 import { ui } from '@/components/ui';
-import { PGC_DIGEST_URL, REGS, regsFor } from '@/data/regs';
+import { PGC_DIGEST_URL, REGS, regsFor, SE_PARK_SUNDAY_NOTE } from '@/data/regs';
 import { describeStatus, speciesStatus } from '@/data/seasons';
 import { allSpecies, speciesLabel, type Species } from '@/data/types';
-import { pgcHoursZone, type HuntingHoursRow } from '@/lib/sun';
+import { officialHours, pgcHoursZone } from '@/lib/sun';
 import { formatDay, todayET, weekdayOf } from '@/lib/time';
 import { colors, fonts, space } from '@/theme/tokens';
 
@@ -22,13 +22,10 @@ export function OpenToday({
   at = DEFAULT_AT,
   now = new Date(),
   species = allSpecies,
-  lookup,
 }: {
   at?: { lat: number; lng: number };
   now?: Date;
   species?: Species[];
-  /** Today's row from the ingested PGC hunting-hours lookup, when available. */
-  lookup?: HuntingHoursRow | null;
 }) {
   const ymd = todayET(now);
   const zone = pgcHoursZone(at.lng);
@@ -36,14 +33,28 @@ export function OpenToday({
 
   return (
     <View style={ui.card} testID="open-today">
+      <Text style={styles.disclaimer} testID="open-today-disclaimer">
+        Unofficial summary, always verify with the PGC Hunting & Trapping Digest
+      </Text>
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel="Open the PGC Hunting & Trapping Digest"
+        onPress={() => Linking.openURL(PGC_DIGEST_URL)}
+        style={styles.link}
+      >
+        <Ionicons name="open-outline" size={16} color={colors.accent} />
+        <Text style={styles.linkText}>PGC Hunting & Trapping Digest</Text>
+      </Pressable>
       <Text style={styles.title}>Open today?</Text>
       <Text style={ui.muted}>
         {formatDay(ymd)}
-        {sunday ? ' (Sunday)' : ''} · Hours for PGC zone {zone.zone}
-        {zone.minutesPlus ? ` (+${zone.minutesPlus} min)` : ''}
+        {sunday ? ' (Sunday)' : ''} ·{' '}
+        {zone
+          ? `Hours for PGC zone ${zone.zone}${zone.minutesPlus ? ` (+${zone.minutesPlus} min)` : ''}`
+          : 'Outside the PGC hours zones: check the digest for hours'}
       </Text>
       {species.map((sp) => {
-        const status = speciesStatus(sp, ymd, at, lookup);
+        const status = speciesStatus(sp, ymd, at);
         const regs = regsFor(sp);
         return (
           <View key={sp} style={styles.row} testID={`open-today-${sp}`}>
@@ -59,21 +70,10 @@ export function OpenToday({
           </View>
         );
       })}
-      <Text style={styles.disclaimer} testID="open-today-disclaimer">
-        Verify with the PGC digest before you hunt. Seasons, hours and limits here are entered by hand and may be wrong.
-      </Text>
+      <Text style={ui.muted}>Sunday exception: {SE_PARK_SUNDAY_NOTE}</Text>
       <Text style={ui.muted} testID="open-today-asof">
-        Regulations as of {formatDay(REGS.asOf)}, {REGS.asOf.slice(0, 4)} (v{REGS.version}).
+        {`Regulations v${REGS.version}, as of ${formatDay(REGS.asOf)}, ${REGS.asOf.slice(0, 4)}. Hours from the official PGC table (${officialHours.version}).`}
       </Text>
-      <Pressable
-        accessibilityRole="link"
-        accessibilityLabel="Open the PGC Hunting & Trapping Digest"
-        onPress={() => Linking.openURL(PGC_DIGEST_URL)}
-        style={styles.link}
-      >
-        <Ionicons name="open-outline" size={16} color={colors.accent} />
-        <Text style={styles.linkText}>PGC Hunting & Trapping Digest</Text>
-      </Pressable>
     </View>
   );
 }
