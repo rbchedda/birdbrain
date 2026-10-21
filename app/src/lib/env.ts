@@ -8,3 +8,16 @@ export const env = {
 };
 
 export const hasSupabase = Boolean(env.supabaseUrl && env.supabaseKey);
+
+/**
+ * Legal links shown on sign-in and profile.
+ * TODO(P0.6): replace these placeholders with the real hosted privacy policy
+ * and terms of service before store submission.
+ */
+export const legal = {
+  privacyPolicyUrl: 'https://example.com/birdbrain/privacy-TODO',
+  termsUrl: 'https://example.com/birdbrain/terms-TODO',
+};
+
+/** Minimum age to use BirdBrain (COPPA / store policy). */
+export const MIN_AGE = 13;
