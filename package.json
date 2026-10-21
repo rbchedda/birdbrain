@@ -3,10 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "db:test": "node --test 'supabase/tests/*.test.mjs'",
+    "db:test": "node --test --test-concurrency=2 'supabase/tests/*.test.mjs'",
     "ingest": "node ingest/arcgis.mjs",
     "ingest:describe": "node ingest/arcgis.mjs --describe",
-    "test": "npm run db:test && node --test 'ingest/*.test.mjs' && npm --prefix app test"
+    "test": "npm run db:test && node --test --test-concurrency=2 'ingest/*.test.mjs' && npm --prefix app test"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.10",
