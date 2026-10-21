@@ -8,7 +8,7 @@ create table public.hunt_log_entries (
   species public.species,
   caption text not null default '' check (char_length(caption) <= 2000),
   hunted_on date,
-  place_counts jsonb not null default '[]'::jsonb,
+  place_counts jsonb not null default '[]'::pg_catalog.jsonb,
   version integer not null default 1,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -28,13 +28,14 @@ create policy hunt_log_update_own on public.hunt_log_entries
 create policy hunt_log_delete_own on public.hunt_log_entries
   for delete to authenticated using (owner_id = auth.uid());
 
--- Owner and client_id never change after insert.
-create function public.hunt_log_entries_guard() returns trigger language plpgsql as $$
+-- Owner and client_id never change after insert. Functions run with an empty
+-- search_path and fully qualified names.
+create function public.hunt_log_entries_guard() returns trigger language plpgsql set search_path = '' as $$
 begin
   if new.owner_id <> old.owner_id or new.client_id <> old.client_id then
     raise exception 'owner_id and client_id are immutable';
   end if;
-  new.updated_at := now();
+  new.updated_at := pg_catalog.now();
   return new;
 end $$;
 create trigger hunt_log_entries_guard before update on public.hunt_log_entries
@@ -52,10 +53,10 @@ create function public.upsert_hunt_log_entry(
   p_hunted_on date,
   p_place_counts jsonb
 ) returns table (version integer, conflict boolean)
-language plpgsql security invoker set search_path = public as $$
+language plpgsql security invoker set search_path = '' as $$
 declare
   cur public.hunt_log_entries;
-  same boolean;
+  same pg_catalog.bool;
 begin
   if auth.uid() is null then
     raise exception 'not signed in' using errcode = '42501';
@@ -64,7 +65,7 @@ begin
   select * into cur from public.hunt_log_entries e where e.client_id = p_client_id for update;
   if not found then
     insert into public.hunt_log_entries (owner_id, client_id, species, caption, hunted_on, place_counts)
-    values (auth.uid(), p_client_id, p_species, coalesce(p_caption, ''), p_hunted_on, coalesce(p_place_counts, '[]'::jsonb))
+    values (auth.uid(), p_client_id, p_species, coalesce(p_caption, ''), p_hunted_on, coalesce(p_place_counts, '[]'::pg_catalog.jsonb))
     on conflict (client_id) do nothing;
     if found then
       return query select 1, false;
@@ -80,14 +81,14 @@ begin
   same := cur.species is not distinct from p_species
     and cur.caption = coalesce(p_caption, '')
     and cur.hunted_on is not distinct from p_hunted_on
-    and cur.place_counts = coalesce(p_place_counts, '[]'::jsonb);
+    and cur.place_counts = coalesce(p_place_counts, '[]'::pg_catalog.jsonb);
 
   if same then
     return query select cur.version, false;
   elsif p_base_version is not null and p_base_version = cur.version then
     update public.hunt_log_entries e
        set species = p_species, caption = coalesce(p_caption, ''), hunted_on = p_hunted_on,
-           place_counts = coalesce(p_place_counts, '[]'::jsonb), version = cur.version + 1
+           place_counts = coalesce(p_place_counts, '[]'::pg_catalog.jsonb), version = cur.version + 1
      where e.id = cur.id;
     return query select cur.version + 1, false;
   else
