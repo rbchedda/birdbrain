@@ -75,6 +75,22 @@ describe('hidden pending review after N reports', () => {
     assert.equal(await sees(alice, 'comments', cid), true);
   });
 
+  it('does not count guest (anonymous) reporters toward the threshold', async () => {
+    const guests = ['f1', 'f2', 'f3'].map(u);
+    for (const g of guests) await db.query('insert into auth.users (id, email, is_anonymous) values ($1, null, true)', [g]);
+    const id = await post(alice, 'guests reported this');
+    await age(id);
+    for (const g of guests) await report(g, 'post_id', id);
+    assert.equal(await sees(erin, 'posts', id), true, '3 guest reports must not hide');
+    const { rows } = await db.query('select count(*)::int n from public.reports where post_id = $1', [id]);
+    assert.equal(rows[0].n, 3, 'guest reports are still stored');
+    await report(bob, 'post_id', id);
+    await report(carol, 'post_id', id);
+    assert.equal(await sees(erin, 'posts', id), true, '2 real + 3 guest must not hide');
+    await report(dave, 'post_id', id);
+    assert.equal(await sees(erin, 'posts', id), false, '3 real reporters hide it');
+  });
+
   it('does not let clients set or clear hidden_at', async () => {
     const id = await post(alice, 'mine');
     await assert.rejects(run(alice, `update public.posts set hidden_at = null where id = $1`, [id]), /permission denied/);
