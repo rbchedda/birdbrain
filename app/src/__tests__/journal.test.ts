@@ -242,6 +242,42 @@ describe('offline-safe hunt log', () => {
     expect(await b.upsertHuntLogEntry({ ...up, caption: 'c', baseVersion: 1 })).toEqual({ version: 2, conflict: true });
     expect(Object.keys(JSON.parse((await AsyncStorage.getItem(HUNT_LOG_KEY))!))).toEqual(['c1']);
   });
+
+  it('never drops queued entries across failed uploads and app restarts', async () => {
+    const server = fakeServer();
+    let t = 5_000_000;
+    const now = () => t;
+    server.setOffline(true);
+    const saved = [];
+    for (let i = 0; i < 20; i++) saved.push(await addJournalEntry(draft(`airplane ${i}`), me));
+
+    // Upload fails while offline.
+    await syncJournal(server.backend, { now });
+    expect((await journalEntries()).every((e) => e.sync.status === 'failed')).toBe(true);
+
+    // App restarts (only device storage survives), and fails again.
+    resetJournalForRestart();
+    expect((await journalEntries()).map((e) => e.clientId).sort()).toEqual(saved.map((e) => e.clientId).sort());
+    t += backoffMs(1);
+    await syncJournal(server.backend, { now });
+    resetJournalForRestart();
+    const afterTwoFailures = await journalEntries();
+    expect(afterTwoFailures).toHaveLength(20);
+    expect(afterTwoFailures.every((e) => e.sync.status === 'failed' && e.sync.attempts === 2)).toBe(true);
+    expect(server.rows.size).toBe(0);
+
+    // Back online after another restart: everything syncs exactly once.
+    resetJournalForRestart();
+    server.setOffline(false);
+    t += backoffMs(2);
+    await syncJournal(server.backend, { now });
+    await syncJournal(server.backend, { now, force: true });
+    const final = await journalEntries();
+    expect(final).toHaveLength(20);
+    expect(final.every((e) => e.sync.status === 'synced')).toBe(true);
+    expect(server.rows.size).toBe(20);
+    expect(final.map((e) => e.caption).sort()).toEqual(saved.map((e) => e.caption).sort());
+  });
 });
 
 async function waitFor(check: () => Promise<boolean>, tries = 50) {
