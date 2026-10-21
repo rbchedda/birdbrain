@@ -176,3 +176,87 @@ export function initials(a: Pick<Author, 'displayName' | 'username'>) {
   const words = name.split(/[\s_.]+/).filter(Boolean);
   return ((words[0]?.[0] ?? '?') + (words[1]?.[0] ?? '')).toUpperCase();
 }
+
+// --- Rich private diary entries (spec §3.2) --------------------------------
+
+export const allCoverTypes = ['grass', 'cut_corn', 'standing_corn', 'brush', 'young_forest', 'timber', 'marsh', 'field_edge'] as const;
+export type CoverType = (typeof allCoverTypes)[number];
+export const coverLabel: Record<CoverType, string> = {
+  grass: 'Grass',
+  cut_corn: 'Cut corn',
+  standing_corn: 'Standing corn',
+  brush: 'Brush',
+  young_forest: 'Young forest',
+  timber: 'Timber',
+  marsh: 'Marsh',
+  field_edge: 'Field edge',
+};
+
+/** A dog in the hunter's saved roster (data/dogs.ts). */
+export interface Dog {
+  id: string;
+  name: string;
+  breed: string | null;
+}
+
+/** One dog's work on one hunt. The name is copied so the entry reads the same if the dog is removed. */
+export interface DiaryDog {
+  dogId: string;
+  name: string;
+  points: number;
+  flushes: number;
+  retrieves: number;
+}
+
+/** Birds bagged for one species. Roosters/hens only apply to pheasant. */
+export interface DiaryBirds {
+  species: Species;
+  count: number;
+  roosters?: number;
+  hens?: number;
+}
+
+/** Entered by hand for now; auto weather comes later (feat/auto-weather). */
+export interface DiaryWeather {
+  tempF: number | null;
+  windMph: number | null;
+  windDir: string | null;
+  sky: string | null;
+  precip: string | null;
+}
+
+/** A private photo. localUri until uploaded; path is <user_id>/<entry client_id>/<photo id>.jpg in the private diary-photos bucket. */
+export interface DiaryPhoto {
+  id: string;
+  localUri?: string | null;
+  path: string | null;
+}
+
+export interface DiaryDetails {
+  /** Local start time, "HH:MM". */
+  startTime: string | null;
+  species: Species[];
+  dogs: DiaryDog[];
+  cover: CoverType[];
+  hours: number | null;
+  miles: number | null;
+  flushes: number;
+  shots: number;
+  birds: DiaryBirds[];
+  weather: DiaryWeather | null;
+  photos: DiaryPhoto[];
+}
+
+export const emptyDiaryDetails = (): DiaryDetails => ({
+  startTime: null,
+  species: [],
+  dogs: [],
+  cover: [],
+  hours: null,
+  miles: null,
+  flushes: 0,
+  shots: 0,
+  birds: [],
+  weather: null,
+  photos: [],
+});
