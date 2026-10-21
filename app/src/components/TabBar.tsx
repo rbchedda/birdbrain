@@ -8,10 +8,10 @@ import { colors, fonts, touchTarget } from '@/theme/tokens';
 type IconName = keyof typeof Ionicons.glyphMap;
 
 const icons: Record<string, { on: IconName; off: IconName }> = {
-  index: { on: 'map', off: 'map-outline' },
-  feed: { on: 'newspaper', off: 'newspaper-outline' },
+  map: { on: 'map', off: 'map-outline' },
+  learn: { on: 'calendar', off: 'calendar-outline' },
   groups: { on: 'people', off: 'people-outline' },
-  learn: { on: 'book', off: 'book-outline' },
+  more: { on: 'ellipsis-horizontal-circle', off: 'ellipsis-horizontal-circle-outline' },
 };
 
 export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
@@ -20,6 +20,9 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   return (
     <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
       {state.routes.map((route, index) => {
+        // Routes with href: null (redirect home, Community feed) stay off the bar.
+        const options = descriptors[route.key].options as { href?: unknown };
+        if (options.href === null) return null;
         const focused = state.index === index;
         const label = descriptors[route.key].options.title ?? route.name;
 
@@ -28,12 +31,12 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
           if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
         };
 
-        if (route.name === 'log') {
+        if (route.name === 'diary') {
           return (
             <View key={route.key} style={styles.item}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Log a hunt or harvest"
+                accessibilityLabel="Diary: log a hunt"
                 accessibilityState={{ selected: focused }}
                 onPress={onPress}
                 style={({ pressed }) => [styles.logButton, pressed && { opacity: 0.85 }]}
@@ -45,7 +48,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
           );
         }
 
-        const icon = icons[route.name] ?? icons.index;
+        const icon = icons[route.name] ?? icons.map;
         return (
           <Pressable
             key={route.key}

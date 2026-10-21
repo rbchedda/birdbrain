@@ -16,7 +16,7 @@ export default function SignInScreen() {
   const [busy, setBusy] = useState<'email' | 'guest' | null>(null);
   const [message, setMessage] = useState<{ tone: 'error' | 'success'; text: string }>();
 
-  const done = () => (router.canGoBack() ? router.back() : router.replace('/feed'));
+  const done = () => (router.canGoBack() ? router.back() : router.replace('/diary'));
 
   const submit = async () => {
     setBusy('email');
