@@ -51,7 +51,15 @@ export function PhotoSlot({
           <Text style={styles.slotText}>PHOTO</Text>
         </View>
       )}
-      <Text style={styles.caption} numberOfLines={2}>
+      <Text
+        style={styles.caption}
+        numberOfLines={2}
+        accessibilityRole="link"
+        accessibilityLabel={`Photo credits: ${creditLine(file)}`}
+        accessibilityHint="Opens the photo credits"
+        onPress={() => router.push("/guide/credits")}
+        testID={`caption-${file}`}
+      >
         {creditLine(file)}
       </Text>
     </View>
