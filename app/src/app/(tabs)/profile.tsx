@@ -69,9 +69,9 @@ export default function ProfileScreen() {
       <ScreenHeader
         title={profile.data ? displayName(profile.data) : 'Profile'}
         subtitle={backend.mode === 'sample' ? 'Sample mode: nothing leaves this device.' : session?.email ?? (session?.anonymous ? 'Guest account' : undefined)}
-        back
       />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+        <Button label="Log a hunt" icon="add" variant="primary" onPress={() => router.push('/new/log')} />
         {session === null ? (
           <SignInPrompt why="Sign in to set up your profile. Your private log below stays on this device either way." />
         ) : (
