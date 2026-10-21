@@ -31,6 +31,14 @@ describe('Map (Pheasant Planner)', () => {
     expect(screen.getByText('Dove')).toBeTruthy();
   });
 
+  it('explains legal hours from the official PGC table and links the digest', async () => {
+    await open('/');
+    await fireEvent.press(await screen.findByLabelText('Pheasant stocking (sample B)'));
+    expect(await screen.findByTestId('place-hours-note')).toHaveTextContent(/official PGC hunting-hours table/);
+    expect(screen.queryByText(/computed for this spot/)).toBeNull();
+    expect(screen.getByRole('link', { name: 'Open the PGC Hunting & Trapping Digest' })).toBeTruthy();
+  });
+
   it('shows stocking windows for stocking points', async () => {
     await open('/');
     await fireEvent.press(await screen.findByLabelText('Pheasant stocking (sample B)'));
