@@ -72,6 +72,16 @@ describe('bird photo credits (lint, runs in npm test)', () => {
     }
   });
 
+  it('PD-USFWS (US federal work) is allowed but still needs an author and a licenseUrl', () => {
+    const fws = { ...ok, license: 'PD-USFWS', author: 'Steve Maslowski/USFWS', licenseUrl: 'https://commons.wikimedia.org/wiki/Template:PD-USGov-FWS' };
+    expect(licenseAllowed('PD-USFWS')).toBe(true);
+    expect(checkCredits(['mourning-dove.webp'], [fws])).toEqual([]);
+    expect(checkCredits(['mourning-dove.webp'], [{ ...fws, author: '' }])).toEqual(['mourning-dove.webp: missing author']);
+    expect(checkCredits(['mourning-dove.webp'], [{ ...fws, licenseUrl: '' }])).toContain('mourning-dove.webp: missing licenseUrl');
+    const bob = (credits as BirdCredit[]).find((c) => c.file === 'northern-bobwhite.webp')!;
+    expect(bob).toMatchObject({ license: 'PD-USFWS', author: 'Steve Maslowski/USFWS' });
+  });
+
   it('ignores non-image files such as CREDITS.json', () => {
     expect(checkCredits(['CREDITS.json', '.gitkeep'], [])).toEqual([]);
   });

@@ -17,7 +17,9 @@ export interface BirdCredit {
 }
 
 export const IMAGE_EXT = /\.(webp|png|jpe?g)$/i;
-const ALLOWED = [/^PD$/, /^PD-USGov-FWS$/, /^CC0-1\.0$/, /^CC-BY-\d/, /^CC-BY-SA-\d/];
+/** US federal government works (public domain, 17 U.S.C. § 105): an author/agency credit is still required. */
+const US_FEDERAL_PD = /^PD-(USFWS|USGov-FWS)$/;
+const ALLOWED = [/^PD$/, US_FEDERAL_PD, /^CC0-1\.0$/, /^CC-BY-\d/, /^CC-BY-SA-\d/];
 const BANNED_HOSTS = /(^|\/\/|\.)(ebird\.org|macaulaylibrary\.org)/i;
 const FIELDS: (keyof BirdCredit)[] = ['file', 'species', 'title', 'sourceUrl', 'author', 'license', 'licenseUrl', 'retrieved', 'changes'];
 
@@ -34,12 +36,15 @@ export function checkCredits(files: string[], credits: BirdCredit[]): string[] {
     if (!images.includes(c.file)) errors.push(`${id}: listed in CREDITS.json but the file is missing`);
     for (const k of FIELDS) {
       const v = c[k];
-      const optional = k === 'author' && /^PD/.test(c.license ?? '');
+      const optional = k === 'author' && c.license === 'PD';
       if (!optional && (typeof v !== 'string' || !v.trim())) errors.push(`${id}: missing ${k}`);
     }
     if (c.sourceUrl && !/^https:\/\//.test(c.sourceUrl)) errors.push(`${id}: sourceUrl must be an https URL`);
     if (/^CC/.test(c.license ?? '') && !/^https:\/\/creativecommons\.org\/(licenses|publicdomain)\//.test(c.licenseUrl ?? '')) {
       errors.push(`${id}: licenseUrl must be the creativecommons.org deed`);
+    }
+    if (US_FEDERAL_PD.test(c.license ?? '') && !/^https:\/\//.test(c.licenseUrl ?? '')) {
+      errors.push(`${id}: licenseUrl must link the public-domain basis`);
     }
     if (c.retrieved && !/^\d{4}-\d{2}-\d{2}$/.test(c.retrieved)) errors.push(`${id}: retrieved must be YYYY-MM-DD`);
     if (!licenseAllowed(c.license ?? '')) errors.push(`${id}: license "${c.license}" is not allowed`);
