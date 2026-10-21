@@ -7,7 +7,9 @@ import { ScreenHeader } from '@/components/Screen';
 import { Button, Chip, Notice, SectionTitle, Stepper, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { useJournal, usePlaces, useSession } from '@/data/hooks';
+import { DiaryForm, diaryDraft } from '@/app/diary/new';
 import { addJournalEntry, type JournalEntry } from '@/data/journal';
+import { emptyDiaryDetails } from '@/data/types';
 import { allSpecies, placeTypeLabel, speciesLabel, type LocationVisibility, type Place, type PlaceCount, type Species } from '@/data/types';
 import { addDays, etParts, formatDay, formatTime, publicAfterET, todayET } from '@/lib/time';
 import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
@@ -60,6 +62,8 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [done, setDone] = useState<'shared' | 'private' | null>(null);
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const [formKey, setFormKey] = useState(0);
 
   // Arriving from a place on the map pre-fills that place.
   useEffect(() => {
@@ -122,6 +126,47 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
   };
 
   const empty = !caption.trim() && counts.length === 0;
+
+  // Log hunt: the rich private diary form (spec §3.2). Post keeps the delayed-share form below.
+  if (!isPost) {
+    const place = places.find((p) => p.id === placeId);
+    return (
+      <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScreenHeader title="Log hunt" subtitle="Saves to your private Hunt Log. Not a post." />
+        <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+          {savedId && (
+            <Notice tone="success">Saved to your private log on this device. It backs up to your account when you’re online.</Notice>
+          )}
+          {savedId && (
+            <View style={styles.row}>
+              <Button label="Open entry" onPress={() => router.push({ pathname: '/diary/[id]', params: { id: savedId } })} style={{ flex: 1 }} />
+              <Button label="Log another" onPress={() => setSavedId(null)} style={{ flex: 1 }} />
+            </View>
+          )}
+          {!savedId && (
+            <DiaryForm
+              key={`${formKey}-${place?.id ?? ""}`}
+              initial={{
+                huntedOn: todayET(),
+                place: place?.name ?? '',
+                notes: '',
+                details: { ...emptyDiaryDetails(), species: place && speciesForPlace(place) ? [speciesForPlace(place)!] : [] },
+              }}
+              submitLabel="Save to diary"
+              onSubmit={async (v) => {
+                const { draft, details } = diaryDraft(v);
+                if (place && draft.counts[0]?.placeName === place.name) draft.counts[0].placeId = place.id;
+                const e = await addJournalEntry(draft, { id: session?.userId ?? 'me', username: null, displayName: 'You' }, details);
+                setSavedId(e.id);
+                setFormKey((k) => k + 1);
+              }}
+            />
+          )}
+          <PrivateLog />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -283,7 +328,14 @@ function PrivateLog() {
       {data.slice(0, 20).map((e) => {
         const s = syncLabel(e, signedOut);
         return (
-          <View key={e.id} style={ui.card} testID={`journal-${e.clientId}`}>
+          <Pressable
+            key={e.id}
+            accessibilityRole="button"
+            accessibilityHint="Opens the diary entry"
+            onPress={() => router.push({ pathname: '/diary/[id]', params: { id: e.id } })}
+            style={ui.card}
+            testID={`journal-${e.clientId}`}
+          >
             <Text style={styles.placeName} numberOfLines={1}>
               {e.caption || (e.species ? speciesLabel[e.species] : 'Hunt')} {e.huntedOn ? ` · ${formatDay(e.huntedOn)}` : ''}
             </Text>
@@ -291,7 +343,7 @@ function PrivateLog() {
               <Ionicons name={s.icon} size={16} color={s.color} />
               <Text style={[ui.muted, { color: s.color }]}>{s.text}</Text>
             </View>
-          </View>
+          </Pressable>
         );
       })}
       {stuck && <Button label="Retry backup now" icon="refresh" onPress={() => void retry()} />}

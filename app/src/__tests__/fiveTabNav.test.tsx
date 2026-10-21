@@ -69,7 +69,7 @@ describe('＋ chooser', () => {
     await fireEvent.press(await screen.findByLabelText('Log hunt'));
     expect(await screen.findByText(/Saves to your private Hunt Log/)).toBeTruthy();
     expect(screen.queryByText('Share (delayed)')).toBeNull();
-    expect(screen.getByText('Save privately')).toBeTruthy();
+    expect(screen.getByText('Save to diary')).toBeTruthy();
   });
 
   it('Post routes to the delayed post flow', async () => {
@@ -94,7 +94,7 @@ describe('Log hunt never creates a post', () => {
     await open('/new');
     await fireEvent.press(await screen.findByLabelText('Log hunt'));
     await fireEvent.changeText(await screen.findByLabelText('Notes'), 'Chooser private hunt');
-    await fireEvent.press(screen.getByText('Save privately'));
+    await fireEvent.press(screen.getByText('Save to diary'));
     expect(await screen.findByText(/Saved to your private log on this device/)).toBeTruthy();
 
     expect(createPost).not.toHaveBeenCalled();
@@ -113,9 +113,9 @@ describe('Log hunt never creates a post', () => {
   it('a /log deep link with a place is still private', async () => {
     const createPost = jest.spyOn(backend, 'createPost');
     await open('/log?placeId=stock-sample-1');
-    expect(await screen.findByText('Pheasant stocking (sample B)')).toBeTruthy();
+    expect(await screen.findByDisplayValue('Pheasant stocking (sample B)')).toBeTruthy();
     expect(screen.queryByText('Share (delayed)')).toBeNull();
-    await fireEvent.press(screen.getByText('Save privately'));
+    await fireEvent.press(screen.getByText('Save to diary'));
     expect(await screen.findByText(/Saved to your private log on this device/)).toBeTruthy();
     expect(createPost).not.toHaveBeenCalled();
     createPost.mockRestore();
