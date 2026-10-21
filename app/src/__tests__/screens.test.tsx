@@ -47,6 +47,23 @@ describe('Map (Pheasant Planner)', () => {
     expect(screen.getByText(/county totals, not this spot/)).toBeTruthy();
   });
 
+  it('straddling game land: release weeks follow the allocation county, header keeps the spatial county', async () => {
+    const spy = jest.spyOn(backend, 'listPlaces').mockResolvedValue([
+      {
+        id: 'sgl-straddle', name: 'State Game Lands 999', type: 'stocking', county: 'Centre', stockingCounty: 'Clinton',
+        species: ['pheasant'], center: { lng: -77.6, lat: 41.0 }, acres: null,
+      },
+    ]);
+    try {
+      await open('/');
+      await fireEvent.press(await screen.findByLabelText('State Game Lands 999'));
+      expect(await screen.findByText(/Clinton County release weeks \(county totals, not this spot\)/)).toBeTruthy();
+      expect(screen.queryByText(/Centre County release weeks/)).toBeNull();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it('filters by place type and searches by county', async () => {
     await open('/');
     await screen.findByText('6 public spots');

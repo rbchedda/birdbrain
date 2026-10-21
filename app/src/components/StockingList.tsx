@@ -12,6 +12,7 @@ import {
   type PlannerRow,
   type PlannerSort,
   type StockingWindow,
+  stockingCountyOf,
 } from '@/data/places';
 import { describeStatus, placeToday } from '@/data/seasons';
 import type { Place } from '@/data/types';
@@ -102,7 +103,7 @@ export function StockingList({
           <Pressable key={place.id} accessibilityRole="button" accessibilityLabel={place.name} onPress={() => onPick(place)} style={styles.row}>
             <Text style={styles.name}>{place.name}</Text>
             <Text style={ui.muted}>
-              {place.county ? `${place.county} County` : 'County not listed'}
+              {stockingCountyOf(place) ? `${stockingCountyOf(place)} County` : 'County not listed'}
               {km(d)}
               {status ? ` · ${describeStatus(status, now)}` : ''}
             </Text>
@@ -140,7 +141,7 @@ function StockingRow({ row, onPress }: { row: PlannerRow; onPress: () => void })
       <Text style={ui.body}>
         {next
           ? `${windowText(next)} · ${next.cocks} roosters, ${next.hens} hens (county total)`
-          : place.county
+          : stockingCountyOf(place)
             ? 'No more PGC release weeks this season.'
             : 'Release weeks are listed by county; check PGC’s allocation page.'}
       </Text>
