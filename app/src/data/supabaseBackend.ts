@@ -3,7 +3,8 @@ import type { Session as AuthSession, SupabaseClient } from '@supabase/supabase-
 import { parseGeometry, parsePoint, toEwkt } from '@/lib/geo';
 
 import { NotSignedInError, postKind, type Backend, type Session } from './backend';
-import type { Author, BirdCounts, Comment, Place, PlaceType, Post, Profile, Species } from './types';
+import placeDetailQuery from './placeDetailQuery.json';
+import type { Author, BirdCounts, Comment, Place, PlaceType, Post, Profile, Species, StockingEvent } from './types';
 
 // posts -> profiles is ambiguous to PostgREST (likes, saves and comments join
 // them too), so embeds name the foreign key column.
@@ -164,20 +165,25 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
     },
 
     async placeDetail(id) {
-      const [events, geom] = await Promise.all([
-        sb.from('stocking_events').select('id, place_id, window_start, window_end, counts').eq('place_id', id).order('window_start'),
-        sb.from('places').select('geom').eq('id', id).maybeSingle(),
-      ]);
-      return {
-        stocking: (check(events) ?? []).map((r: Row) => ({
-          id: r.id,
-          placeId: r.place_id,
-          windowStart: r.window_start,
-          windowEnd: r.window_end,
-          counts: r.counts ?? {},
-        })),
-        outline: parseGeometry(check(geom)?.geom),
-      };
+      // Query shape lives in placeDetailQuery.json so supabase/tests can run it against the migrations.
+      const { place: pq, stocking: sq } = placeDetailQuery;
+      const place = check(await sb.from(pq.table).select(pq.columns.join(', ')).eq(pq.key, id).maybeSingle()) as Row | null;
+      let stocking: StockingEvent[] = [];
+      // stocking_events is per county (PGC publishes county allocations), so match on the place's county.
+      if (place?.type === 'stocking' && place.county) {
+        const events = await sb.from(sq.table).select(sq.columns.join(', ')).eq(sq.filter, place.county).order(sq.order);
+        // A stocking read failure must not cost the outline.
+        stocking = ((events.error ? [] : events.data) as Row[])
+          .filter((r) => r.cocks + r.hens > 0)
+          .map((r) => ({
+            id: r.id,
+            placeId: id,
+            windowStart: r.window_start,
+            windowEnd: r.window_end,
+            counts: { roosters: r.cocks, hens: r.hens },
+          }));
+      }
+      return { stocking, outline: parseGeometry(place?.geom) };
     },
 
     async savedPlaceIds() {
