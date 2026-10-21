@@ -94,6 +94,8 @@ export interface Backend {
   upsertHuntLogEntry(entry: HuntLogUpload): Promise<HuntLogUpsertResult>;
   /** Upload a private diary photo (idempotent by path); returns its storage path. */
   uploadDiaryPhoto(clientId: string, photo: { id: string; localUri: string }): Promise<string>;
+  /** Delete a private hunt log entry (and its diary details and photos) by client UUID. Idempotent; owner-only. */
+  deleteHuntLogEntry(clientId: string): Promise<void>;
 }
 
 export class NotSignedInError extends Error {

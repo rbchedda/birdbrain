@@ -277,6 +277,12 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
       return { version: cur.version, conflict: true };
     },
 
+    async deleteHuntLogEntry(clientId) {
+      const rows = await readJson<Record<string, unknown>>(HUNT_LOG_KEY, {});
+      delete rows[clientId];
+      await writeJson(HUNT_LOG_KEY, rows);
+    },
+
     // Offline: photos stay on the device; the path mirrors the private bucket layout.
     async uploadDiaryPhoto(clientId, photo) {
       return `${sampleMe.id}/${clientId}/${photo.id}.jpg`;

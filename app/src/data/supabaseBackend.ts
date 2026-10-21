@@ -409,6 +409,15 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
       return { version: Number(row.version), conflict: Boolean(row.conflict) };
     },
 
+    async deleteHuntLogEntry(clientId) {
+      const userId = await me();
+      // Photos first (best-effort), then the row; diary_entries cascades. RLS limits both to the owner.
+      const bucket = sb.storage.from('diary-photos');
+      const { data: files } = await bucket.list(`${userId}/${clientId}`, { limit: 100 });
+      if (files?.length) await bucket.remove(files.map((f) => `${userId}/${clientId}/${f.name}`));
+      check(await sb.from('hunt_log_entries').delete().eq('client_id', clientId));
+    },
+
     async uploadDiaryPhoto(clientId, photo) {
       const userId = await me();
       const path = `${userId}/${clientId}/${photo.id}.jpg`;
