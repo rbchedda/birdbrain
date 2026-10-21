@@ -246,9 +246,9 @@ describe('Report and block on posts, comments and profiles', () => {
   });
 });
 
-describe('Plan tab', () => {
+describe('Guide tab', () => {
   it('shows the Open today card with the PGC link', async () => {
-    await open('/plan');
+    await open('/guide');
     expect(await screen.findByText('Open today?')).toBeTruthy();
     expect(screen.getByLabelText('Open the PGC Hunting & Trapping Digest')).toBeTruthy();
   });
@@ -256,8 +256,7 @@ describe('Plan tab', () => {
 
 describe('After-the-hunt log', () => {
   it('shares a delayed post with per-place counts that stay private', async () => {
-    await open('/log?placeId=stock-sample-1');
-    await fireEvent.press(await screen.findByText('Post'));
+    await open('/new/post?placeId=stock-sample-1');
     expect(await screen.findByText('Pheasant stocking (sample B)')).toBeTruthy();
     await fireEvent.press(screen.getByLabelText('More flushed'));
     await fireEvent.press(screen.getByLabelText('More flushed'));
@@ -287,13 +286,13 @@ describe('After-the-hunt log', () => {
   });
 
   it('logs a hunt to the private diary by default and shows it on the profile', async () => {
-    await open('/log?placeId=stock-sample-1');
-    expect(await screen.findByText(/Saves to your private Diary/)).toBeTruthy();
+    await open('/new/log?placeId=stock-sample-1');
+    expect(await screen.findByText(/Saves to your private Hunt Log/)).toBeTruthy();
     expect(screen.getByDisplayValue('Pheasant stocking (sample B)')).toBeTruthy();
     await fireEvent.press(screen.getByLabelText('More flushes'));
     await fireEvent.changeText(screen.getByLabelText('Notes'), 'Scouting only');
     await fireEvent.press(screen.getByText('Save to diary'));
-    expect(await screen.findByText(/Saved to your private diary on this device/)).toBeTruthy();
+    expect(await screen.findByText(/Saved to your private log on this device/)).toBeTruthy();
     expect(await screen.findByText('Backed up')).toBeTruthy();
 
     const page = await backend.feed(null, 20);

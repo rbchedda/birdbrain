@@ -12,7 +12,7 @@ export default function PlanScreen() {
   const today = todayET();
   return (
     <View style={styles.root}>
-      <ScreenHeader title="Plan" subtitle={`${SEASON_YEAR} seasons, hours and how BirdBrain keeps spots private`} />
+      <ScreenHeader title="Guide" subtitle={`${SEASON_YEAR} seasons, hours and how BirdBrain keeps spots private`} />
       <ScrollView contentContainerStyle={styles.body}>
         <OpenToday />
 

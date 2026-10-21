@@ -1,7 +1,9 @@
+import { router } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ScreenHeader } from '@/components/Screen';
 import { SignInPrompt } from '@/components/SignInPrompt';
+import { Button } from '@/components/ui';
 import { AccountSettings, SectionRow, StatTiles, badgesSummary, dogsSummary, lifeSummary, useProfileData } from '@/components/profile';
 import { backend } from '@/data';
 import { useAsync, useSession } from '@/data/hooks';
@@ -22,9 +24,9 @@ export default function ProfileScreen() {
       <ScreenHeader
         title={profile.data ? displayName(profile.data) : 'Profile'}
         subtitle={`${seasonLabel(p.season)} season${backend.mode === 'sample' ? ' · sample mode' : ''}`}
-        back
       />
       <ScrollView contentContainerStyle={styles.body}>
+        <Button label="Log a hunt" icon="add" variant="primary" onPress={() => router.push('/new/log')} />
         {session === null && <SignInPrompt why="Sign in to back up your private hunt log to your account. It works on this device either way." />}
         <StatTiles
           testID="profile-stats"
