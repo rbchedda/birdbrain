@@ -1,5 +1,8 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+// Jest runs in Node; the app tsconfig has no Node types, so declare the bits used here.
+declare const __dirname: string;
+declare function require(name: 'fs'): { readFileSync(path: string, enc: 'utf8'): string };
+const { readFileSync } = require('fs');
+const join = (...parts: string[]) => parts.join('/');
 
 import bundled from '@/data/pgcStocking.json';
 import {
