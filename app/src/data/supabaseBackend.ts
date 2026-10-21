@@ -390,6 +390,23 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
       if (member) check(await sb.from('group_members').upsert({ group_id: groupId, user_id: userId }, { ignoreDuplicates: true }));
       else check(await sb.from('group_members').delete().eq('group_id', groupId).eq('user_id', userId));
     },
+
+    async upsertHuntLogEntry(e) {
+      await me();
+      const rows = check(
+        await sb.rpc('upsert_hunt_log_entry', {
+          p_client_id: e.clientId,
+          p_base_version: e.baseVersion,
+          p_species: e.species,
+          p_caption: e.caption,
+          p_hunted_on: e.huntedOn,
+          p_place_counts: e.placeCounts,
+        }),
+      ) as Row[] | Row | null;
+      const row = (Array.isArray(rows) ? rows[0] : rows) as Row | undefined;
+      if (!row) throw new Error('Hunt log sync returned nothing.');
+      return { version: Number(row.version), conflict: Boolean(row.conflict) };
+    },
   };
   return api;
 }
