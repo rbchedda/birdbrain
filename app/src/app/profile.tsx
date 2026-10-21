@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { LegalLinks } from '@/components/LegalLinks';
 import { PostCard } from '@/components/PostCard';
 import { ScreenHeader } from '@/components/Screen';
 import { SignInPrompt } from '@/components/SignInPrompt';
@@ -25,6 +26,22 @@ export default function ProfileScreen() {
   const [hasDog, setHasDog] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ tone: 'success' | 'error'; text: string }>();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string>();
+
+  const deleteAccount = async () => {
+    setDeleting(true);
+    setDeleteError(undefined);
+    try {
+      await backend.deleteAccount();
+      router.replace('/');
+    } catch (e) {
+      setDeleteError((e as Error).message);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     if (!profile.data) return;
@@ -137,6 +154,27 @@ export default function ProfileScreen() {
             style={{ marginTop: space.xl }}
           />
         )}
+
+        {session && (
+          <>
+            <SectionTitle>Delete account</SectionTitle>
+            {!confirmDelete ? (
+              <Button label="Delete account" icon="trash-outline" variant="danger" onPress={() => setConfirmDelete(true)} />
+            ) : (
+              <>
+                <Notice tone="error">
+                  This permanently deletes your account, posts, comments, photos, locations, group memberships, blocks and
+                  reports. It can’t be undone.
+                </Notice>
+                {deleteError && <Notice tone="error">{deleteError}</Notice>}
+                <Button label="Yes, delete my account" variant="danger" busy={deleting} onPress={deleteAccount} />
+                <Button label="Cancel" onPress={() => setConfirmDelete(false)} />
+              </>
+            )}
+          </>
+        )}
+
+        <LegalLinks />
       </ScrollView>
     </View>
   );

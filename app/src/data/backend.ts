@@ -38,6 +38,8 @@ export interface Backend {
   signUp(email: string, password: string): Promise<{ needsConfirmation: boolean }>;
   signInAsGuest(): Promise<void>;
   signOut(): Promise<void>;
+  /** Permanently delete the signed-in account and everything it owns, then sign out. */
+  deleteAccount(): Promise<void>;
 
   listPlaces(): Promise<Place[]>;
   placeDetail(id: string): Promise<PlaceDetail>;

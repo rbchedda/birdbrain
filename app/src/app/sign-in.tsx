@@ -2,6 +2,8 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
 
+import { AgeGate } from '@/components/AgeGate';
+import { LegalLinks } from '@/components/LegalLinks';
 import { ScreenHeader } from '@/components/Screen';
 import { Button, Chip, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
@@ -50,6 +52,7 @@ export default function SignInScreen() {
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScreenHeader title={mode === 'in' ? 'Sign in' : 'Create account'} back />
+      <AgeGate>
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         {backend.mode === 'sample' && <Notice>Sample mode: you’re already signed in as a local test hunter.</Notice>}
         <Text style={ui.muted}>Know what was stocked, what’s open today, and share your hunts without burning your spot.</Text>
@@ -89,7 +92,10 @@ export default function SignInScreen() {
         />
         <Button label="Continue as guest" icon="person-outline" busy={busy === 'guest'} onPress={guest} />
         <Text style={ui.muted}>Guest accounts can post and comment from this device only.</Text>
+        <Text style={ui.muted}>By continuing you agree to the Terms of Service and Privacy Policy.</Text>
+        <LegalLinks />
       </ScrollView>
+      </AgeGate>
     </KeyboardAvoidingView>
   );
 }
