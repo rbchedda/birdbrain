@@ -46,7 +46,8 @@ export default function PlanScreen() {
         <Text style={ui.body}>
           Pheasant, grouse and fall turkey: ½ hour before sunrise to ½ hour after sunset. Doves and waterfowl: ½ hour
           before sunrise to sunset. Spring gobbler: ½ hour before sunrise to noon through May 15, then to ½ hour after
-          sunset. PGC sets times by longitude zone; the card above uses your zone.
+          sunset. Times come from the official PGC hunting-hours table for your longitude zone, never computed; if a date
+          isn’t in the table, check the digest.
         </Text>
 
         <SectionTitle>Sharing without burning your spot</SectionTitle>
