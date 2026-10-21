@@ -2,9 +2,9 @@ import type { Species } from './types';
 
 /**
  * Bird ID content for the Guide. Field marks and look-alikes are general field
- * guide knowledge, written for hunters. Photos come later (feat/guide-bird-photos):
- * each entry names the image files it will use, which must then be listed in
- * app/assets/birds/CREDITS.json. Until then the cards show a grey placeholder.
+ * guide knowledge, written for hunters. Each photo slot names a file in
+ * app/assets/birds (see data/birdImages.ts) that must be listed in CREDITS.json;
+ * a slot without a licensed file shows a grey placeholder.
  */
 export type BirdKey = 'pheasant' | 'grouse' | 'woodcock' | 'dove' | 'turkey' | 'bobwhite';
 
