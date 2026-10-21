@@ -70,3 +70,48 @@ describe('comment delay', () => {
     assert.equal(await seesComment(alice, c), true);
   });
 });
+
+describe('edit lock after public_after', () => {
+  it('lets the author edit before the post is public', async () => {
+    const p = await post(alice, 'draft');
+    const r = await q(alice, `update public.posts set caption = 'edited' where id = $1`, [p]);
+    assert.equal(r.affectedRows, 1);
+  });
+
+  it('rejects caption, photo and location edits once public', async () => {
+    const p = await post(alice, 'quiet morning');
+    await q(alice, `insert into public.post_locations (post_id, geom) values ($1, extensions.st_setsrid(extensions.st_makepoint(-77.1, 40.8), 4326))`, [p]);
+    await agePost(p);
+    await assert.rejects(q(alice, `update public.posts set caption = 'birds by the creek NOW' where id = $1`, [p]), /can no longer be edited/);
+    await assert.rejects(q(alice, `update public.posts set photo_path = 'x/y.jpg' where id = $1`, [p]), /can no longer be edited/);
+    await assert.rejects(
+      q(alice, `update public.post_locations set geom = extensions.st_setsrid(extensions.st_makepoint(-77.5, 40.9), 4326) where post_id = $1`, [p]),
+      /can no longer be edited/,
+    );
+  });
+
+  it('still lets the author hide the location of a public post', async () => {
+    const p = await post(alice, 'hide later');
+    await agePost(p);
+    const r = await q(alice, `update public.posts set location_visibility = 'hidden' where id = $1`, [p]);
+    assert.equal(r.affectedRows, 1);
+    await assert.rejects(
+      q(alice, `update public.posts set location_visibility = 'hidden', caption = 'sneaky' where id = $1`, [p]),
+      /can no longer be edited/,
+    );
+  });
+
+  it('still lets the author delete a public post', async () => {
+    const p = await post(alice, 'delete me');
+    await q(alice, `insert into public.post_locations (post_id, geom) values ($1, extensions.st_setsrid(extensions.st_makepoint(-77.1, 40.8), 4326))`, [p]);
+    await agePost(p);
+    const r = await q(alice, 'delete from public.posts where id = $1', [p]);
+    assert.equal(r.affectedRows, 1);
+  });
+
+  it('keeps server-side count updates working on public posts', async () => {
+    const p = await post(alice, 'likes ok');
+    await agePost(p);
+    await q(bob, 'insert into public.likes (post_id, user_id) values ($1, $2)', [p, bob]);
+  });
+});

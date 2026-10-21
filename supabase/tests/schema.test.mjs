@@ -123,16 +123,26 @@ describe('post location privacy', () => {
     );
   });
 
-  it('clears and restores the public location when visibility changes', async () => {
+  it('clears the public location when hidden; restoring is locked once public', async () => {
     const read = () => db.query('select blurred_geom is null hidden from public.posts where id = $1', [postId]);
     await as(db, 'authenticated', alice, (tx) =>
       tx.query(`update public.posts set location_visibility = 'hidden' where id = $1`, [postId]),
     );
     assert.equal((await read()).rows[0].hidden, true);
+    // The post is already public, so re-revealing its location is an edit.
+    await assert.rejects(
+      as(db, 'authenticated', alice, (tx) =>
+        tx.query(`update public.posts set location_visibility = 'blurred' where id = $1`, [postId]),
+      ),
+      /can no longer be edited/,
+    );
+    // Before the delay passes the author can still toggle it back.
+    await db.query(`update public.posts set public_after = now() + interval '1 hour' where id = $1`, [postId]);
     await as(db, 'authenticated', alice, (tx) =>
       tx.query(`update public.posts set location_visibility = 'blurred' where id = $1`, [postId]),
     );
     assert.equal((await read()).rows[0].hidden, false);
+    await db.query(`update public.posts set public_after = now() - interval '1 minute' where id = $1`, [postId]);
   });
 
   it('does not let another user move or delete someone else\u2019s exact location', async () => {
