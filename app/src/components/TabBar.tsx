@@ -14,7 +14,7 @@ const icons: Record<string, { on: IconName; off: IconName }> = {
   learn: { on: 'book', off: 'book-outline' },
 };
 
-export function TabBar({ state, descriptors, emitter, navigateToTab }: BottomTabBarProps) {
+export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -24,8 +24,8 @@ export function TabBar({ state, descriptors, emitter, navigateToTab }: BottomTab
         const label = descriptors[route.key].options.title ?? route.name;
 
         const onPress = () => {
-          const event = emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-          if (!focused && !event.defaultPrevented) navigateToTab(route.key);
+          const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+          if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
         };
 
         if (route.name === 'log') {
