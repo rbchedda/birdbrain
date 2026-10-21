@@ -128,6 +128,8 @@ export default function LogScreen() {
           </View>
         )}
 
+        <Button label="Detailed diary entry" icon="book-outline" onPress={() => router.push('/diary/new')} />
+
         <SectionTitle>Species</SectionTitle>
         <View style={ui.row}>
           {allSpecies.map((s) => (
@@ -264,7 +266,14 @@ function PrivateLog() {
       {data.slice(0, 20).map((e) => {
         const s = syncLabel(e, signedOut);
         return (
-          <View key={e.id} style={ui.card} testID={`journal-${e.clientId}`}>
+          <Pressable
+            key={e.id}
+            accessibilityRole="button"
+            accessibilityHint="Opens the diary entry"
+            onPress={() => router.push({ pathname: '/diary/[id]', params: { id: e.id } })}
+            style={ui.card}
+            testID={`journal-${e.clientId}`}
+          >
             <Text style={styles.placeName} numberOfLines={1}>
               {e.caption || (e.species ? speciesLabel[e.species] : 'Hunt')} {e.huntedOn ? ` · ${formatDay(e.huntedOn)}` : ''}
             </Text>
@@ -272,7 +281,7 @@ function PrivateLog() {
               <Ionicons name={s.icon} size={16} color={s.color} />
               <Text style={[ui.muted, { color: s.color }]}>{s.text}</Text>
             </View>
-          </View>
+          </Pressable>
         );
       })}
       {stuck && <Button label="Retry backup now" icon="refresh" onPress={() => void retry()} />}
