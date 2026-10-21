@@ -42,18 +42,15 @@ export default function DiaryScreen() {
   const [huntedOn, setHuntedOn] = useState(todayET());
   const [counts, setCounts] = useState<PlaceCount[]>([]);
   const [caption, setCaption] = useState('');
-  const [audience, setAudience] = useState<'shared' | 'private'>('private');
+  const [chosenAudience, setAudience] = useState<'shared' | 'private'>('private');
+  // Delayed sharing is only offered after the user opts in to the community.
+  const audience = sharing ? chosenAudience : 'private';
   const [location, setLocation] = useState<LocationVisibility>('blurred');
   const [toGroup, setToGroup] = useState(false);
   const [picking, setPicking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [done, setDone] = useState<'shared' | 'private' | null>(null);
-
-  // Delayed sharing is only offered after the user opts in to the community.
-  useEffect(() => {
-    if (!sharing) setAudience('private');
-  }, [sharing]);
 
   // Arriving from a place on the map pre-fills that place.
   useEffect(() => {
@@ -101,7 +98,7 @@ export default function DiaryScreen() {
       groupSlug: toGroup && species ? groupFor[species] : null,
     };
     try {
-      if (audience === 'private' || !sharing) {
+      if (audience === 'private') {
         await addJournalEntry(draft, { id: session?.userId ?? 'me', username: null, displayName: 'You' });
       } else {
         await backend.createPost(draft);
