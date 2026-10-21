@@ -100,3 +100,33 @@ describe('counties access', () => {
     );
   });
 });
+
+describe('place_stocking_county', () => {
+  it('prefers the county PGC allocation lists the place under, else the spatial county', async () => {
+    const listed = await addPlace('SGL listed elsewhere', 'stocking', 'POINT(-77.5 40.6)'); // spatially Centre
+    const plain = await addPlace('plain point', 'stocking', 'POINT(-77.5 40.7)');
+    await db.query(
+      `insert into public.stocking_properties (season, region, county, name, sgl, place_id, source)
+       values ('2026-27', 'Northcentral', 'Clinton', 'State Game Lands 999', 999, $1, 'test')`,
+      [listed.id],
+    );
+    const { rows } = await as(db, 'anon', null, (tx) =>
+      tx.query(`select place_id, county, basis from public.place_stocking_county where place_id = any($1::uuid[])`, [[listed.id, plain.id]]),
+    );
+    const by = Object.fromEntries(rows.map((r) => [r.place_id, [r.county, r.basis]]));
+    assert.deepEqual(by[listed.id], ['Clinton', 'allocation']);
+    assert.deepEqual(by[plain.id], ['Centre', 'spatial']);
+  });
+
+  it('falls back to spatial when the allocation lists the place in two counties', async () => {
+    const two = await addPlace('two-county', 'stocking', 'POINT(-77.5 40.8)');
+    await db.query(
+      `insert into public.stocking_properties (season, region, county, name, sgl, place_id, source) values
+         ('2026-27', 'Northcentral', 'Clinton', 'SGL 998 a', 998, $1, 'test'),
+         ('2026-27', 'Northcentral', 'Lycoming', 'SGL 998 b', 998, $1, 'test')`,
+      [two.id],
+    );
+    const { rows } = await db.query(`select county, basis from public.place_stocking_county where place_id = $1`, [two.id]);
+    assert.deepEqual(rows[0], { county: 'Centre', basis: 'spatial' });
+  });
+});

@@ -60,3 +60,21 @@ begin
 end;
 $$;
 revoke execute on function public.assign_place_counties() from public, anon, authenticated;
+
+-- County whose PGC release weeks apply to a stocking place. Game lands can
+-- straddle county lines, and PGC's allocation lists some under a neighboring
+-- county (checked 2026-10-21: 7 of 151 SGL stocking points sit in a county
+-- other than the one whose allocation lists them). Prefer the allocation's
+-- county when stocking_properties links the place to exactly one county;
+-- otherwise use the spatial county.
+create view public.place_stocking_county with (security_invoker = true) as
+  select p.id as place_id,
+         coalesce(alloc.county, p.county) as county,
+         case when alloc.county is not null then 'allocation' when p.county is not null then 'spatial' end as basis
+    from public.places p
+    left join lateral (
+      select min(sp.county) as county from public.stocking_properties sp
+       where sp.place_id = p.id
+      having count(distinct sp.county) = 1
+    ) alloc on true
+   where p.type = 'stocking';
