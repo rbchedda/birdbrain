@@ -1,7 +1,7 @@
 import { newClientId, readJson, updateJson, writeJson } from '@/lib/localStore';
 
 import { NotSignedInError, postKind, sumCounts, type Backend, type HuntLogUpload } from './backend';
-import type { Author, Post, PostDraft } from './types';
+import type { Author, DiaryDetails, Post, PostDraft } from './types';
 
 /**
  * Private hunt log. Every entry is written to this device first, with a
@@ -32,6 +32,8 @@ export interface JournalEntry extends Post {
   /** Client UUID; also the entry id. */
   clientId: string;
   sync: SyncState;
+  /** Rich diary fields; absent on quick log entries. */
+  details?: DiaryDetails;
 }
 
 export const BACKOFF_BASE_MS = 2_000;
@@ -81,7 +83,7 @@ const update = async (fn: (cur: JournalEntry[]) => JournalEntry[]) => {
   return updateJson<JournalEntry[]>(KEY, [], fn);
 };
 
-export async function addJournalEntry(draft: PostDraft, me: Author): Promise<JournalEntry> {
+export async function addJournalEntry(draft: PostDraft, me: Author, details?: DiaryDetails): Promise<JournalEntry> {
   const clientId = newClientId();
   const entry: JournalEntry = {
     id: clientId,
@@ -103,13 +105,14 @@ export async function addJournalEntry(draft: PostDraft, me: Author): Promise<Jou
     likedByMe: false,
     group: null,
     sync: fresh(),
+    ...(details ? { details } : {}),
   };
   await update((cur) => [entry, ...cur]);
   notify(true);
   return entry;
 }
 
-export type JournalEdit = Partial<Pick<PostDraft, 'species' | 'caption' | 'huntedOn' | 'counts'>>;
+export type JournalEdit = Partial<Pick<PostDraft, 'species' | 'caption' | 'huntedOn' | 'counts'>> & { details?: DiaryDetails };
 
 /** Edit locally; the change is queued and synced against the last known server version. */
 export async function editJournalEntry(id: string, edit: JournalEdit) {
@@ -124,7 +127,8 @@ export async function editJournalEntry(id: string, edit: JournalEdit) {
         huntedOn: edit.huntedOn ?? e.huntedOn,
         placeCounts,
         counts: sumCounts(placeCounts),
-        kind: placeCounts.some((c) => c.harvested > 0) ? 'harvest' : 'hunt',
+        kind: placeCounts.some((c) => c.harvested > 0) || edit.details?.birds.some((b) => b.count > 0) ? 'harvest' : 'hunt',
+        ...(edit.details ? { details: edit.details } : {}),
         sync: { ...fresh(e.sync.rev + 1), version: e.sync.version },
       };
     }),
@@ -145,7 +149,28 @@ const toUpload = (e: JournalEntry): HuntLogUpload => ({
   caption: e.caption,
   huntedOn: e.huntedOn,
   placeCounts: e.placeCounts ?? [],
+  // Only storage paths leave the device; local file URIs never do.
+  details: e.details ? { ...e.details, photos: e.details.photos.map((p) => ({ id: p.id, path: p.path })) } : null,
 });
+
+/** Upload photos that have no storage path yet; records each path as soon as it lands. */
+async function uploadPhotos(backend: Backend, e: JournalEntry): Promise<JournalEntry> {
+  const missing = (e.details?.photos ?? []).filter((p) => !p.path && p.localUri);
+  if (!missing.length) return e;
+  const paths = new Map<string, string>();
+  for (const p of missing) {
+    paths.set(p.id, await backend.uploadDiaryPhoto(e.clientId, { id: p.id, localUri: p.localUri! }));
+    // Recording a path is not a content edit, so it applies whatever the rev.
+    await update((cur) =>
+      cur.map((x) =>
+        x.id === e.id && x.details
+          ? { ...x, details: { ...x.details, photos: x.details.photos.map((ph) => (paths.has(ph.id) ? { ...ph, path: paths.get(ph.id)! } : ph)) } }
+          : x,
+      ),
+    );
+  }
+  return { ...e, details: { ...e.details!, photos: e.details!.photos.map((ph) => (paths.has(ph.id) ? { ...ph, path: paths.get(ph.id)! } : ph)) } };
+}
 
 /**
  * Apply a sync result. If the entry was edited during the upload (rev moved on)
@@ -200,7 +225,8 @@ async function runSync(backend: Backend, { now = Date.now, force = false }: Sync
   );
   for (const e of due) {
     try {
-      const res = await backend.upsertHuntLogEntry(toUpload(e));
+      const ready = await uploadPhotos(backend, e);
+      const res = await backend.upsertHuntLogEntry(toUpload(ready));
       if (res.conflict) {
         report.conflicts++;
         await patchSync(e.id, e.sync.rev, {

@@ -394,18 +394,28 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
     async upsertHuntLogEntry(e) {
       await me();
       const rows = check(
-        await sb.rpc('upsert_hunt_log_entry', {
+        await sb.rpc('upsert_diary_entry', {
           p_client_id: e.clientId,
           p_base_version: e.baseVersion,
           p_species: e.species,
           p_caption: e.caption,
           p_hunted_on: e.huntedOn,
           p_place_counts: e.placeCounts,
+          p_details: e.details ?? null,
         }),
       ) as Row[] | Row | null;
       const row = (Array.isArray(rows) ? rows[0] : rows) as Row | undefined;
       if (!row) throw new Error('Hunt log sync returned nothing.');
       return { version: Number(row.version), conflict: Boolean(row.conflict) };
+    },
+
+    async uploadDiaryPhoto(clientId, photo) {
+      const userId = await me();
+      const path = `${userId}/${clientId}/${photo.id}.jpg`;
+      const body = await (await fetch(photo.localUri)).arrayBuffer();
+      const res = await sb.storage.from('diary-photos').upload(path, body, { contentType: 'image/jpeg', upsert: true });
+      if (res.error) throw new Error(res.error.message);
+      return path;
     },
   };
   return api;
