@@ -3,7 +3,20 @@ import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
 import { createTestDb } from '../supabase/tests/db.mjs';
-import { cropsIn, fetchFeatures, ingestSource, missingFields, pick, SOURCES, toRows, upsertRows } from './arcgis.mjs';
+import {
+  COUNTIES,
+  cropsIn,
+  fetchFeatures,
+  ingestCounties,
+  ingestSource,
+  missingFields,
+  pick,
+  SOURCES,
+  toCountyRows,
+  toRows,
+  upsertCounties,
+  upsertRows,
+} from './arcgis.mjs';
 
 const fixture = (name) => JSON.parse(readFileSync(new URL(`./fixtures/${name}`, import.meta.url)));
 const gameLands = fixture('two-game-lands.geojson');
@@ -233,5 +246,55 @@ describe('ingestSource', () => {
       ingestSource(db, SOURCES.dove_fields, { fetchImpl: fakeServer({ [url]: { features: junk, lastEditDate: 1 } }).fetchImpl }),
       /0 usable rows/,
     );
+  });
+});
+
+describe('counties (spatial join for place county)', () => {
+  const counties = fixture('pa-counties-sample.geojson').features; // Carbon, Crawford, Erie (simplified)
+
+  it('maps the PGC PA County layer to rows with title-case names and 3-digit FIPS', () => {
+    const rows = toCountyRows(counties);
+    assert.deepEqual(rows.map((r) => r.name).sort(), ['Carbon', 'Crawford', 'Erie']);
+    for (const r of rows) assert.match(r.fips, /^\d{3}$/);
+  });
+
+  it('gives live stocking points the county they sit in, whichever loads first', async () => {
+    const db = await createTestDb();
+    // Places first (as on an existing DB), then counties: backfill.
+    await upsertRows(db, SOURCES.pheasant_stocking, toRows(SOURCES.pheasant_stocking, stockingFeatures));
+    const before = await db.query(`select count(*)::int n from public.places where county is not null`);
+    assert.equal(before.rows[0].n, 0);
+    const res = await upsertCounties(db, toCountyRows(counties), { minRows: 3 });
+    assert.equal(res.placesFilled, 2);
+    const byName = async () =>
+      Object.fromEntries((await db.query(`select name, county from public.places order by name`)).rows.map((r) => [r.name, r.county]));
+    // Checked against the live PA County layer: SGL 101 is in Erie, Beltzville in Carbon.
+    assert.deepEqual(await byName(), { 'Beltzville State Park': 'Carbon', 'State Game Lands 101': 'Erie' });
+
+    // Re-ingesting places (county comes back null from the source) keeps the joined county.
+    await upsertRows(db, SOURCES.pheasant_stocking, toRows(SOURCES.pheasant_stocking, stockingFeatures));
+    assert.deepEqual(await byName(), { 'Beltzville State Park': 'Carbon', 'State Game Lands 101': 'Erie' });
+  });
+
+  it('joined counties match stocking_events county names', async () => {
+    const seed = JSON.parse(readFileSync(new URL('../data/pgc/pheasant-allocation-2026-27.json', import.meta.url)));
+    const seedCounties = new Set(seed.events.map((e) => e.county));
+    for (const r of toCountyRows(counties)) assert.ok(seedCounties.has(r.name), r.name);
+  });
+
+  it('refuses a short county load and leaves places untouched', async () => {
+    const db = await createTestDb();
+    await assert.rejects(upsertCounties(db, toCountyRows(counties)), /3 counties, expected 67/);
+    const { rows } = await db.query('select count(*)::int n from public.counties');
+    assert.equal(rows[0].n, 0);
+  });
+
+  it('ingestCounties fetches the layer and records ingest_state', async () => {
+    const db = await createTestDb();
+    const { fetchImpl } = fakeServer({ [COUNTIES.layerUrl]: { features: counties, lastEditDate: 1782848117058 } }, { pageCap: 2 });
+    const res = await ingestCounties(db, { fetchImpl, minRows: 3 });
+    assert.equal(res.upserted, 3);
+    const again = await ingestCounties(db, { fetchImpl, minRows: 3 });
+    assert.equal(again.skipped, true);
   });
 });

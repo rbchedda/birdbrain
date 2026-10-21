@@ -172,7 +172,10 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
       // stocking_events is per county (PGC publishes county allocations), so match on the place's county.
       if (place?.type === 'stocking' && place.county) {
         const events = await sb.from(sq.table).select(sq.columns.join(', ')).eq(sq.filter, place.county).order(sq.order);
-        // A stocking read failure must not cost the outline.
+        // A stocking read failure must not cost the outline, but say so.
+        if (events.error) {
+          console.warn(`placeDetail: stocking_events read failed for place ${id} (county ${place.county}): ${events.error.message}`);
+        }
         stocking = ((events.error ? [] : events.data) as Row[])
           .filter((r) => r.cocks + r.hens > 0)
           .map((r) => ({
