@@ -19,19 +19,19 @@ const tabBar = () =>
   screen
     .getAllByRole(/^(tab|button)$/)
     .map((el) => el.props.accessibilityLabel as string)
-    .filter((l) => ['Map', 'Feed', 'New: log a hunt or post', 'Learn', 'Profile'].includes(l));
+    .filter((l) => ['Map', 'Feed', 'New: log a hunt or post', 'Guide', 'Profile'].includes(l));
 
 describe('Five-tab nav', () => {
-  it('launches on Map with tabs Map | Feed | ＋ | Learn | Profile', async () => {
+  it('launches on Map with tabs Map | Feed | ＋ | Guide | Profile', async () => {
     await open('/');
     expect(await screen.findByText('6 public spots')).toBeTruthy();
-    expect(tabBar()).toEqual(['Map', 'Feed', 'New: log a hunt or post', 'Learn', 'Profile']);
-    for (const gone of ['Plan', 'Crew', 'Log']) expect(screen.queryByRole('tab', { name: gone })).toBeNull();
+    expect(tabBar()).toEqual(['Map', 'Feed', 'New: log a hunt or post', 'Guide', 'Profile']);
+    for (const gone of ['Plan', 'Learn', 'Crew', 'Log']) expect(screen.queryByRole('tab', { name: gone })).toBeNull();
   });
 
   it.each([
     ['/feed', /My profile/],
-    ['/learn', /Open today\?/],
+    ['/guide', /Open today\?/],
     ['/profile', /Log a hunt/],
     ['/log', /Saves to your private Hunt Log/],
     ['/new/log', /Saves to your private Hunt Log/],
@@ -42,6 +42,15 @@ describe('Five-tab nav', () => {
     await open(url);
     if (url === '/feed') expect(await screen.findByLabelText('My profile')).toBeTruthy();
     else expect((await screen.findAllByText(text)).length).toBeGreaterThan(0);
+  });
+});
+
+describe('Old routes redirect to Guide', () => {
+  it.each(['/learn', '/plan'])('%s redirects to the Guide tab', async (url) => {
+    await open(url);
+    expect(await screen.findByText('Open today?')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Guide' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Guide', selected: true })).toBeTruthy();
   });
 });
 

@@ -226,9 +226,9 @@ describe('Report and block on posts, comments and profiles', () => {
   });
 });
 
-describe('Learn tab', () => {
+describe('Guide tab', () => {
   it('shows the Open today card with the PGC link', async () => {
-    await open('/learn');
+    await open('/guide');
     expect(await screen.findByText('Open today?')).toBeTruthy();
     expect(screen.getByLabelText('Open the PGC Hunting & Trapping Digest')).toBeTruthy();
   });
