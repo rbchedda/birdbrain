@@ -174,7 +174,7 @@ export default function ProfileScreen() {
           </>
         )}
 
-        <LegalLinks />
+        <LegalLinks credits />
       </ScrollView>
     </View>
   );
