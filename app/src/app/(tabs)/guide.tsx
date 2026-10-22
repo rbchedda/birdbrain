@@ -3,14 +3,14 @@ import { useLayoutEffect } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { DigestLink } from '@/components/guide/DigestLink';
-import { ZonePicker } from '@/components/guide/GuideSections';
 import { useGuideZone } from '@/components/guide/useGuideZone';
 import { ScreenHeader } from '@/components/Screen';
 import { Tag } from '@/components/Tag';
 import { SectionTitle, ui } from '@/components/ui';
 import { birds } from '@/data/birds';
-import { inSeasonRows, shootingTimes, type Badge } from '@/data/guide';
-import { PGC_DIGEST_URL, REGS } from '@/data/regs';
+import { comingUp, inSeasonNow, inSeasonRows, shootingTimes, todayHoursSummary, type Badge } from '@/data/guide';
+import { PGC_DIGEST_URL } from '@/data/regs';
+import type { Species } from '@/data/types';
 import { todayET } from '@/lib/time';
 import { colors, fonts, radius, space } from '@/theme/tokens';
 
@@ -32,9 +32,13 @@ export default function GuideScreen() {
 
   const now = new Date();
   const ymd = todayET(now);
-  const [zone, pickZone] = useGuideZone();
+  // Zone is picked on the PGC table screen; the Today card just uses it.
+  const [zone] = useGuideZone();
   const today = shootingTimes(ymd, zone, 1)[0];
-  const rows = inSeasonRows(ymd, zone, now).filter((r) => r.badge !== 'CLOSED');
+  const all = inSeasonRows(ymd, zone, now);
+  const rows = inSeasonNow(all);
+  const upcoming = comingUp(ymd, zone, now, 3);
+  const hours = todayHoursSummary(all, today);
 
   return (
     <View style={styles.root}>
@@ -52,7 +56,9 @@ export default function GuideScreen() {
               PGC table ›
             </Text>
           </View>
-          <Text style={ui.muted}>Pheasant, grouse, fall turkey</Text>
+          <Text style={ui.muted} testID="guide-today-label">
+            {hours.label}
+          </Text>
           {today?.smallGame ? (
             <View style={styles.times}>
               <View style={{ flex: 1 }}>
@@ -67,29 +73,38 @@ export default function GuideScreen() {
           ) : (
             <Text style={ui.body}>Check the digest for today's hours.</Text>
           )}
-          <Text style={ui.muted} testID="guide-today-migratory">
-            Doves, woodcock, waterfowl:{' '}
-            {today?.sunday ? 'closed Sundays' : today?.migratory ? `${today.migratory.start} – ${today.migratory.end}` : 'check the digest'}
-          </Text>
-          <Text style={ui.muted}>PGC hours zone (east 1 → west 7). Pick yours:</Text>
-          <ZonePicker zone={zone} onChange={pickZone} />
+          {hours.migratoryDiffers && (
+            <Text accessibilityRole="link" style={styles.link} testID="guide-today-dove" onPress={() => router.push('/guide/hours')}>
+              Dove hours differ ›
+            </Text>
+          )}
         </View>
 
         <View style={styles.section} testID="guide-season">
           <SectionTitle>{`In season now · Zone ${zone}`}</SectionTitle>
           {rows.length === 0 && <Text style={ui.muted}>Nothing open today. See the PGC table for all seasons.</Text>}
           {rows.map((r) => (
-            <View key={r.species} style={[ui.card, styles.rowCard]} testID={`in-season-${r.species}`}>
+            <SpeciesRow key={r.species} species={r.species} testID={`in-season-${r.species}`}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.rowName}>{r.label}</Text>
-                <Text style={ui.muted}>
-                  {r.detail}
-                  {r.badge === 'CHECK' ? '' : ` · bag ${REGS.species[r.species].daily}`}
-                </Text>
+                <Text style={ui.muted}>{r.detail}</Text>
               </View>
               <Tag label={badgeText[r.badge]} tone={badgeTone[r.badge]} />
-            </View>
+            </SpeciesRow>
           ))}
+          {upcoming.length > 0 && (
+            <View style={styles.section} testID="guide-coming-up">
+              <SectionTitle>Coming up</SectionTitle>
+              {upcoming.map((r) => (
+                <SpeciesRow key={r.species} species={r.species} testID={`coming-up-${r.species}`}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rowName}>{r.label}</Text>
+                    <Text style={ui.muted}>{r.status}</Text>
+                  </View>
+                </SpeciesRow>
+              ))}
+            </View>
+          )}
           <Text style={styles.disclaimer} testID="guide-disclaimer">
             Unofficial summary, always verify with the PGC Hunting & Trapping Digest
           </Text>
@@ -124,6 +139,29 @@ export default function GuideScreen() {
         </View>
       </ScrollView>
     </View>
+  );
+}
+
+/** A species list row; opens the species detail (dates, limits) when there is one. */
+function SpeciesRow({ species, testID, children }: { species: Species; testID: string; children: React.ReactNode }) {
+  const bird = birds.find((b) => b.species === species);
+  if (!bird) {
+    return (
+      <View style={[ui.card, styles.rowCard]} testID={testID}>
+        {children}
+      </View>
+    );
+  }
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${bird.name} details`}
+      testID={testID}
+      onPress={() => router.push(`/guide/bird/${bird.key}`)}
+      style={[ui.card, styles.rowCard]}
+    >
+      {children}
+    </Pressable>
   );
 }
 
