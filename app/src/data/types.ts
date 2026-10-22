@@ -140,6 +140,29 @@ export interface Profile {
   hasDog: boolean;
 }
 
+/** A private crew the user belongs to (spec §3.6). */
+export interface Crew {
+  id: string;
+  name: string;
+  role: 'member' | 'admin';
+  memberCount: number;
+}
+
+export interface CrewMember {
+  author: Author;
+  role: 'member' | 'admin';
+}
+
+export interface CrewDetail extends Crew {
+  members: CrewMember[];
+}
+
+/** An invite token is shown once, at creation; only its hash is stored server-side. */
+export interface CrewInvite {
+  token: string;
+  expiresAt: string;
+}
+
 export interface Group {
   id: string;
   slug: string;

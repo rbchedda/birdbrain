@@ -5,11 +5,17 @@ import { blurPoint, postKind, sumCounts, type Backend, type FeedPage, type HuntL
 import { samplePlaces, sampleStocking } from './places';
 import { sampleAuthors, sampleComments, sampleMe, samplePosts } from './posts';
 import { containsObjectionable, OBJECTIONABLE_MESSAGE } from './moderation';
-import type { Author, Comment, Group, Post, Profile } from './types';
+import type { Author, Comment, Crew, CrewDetail, Group, Post, Profile } from './types';
 
 const KEY = 'birdbrain.sample.v1';
 /** Stand-in for the server's hunt_log_entries table. */
 export const HUNT_LOG_KEY = 'birdbrain.sample.huntlog.v1';
+
+interface SampleCrew {
+  id: string;
+  name: string;
+  members: { author: Author; role: 'member' | 'admin' }[];
+}
 
 interface State {
   posts: Post[];
@@ -18,6 +24,8 @@ interface State {
   blocked: string[];
   saved: string[];
   members: string[];
+  crews: SampleCrew[];
+  invites: { token: string; crewId: string; expiresAt: string }[];
   profile: Profile;
   reports: { target: string; reason: string }[];
   rulesAcceptedAt: string | null;
@@ -51,6 +59,8 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
       blocked: saved.blocked ?? [],
       saved: saved.saved ?? [],
       members: saved.members ?? [],
+      crews: saved.crews ?? [],
+      invites: saved.invites ?? [],
       profile: saved.profile ?? { id: sampleMe.id, username: sampleMe.username, displayName: sampleMe.displayName, hasDog: false },
       reports: saved.reports ?? [],
       rulesAcceptedAt: saved.rulesAcceptedAt ?? null,
@@ -67,6 +77,8 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
       blocked: s.blocked,
       saved: s.saved,
       members: s.members,
+      crews: s.crews,
+      invites: s.invites,
       profile: s.profile,
       reports: s.reports,
       rulesAcceptedAt: s.rulesAcceptedAt,
@@ -260,6 +272,63 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
     async setMember(groupId, member) {
       const s = await load();
       s.members = member ? [...new Set([...s.members, groupId])] : s.members.filter((x) => x !== groupId);
+      await persist(s);
+    },
+
+    // Crews mirror public.create_crew / create_crew_invite / join_crew: device-local only,
+    // so a sample-mode invite can only be redeemed on the same device.
+    async myCrews() {
+      const s = await load();
+      return s.crews.flatMap((c): Crew[] => {
+        const m = c.members.find((x) => x.author.id === sampleMe.id);
+        return m ? [{ id: c.id, name: c.name, role: m.role, memberCount: c.members.length }] : [];
+      });
+    },
+
+    async crew(id) {
+      const s = await load();
+      const c = s.crews.find((x) => x.id === id);
+      const m = c?.members.find((x) => x.author.id === sampleMe.id);
+      if (!c || !m) return null;
+      return { id: c.id, name: c.name, role: m.role, memberCount: c.members.length, members: c.members } satisfies CrewDetail;
+    },
+
+    async createCrew(name) {
+      const s = await load();
+      const n = name.trim();
+      if (n.length < 3 || n.length > 60) throw new Error('Crew names are 3 to 60 characters.');
+      const id = `crew-${now().getTime().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+      s.crews.push({ id, name: n, members: [{ author: { id: sampleMe.id, username: s.profile.username, displayName: s.profile.displayName }, role: 'admin' }] });
+      await persist(s);
+      return id;
+    },
+
+    async createCrewInvite(crewId) {
+      const s = await load();
+      const c = s.crews.find((x) => x.id === crewId);
+      if (!c?.members.some((m) => m.author.id === sampleMe.id && m.role === 'admin')) throw new Error('Only crew admins can invite.');
+      const token = Array.from({ length: 4 }, () => Math.random().toString(36).slice(2, 10)).join('');
+      const expiresAt = new Date(now().getTime() + 7 * 24 * 3600e3).toISOString();
+      s.invites.push({ token, crewId, expiresAt });
+      await persist(s);
+      return { token, expiresAt };
+    },
+
+    async joinCrew(token) {
+      const s = await load();
+      const inv = s.invites.find((i) => i.token === token.trim() && new Date(i.expiresAt) > now());
+      const c = inv && s.crews.find((x) => x.id === inv.crewId);
+      if (!c) throw new Error('That invite is invalid or has expired.');
+      if (!c.members.some((m) => m.author.id === sampleMe.id))
+        c.members.push({ author: { id: sampleMe.id, username: s.profile.username, displayName: s.profile.displayName }, role: 'member' });
+      await persist(s);
+      return c.id;
+    },
+
+    async leaveCrew(crewId) {
+      const s = await load();
+      const c = s.crews.find((x) => x.id === crewId);
+      if (c) c.members = c.members.filter((m) => m.author.id !== sampleMe.id);
       await persist(s);
     },
 

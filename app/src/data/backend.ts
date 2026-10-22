@@ -1,4 +1,7 @@
 import type {
+  Crew,
+  CrewDetail,
+  CrewInvite,
   Author,
   Comment,
   DataSource,
@@ -102,6 +105,18 @@ export interface Backend {
 
   groups(): Promise<Group[]>;
   setMember(groupId: string, member: boolean): Promise<void>;
+
+  /** Private crews the signed-in user belongs to (empty when signed out). */
+  myCrews(): Promise<Crew[]>;
+  /** A crew with its members; null when it doesn't exist or the user isn't a member (RLS). */
+  crew(id: string): Promise<CrewDetail | null>;
+  /** Create a crew; the caller becomes its admin. Returns the crew id. */
+  createCrew(name: string): Promise<string>;
+  /** New invite token for a crew the caller administers. */
+  createCrewInvite(crewId: string): Promise<CrewInvite>;
+  /** Join a crew by invite token (always as a member). Returns the crew id. */
+  joinCrew(token: string): Promise<string>;
+  leaveCrew(crewId: string): Promise<void>;
 
   /** Idempotent upsert of a private hunt log entry by its client UUID (owner-only). */
   upsertHuntLogEntry(entry: HuntLogUpload): Promise<HuntLogUpsertResult>;
