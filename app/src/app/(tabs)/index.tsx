@@ -150,7 +150,11 @@ export default function MapScreen() {
             </Text>
             <Text style={ui.muted}>
               {openIds.size} open today ({formatDay(today)}).{' '}
-              {backend.mode === 'sample' ? 'Sample data until Supabase is connected.' : 'Data: Pennsylvania Game Commission.'}
+              {backend.mode === 'sample'
+                ? 'Sample data (dev flag).'
+                : backend.mode === 'unconfigured'
+                  ? 'Not connected to a server. Set app/.env.'
+                  : 'Data: Pennsylvania Game Commission.'}
             </Text>
             {error && (
               <View style={{ gap: space.sm }}>

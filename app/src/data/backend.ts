@@ -51,7 +51,7 @@ export interface HuntLogUpsertResult {
 }
 
 export interface Backend {
-  mode: 'sample' | 'supabase';
+  mode: 'sample' | 'supabase' | 'unconfigured';
 
   getSession(): Promise<Session | null>;
   onSessionChange(cb: (s: Session | null) => void): () => void;
