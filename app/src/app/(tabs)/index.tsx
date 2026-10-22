@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheet } from '@/components/BottomSheet';
 import { PlaceMap } from '@/components/map/PlaceMap';
 import { StockingList, windowText } from '@/components/StockingList';
-import { pinColor, type Basemap } from '@/components/map/types';
+import { pinColor, visibleBasemaps, type Basemap } from '@/components/map/types';
 import { Tag } from '@/components/Tag';
 import { Button, Chip, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
@@ -159,8 +159,9 @@ export default function MapScreen() {
           <View style={styles.layers} testID="layers-panel">
             <Text style={styles.layersTitle}>Map</Text>
             <View style={styles.chips}>
-              <Chip label="Topo" icon="map-outline" active={basemap === 'topo'} onPress={() => setBasemap('topo')} />
-              <Chip label="Satellite" icon="earth-outline" active={basemap === 'imagery'} onPress={() => setBasemap('imagery')} />
+              {visibleBasemaps().map((o) => (
+                <Chip key={o.key} label={o.label} icon={o.icon} active={basemap === o.key} onPress={() => setBasemap(o.key)} />
+              ))}
             </View>
             <Text style={styles.layersTitle}>Show</Text>
             <View style={styles.chips}>
