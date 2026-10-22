@@ -1,19 +1,24 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { usePromptSignIn } from '@/auth/usePromptSignIn';
+import { SignInSheet } from '@/components/SignInSheet';
+import { needsAccount } from '@/lib/gate';
+import { readJson, writeJson } from '@/lib/localStore';
 import { ScreenHeader } from '@/components/Screen';
 import { Button, Chip, Notice, SectionTitle, Stepper, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { useJournal, usePlaces, useSession } from '@/data/hooks';
 import { DiaryForm, diaryDraft } from '@/app/diary/new';
 import { addJournalEntry, type JournalEntry } from '@/data/journal';
-import { emptyDiaryDetails } from '@/data/types';
+import { emptyDiaryDetails, type DiaryDetails } from '@/data/types';
 import { allSpecies, placeTypeLabel, speciesLabel, type LocationVisibility, type Place, type PlaceCount, type Species } from '@/data/types';
 import { addDays, etParts, formatDay, formatTime, publicAfterET, todayET } from '@/lib/time';
 import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
+
+const SIGN_IN_PROMPT_KEY = 'birdbrain.signInPromptSeen.v1';
+type PostDraft = Parameters<typeof addJournalEntry>[0];
 
 const groupFor: Record<Species, string> = {
   pheasant: 'pa-pheasant',
@@ -272,25 +277,56 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
 
 /**
  * Redesign Log hunt sheet (mockups 02 + 02b). Always private, never a post.
- * Signed out (hosted backend): the entry saves on the phone first, then
- * usePromptSignIn() asks to sign in (sheet owned by feat/guest-mode-hybrid).
+ * Signed out (hybrid guest mode): Save holds the entry on the phone and shows
+ * the first-save SignInSheet. It saves the moment sign-in completes; "Not now"
+ * keeps it on this phone only (the journal never uploads while signed out).
  */
 export function LogHuntSheet() {
-  const { placeId } = useLocalSearchParams<{ placeId?: string }>();
+  const { placeId, ask } = useLocalSearchParams<{ placeId?: string; ask?: string }>();
   const { places } = usePlaces();
   const session = useSession();
   const { data: journal } = useJournal();
   const [saved, setSaved] = useState<{ id: string; label: string } | null>(null);
-  const promptSignIn = usePromptSignIn();
+  const [held, setHeld] = useState<{ draft: PostDraft; details: DiaryDetails; label: string } | null>(null);
   const [formKey, setFormKey] = useState(0);
   const place = places.find((p) => p.id === placeId);
-  const signedOut = backend.mode === 'supabase' && !session;
+  // session === null: known signed out (undefined = still loading).
+  const signedOut = session === null && needsAccount('saveHuntLog', session);
   const firstSave = signedOut && !(journal?.length);
+
+  const saveHeld = useCallback(async (h: { draft: PostDraft; details: DiaryDetails; label: string }, userId: string) => {
+    setHeld(null);
+    const e = await addJournalEntry(h.draft, { id: userId, username: null, displayName: 'You' }, h.details);
+    setSaved({ id: e.id, label: h.label });
+  }, []);
+  useEffect(() => {
+    if (held && session) void saveHeld(held, session.userId);
+  }, [held, session, saveHeld]);
+
+  // First "+ Log hunt" tap while signed out (chooser passes ask=1): ask once per install.
+  const [askNow, setAskNow] = useState(false);
+  useEffect(() => {
+    if (ask !== '1' || !signedOut) return;
+    readJson(SIGN_IN_PROMPT_KEY, false).then((seen) => {
+      if (!seen) {
+        setAskNow(true);
+        void writeJson(SIGN_IN_PROMPT_KEY, true);
+      }
+    }, () => {});
+  }, [ask, signedOut]);
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScreenHeader title="Log hunt" subtitle="🔒 Private diary entry · not a post" back />
-      {saved ? (
+      {held ? (
+        <ScrollView contentContainerStyle={styles.body}>
+          <SignInSheet held={held.label} onDismiss={() => void saveHeld(held, 'me')} />
+        </ScrollView>
+      ) : askNow ? (
+        <ScrollView contentContainerStyle={styles.body}>
+          <SignInSheet onDismiss={() => setAskNow(false)} />
+        </ScrollView>
+      ) : saved ? (
         <ScrollView contentContainerStyle={styles.body}>
           <Notice tone="success">
             {signedOut
@@ -324,10 +360,10 @@ export function LogHuntSheet() {
           onSubmit={async (v) => {
             const { draft, details } = diaryDraft(v);
             if (place && draft.counts[0]?.placeName === place.name) draft.counts[0].placeId = place.id;
-            const e = await addJournalEntry(draft, { id: session?.userId ?? 'me', username: null, displayName: 'You' }, details);
             const label = [draft.counts[0]?.placeName, draft.species ? speciesLabel[draft.species] : null].filter(Boolean).join(' · ') || 'this hunt';
+            if (signedOut) return setHeld({ draft, details, label });
+            const e = await addJournalEntry(draft, { id: session?.userId ?? 'me', username: null, displayName: 'You' }, details);
             setSaved({ id: e.id, label });
-            if (firstSave) promptSignIn({ reason: 'first-hunt-save', entryLabel: label });
           }}
         />
       )}

@@ -1,5 +1,8 @@
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
+import { backend } from '@/data';
+import { gate } from '@/lib/gate';
+
 import type { ProductConfig } from './config';
 import type { Feature } from './features';
 import { createPurchaseProvider, type PurchaseProvider } from './provider';
@@ -14,6 +17,13 @@ interface Ctx {
   restore: () => Promise<void>;
   upgradeFor: Feature | null;
   showUpgrade: (f: Feature | null) => void;
+}
+
+export class AccountRequiredError extends Error {
+  constructor() {
+    super('Sign in to buy or restore a pass, so it stays with your account if you switch phones.');
+    this.name = 'AccountRequiredError';
+  }
 }
 
 const defaultProvider = createPurchaseProvider();
@@ -36,8 +46,20 @@ export function EntitlementsProvider({
     provider.getEntitlements().then((s) => s.active.length || s.weekendPassExpiresAt ? setState(s) : undefined).catch(() => {});
   }, [provider]);
   const clock = now ?? Date.now;
-  const purchase = useCallback(async (id: ProductConfig['id']) => setState(await provider.purchase(id)), [provider]);
-  const restore = useCallback(async () => setState(await provider.restore()), [provider]);
+  // Hybrid guest mode: buying or restoring any pass (Weekend Pass included) needs an account,
+  // so a non-renewing pass can be restored on a new phone (RevenueCat custom App User ID).
+  const requireAccount = useCallback(async () => {
+    const session = await backend.getSession().catch(() => null);
+    if (gate('purchase', session).reason === 'signIn') throw new AccountRequiredError();
+  }, []);
+  const purchase = useCallback(async (id: ProductConfig['id']) => {
+    await requireAccount();
+    setState(await provider.purchase(id));
+  }, [provider, requireAccount]);
+  const restore = useCallback(async () => {
+    await requireAccount();
+    setState(await provider.restore());
+  }, [provider, requireAccount]);
   const value = useMemo<Ctx>(
     () => ({
       state,

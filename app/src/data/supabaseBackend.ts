@@ -27,8 +27,12 @@ const toAuthor = (r: Row | null | undefined, fallbackId: string): Author => ({
   displayName: r?.display_name ?? null,
 });
 
+/**
+ * Anonymous sign-ins are off (supabase/config.toml) and the app never creates
+ * them. A stray anonymous session is treated as signed out.
+ */
 const toSession = (s: AuthSession | null): Session | null =>
-  s ? { userId: s.user.id, email: s.user.email ?? null, anonymous: Boolean(s.user.is_anonymous) } : null;
+  s && !s.user.is_anonymous ? { userId: s.user.id, email: s.user.email ?? null } : null;
 
 function check<T>(res: { data: T; error: { message: string } | null }): T {
   if (res.error) throw new Error(res.error.message);
@@ -50,7 +54,7 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
 
   async function me() {
     const { data } = await sb.auth.getSession();
-    const id = data.session?.user.id;
+    const id = data.session && !data.session.user.is_anonymous ? data.session.user.id : null;
     if (!id) throw new NotSignedInError();
     return id;
   }
@@ -119,9 +123,6 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
       const { data, error } = await sb.auth.signUp({ email, password });
       checkAuth({ error });
       return { needsConfirmation: !data.session };
-    },
-    async signInAsGuest() {
-      checkAuth(await sb.auth.signInAnonymously());
     },
     async signOut() {
       checkAuth(await sb.auth.signOut());

@@ -3,6 +3,8 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui';
+import { useSession } from '@/data/hooks';
+import { needsAccount } from '@/lib/gate';
 import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
 
 type Choice = {
@@ -32,8 +34,14 @@ const choices: Choice[] = [
 
 /** ＋ chooser: "Log hunt" (private diary, never a post) or "Post" (delayed social post). */
 export default function NewChooser() {
+  const session = useSession();
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
-  const pick = (mode: Choice['mode']) => router.replace(mode === 'post' ? '/new/post' : '/new/log');
+  const pick = (mode: Choice['mode']) => {
+    if (mode === 'post') return router.replace('/new/post');
+    // Signed out: "+ Log hunt" asks for an account once, at the moment of value (no launch wall).
+    const ask = session === null && needsAccount('saveHuntLog', session);
+    router.replace(ask ? { pathname: '/new/log', params: { ask: '1' } } : '/new/log');
+  };
 
   return (
     <View style={styles.backdrop}>
