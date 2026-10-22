@@ -8,6 +8,7 @@ import { ScreenHeader } from '@/components/Screen';
 import { SignInPrompt } from '@/components/SignInPrompt';
 import { Button, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
+import { useCrewSize, useInviteCardDismissed } from '@/data/crew';
 import { useSession } from '@/data/hooks';
 import type { Post } from '@/data/types';
 import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
@@ -37,7 +38,7 @@ function Segments({ value, onChange }: { value: Segment; onChange: (s: Segment) 
 
 /**
  * Zero-crew empty state. Crews don't exist in the backend yet, so every user has
- * zero crew for now; the Invite share sheet sends a plain-text invite.
+ * zero crew for now; the Invite share sheet sends a plain-text invite. Shown only on the Crew tab.
  */
 export function CrewEmpty({ onCommunity }: { onCommunity: () => void }) {
   const [qr, setQr] = useState(false);
@@ -55,9 +56,7 @@ export function CrewEmpty({ onCommunity }: { onCommunity: () => void }) {
         icon="person-add-outline"
         variant="primary"
         style={{ alignSelf: 'stretch' }}
-        onPress={() =>
-          Share.share({ message: 'Join my hunting crew on BirdBrain. Hunt logs are private, and shared posts are delayed 12+ hours with no live locations.' }).catch(() => {})
-        }
+        onPress={inviteCrew}
       />
       <Pressable accessibilityRole="link" onPress={() => setQr(true)}>
         <Text style={styles.link}>Show a QR code instead</Text>
@@ -75,10 +74,32 @@ export function CrewEmpty({ onCommunity }: { onCommunity: () => void }) {
   );
 }
 
+const inviteCrew = () =>
+  Share.share({ message: 'Join my hunting crew on BirdBrain. Hunt logs are private, and shared posts are delayed 12+ hours with no live locations.' }).catch(() => {});
+
+/** Slim, dismissible invite card shown atop Community for users with no crew. */
+export function InviteCard({ onDismiss }: { onDismiss: () => void }) {
+  return (
+    <View style={styles.inviteCard} testID="invite-card">
+      <Text style={[ui.body, { flex: 1 }]} numberOfLines={1}>Hunt with friends? Invite your crew.</Text>
+      <Button label="Invite" icon="person-add-outline" onPress={inviteCrew} />
+      <Pressable accessibilityRole="button" accessibilityLabel="Dismiss invite" onPress={onDismiss} style={styles.dismiss}>
+        <Ionicons name="close" size={20} color={colors.muted} />
+      </Pressable>
+    </View>
+  );
+}
+
 export default function FeedScreen() {
   const session = useSession();
   const { tab } = useLocalSearchParams<{ tab?: string }>();
-  const [segment, setSegment] = useState<Segment>(tab === 'community' ? 'community' : 'crew');
+  const crew = useCrewSize();
+  const [chosen, setSegment] = useState<Segment | null>(null);
+  const [inviteDismissed, dismissInvite] = useInviteCardDismissed();
+  // ?tab= overrides; then the user's pick; then Crew if they have one, else Community.
+  const override: Segment | null = tab === 'community' || tab === 'crew' ? tab : null;
+  const segment: Segment = chosen ?? override ?? (crew && crew > 0 ? 'crew' : 'community');
+  const invite = crew === 0 && !inviteDismissed ? <InviteCard onDismiss={dismissInvite} /> : null;
   const [posts, setPosts] = useState<Post[]>([]);
   const [next, setNext] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -167,6 +188,7 @@ export default function FeedScreen() {
       <View style={styles.root}>
         <ScreenHeader title="Feed" />
         <Segments value={segment} onChange={setSegment} />
+        {invite}
         <View style={styles.gate}>
           {rules === 'required' && <Notice>Before you see or share posts, please read and accept the community rules.</Notice>}
           {error && <Notice tone="error">{error}</Notice>}
@@ -182,6 +204,7 @@ export default function FeedScreen() {
       <View style={styles.root}>
         <ScreenHeader title="Feed" />
         <Segments value={segment} onChange={setSegment} />
+        {invite}
         <ActivityIndicator color={colors.accent} style={{ margin: space.lg }} accessibilityLabel="Loading feed" />
       </View>
     );
@@ -191,6 +214,7 @@ export default function FeedScreen() {
     <View style={styles.root}>
       <ScreenHeader title="Feed" />
       <Segments value={segment} onChange={setSegment} />
+      {invite}
       <FlatList
         data={posts}
         keyExtractor={(p) => p.id}
@@ -232,6 +256,8 @@ const styles = StyleSheet.create({
   gate: { padding: space.lg, gap: space.md },
   rulesLink: { color: colors.accent, textDecorationLine: 'underline' },
   list: { paddingHorizontal: space.lg, paddingBottom: space.xxl },
+  inviteCard: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginHorizontal: space.lg, marginBottom: space.md, paddingLeft: space.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  dismiss: { width: touchTarget, height: touchTarget, alignItems: 'center', justifyContent: 'center' },
   segments: { flexDirection: 'row', marginHorizontal: space.lg, marginBottom: space.md, padding: 3, borderRadius: radius.md, backgroundColor: colors.surface },
   segment: { flex: 1, minHeight: touchTarget - 8, alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm },
   segmentActive: { backgroundColor: colors.surfaceRaised },
