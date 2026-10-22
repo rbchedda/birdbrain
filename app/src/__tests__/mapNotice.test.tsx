@@ -107,7 +107,7 @@ describe('map and sheet notices', () => {
   it('shows the approved one-line banner verbatim, and tapping it shows the full notice verbatim', async () => {
     expect(MAP_BANNER_SHORT).toBe('Approximate boundaries, not a survey. Get permission for private land. (i)');
     expect(MAP_BANNER).toBe(
-      'Boundaries are approximate, not a survey. Shows public land and PGC access-program land only. Get permission before entering any other private land.',
+      'Boundaries are approximate, not a survey. Shows public land (including state parks, where hunting is allowed only in designated areas) and PGC access-program land. Get permission before entering any other private land.',
     );
     await open('/');
     expect(await screen.findByText('6 spots nearby')).toBeTruthy();
