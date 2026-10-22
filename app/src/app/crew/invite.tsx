@@ -22,7 +22,7 @@ const PRIVACY = 'Crews are private: no public directory, joined only by invite l
 export default function CrewInviteScreen() {
   const session = useSession();
   const { id, token } = useLocalSearchParams<{ id?: string; token?: string }>();
-  const title = id ? 'Invite to crew' : token ? 'Join crew' : 'Crews';
+  const title = id ? 'Invite to crew' : token ? 'Crew invite' : 'Crews';
 
   return (
     <View style={styles.root}>
