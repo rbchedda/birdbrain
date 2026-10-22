@@ -30,7 +30,7 @@ describe('Five-tab nav', () => {
   });
 
   it.each([
-    ['/feed', /My profile/],
+    ['/feed', /Hunt with a crew/],
     ['/guide', /Open today\?/],
     ['/profile', /Log a hunt/],
     ['/log', /Saves to your private Hunt Log/],
@@ -40,8 +40,7 @@ describe('Five-tab nav', () => {
     ['/new', /What are you adding\?/],
   ])('deep link %s opens its screen', async (url, text) => {
     await open(url);
-    if (url === '/feed') expect(await screen.findByLabelText('My profile')).toBeTruthy();
-    else expect((await screen.findAllByText(text)).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(text)).length).toBeGreaterThan(0);
   });
 });
 

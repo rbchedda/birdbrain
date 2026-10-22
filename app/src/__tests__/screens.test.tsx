@@ -117,7 +117,7 @@ describe('Stocking planner', () => {
 describe('Community rules', () => {
   it('gates the feed until the rules are accepted, once', async () => {
     expect(await backend.rulesAccepted()).toBe(false);
-    await open('/feed');
+    await open('/feed?tab=community');
     expect(await screen.findByText(/please read and accept the community rules/)).toBeTruthy();
     expect(screen.queryByText(samplePosts()[0].caption)).toBeNull();
     await fireEvent.press(screen.getByText('Read community rules'));
@@ -129,7 +129,7 @@ describe('Community rules', () => {
 
   it('fails closed with a retry when the rules check errors', async () => {
     const spy = jest.spyOn(backend, 'rulesAccepted').mockRejectedValueOnce(new Error('network down'));
-    await open('/feed');
+    await open('/feed?tab=community');
     expect(await screen.findByText(/Couldn’t check the community rules: network down/)).toBeTruthy();
     expect(screen.queryByText(samplePosts()[0].caption)).toBeNull();
     expect(screen.queryByLabelText('Loading feed')).toBeNull();
@@ -139,7 +139,7 @@ describe('Community rules', () => {
   });
 
   it('is linked from the feed and shows it was accepted', async () => {
-    await open('/feed');
+    await open('/feed?tab=community');
     await fireEvent.press(await screen.findByText('Community rules'));
     expect(await screen.findByText('You’ve accepted the community rules.')).toBeTruthy();
     expect(screen.queryByText('I agree to the community rules')).toBeNull();
@@ -148,7 +148,7 @@ describe('Community rules', () => {
 
 describe('Feed', () => {
   it('renders visible posts with blurred areas and toggles like', async () => {
-    await open('/feed');
+    await open('/feed?tab=community');
     const first = samplePosts()[0];
     expect(await screen.findByText(first.caption)).toBeTruthy();
     expect(screen.getByText(/Near Lancaster County/)).toBeTruthy();
@@ -159,7 +159,7 @@ describe('Feed', () => {
   });
 
   it('reports a post', async () => {
-    await open('/feed');
+    await open('/feed?tab=community');
     await screen.findByText(samplePosts()[1].caption);
     await fireEvent.press(screen.getAllByLabelText('Post options')[1]);
     await fireEvent.press(screen.getByText('Report post'));
@@ -169,7 +169,7 @@ describe('Feed', () => {
   });
 
   it('blocks an author and hides their posts', async () => {
-    await open('/feed');
+    await open('/feed?tab=community');
     const sam = samplePosts()[3];
     await screen.findByText(sam.caption);
     await fireEvent.press(screen.getAllByLabelText('Post options')[3]);
@@ -190,7 +190,7 @@ describe('Feed', () => {
 
 describe('Report and block on posts, comments and profiles', () => {
   it('offers the hate reason and refuses a duplicate report', async () => {
-    await open('/feed');
+    await open('/feed?tab=community');
     await screen.findByText(samplePosts()[2].caption);
     await fireEvent.press(screen.getAllByLabelText('Post options')[2]);
     await fireEvent.press(screen.getByText('Report post'));
@@ -344,7 +344,7 @@ describe('After-the-hunt log', () => {
     });
     expect(new Date(mine.publicAfter!).getTime()).toBeGreaterThan(Date.now());
 
-    await open('/feed');
+    await open('/feed?tab=community');
     expect(await screen.findByText('Two flushes on the creek edge')).toBeTruthy();
     expect(screen.getByText(/Delayed · others see it/)).toBeTruthy();
   });
