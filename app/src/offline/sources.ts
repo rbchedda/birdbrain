@@ -21,7 +21,8 @@ const R2_BASE = (process.env.EXPO_PUBLIC_OFFLINE_R2_BASE ?? '').trim();
 export function allowedHosts(): string[] {
   const hosts = ['basemap.nationalmap.gov', 's3.amazonaws.com', 'elevation-tiles-prod.s3.amazonaws.com'];
   const r2 = hostOf(R2_BASE);
-  if (r2) hosts.push(r2);
+  // A misconfigured R2 base can never add a blocked (Esri) host.
+  if (r2 && !isBlockedHost(r2)) hosts.push(r2);
   return hosts;
 }
 

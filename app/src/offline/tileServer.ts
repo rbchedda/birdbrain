@@ -1,4 +1,5 @@
-import { covers, type PackManifest } from './packs';
+import { covers, isValidPackId, type PackManifest } from './packs';
+import { PACK_SOURCES } from './sources';
 import { tilePath, type TileStore } from './store';
 
 const RE = /^bboffline:\/\/([a-z]+)\/(\d+)\/(\d+)\/(\d+)$/;
@@ -19,12 +20,13 @@ export async function serveTile(url: string, manifests: Record<string, PackManif
   const m = RE.exec(url);
   if (!m) return null;
   const [, source, zs, xs, ys] = m;
+  if (!Object.prototype.hasOwnProperty.call(PACK_SOURCES, source)) return null;
   const z = +zs, x = +xs, y = +ys;
   const c = tileCenter(z, x, y);
   // Packs whose box holds the tile center go first; low-zoom tiles are larger than
   // any pack, so the rest are still checked.
   const packs = Object.values(manifests)
-    .filter((p) => p.done > 0 && p.spec.basemaps.includes(source as never))
+    .filter((p) => isValidPackId(p.spec.id) && p.done > 0 && p.spec.basemaps.includes(source as never))
     .sort((a, b) => Number(covers(b.spec.bbox, c.lng, c.lat)) - Number(covers(a.spec.bbox, c.lng, c.lat)));
   for (const p of packs) {
     const data = await store.readBase64(tilePath(p.spec.id, source, z, x, y));

@@ -33,9 +33,28 @@ export interface PackManifest {
 export const SGL_FALLBACK_KM = 4.5;
 export const AREA_RADII_KM = [3, 5, 10] as const;
 
+/** Pack ids are folder names under the packs root, so they must be one safe path segment. */
+const PACK_ID_RE = /^[A-Za-z0-9][A-Za-z0-9.,_-]{0,127}$/;
+
+export class InvalidPackIdError extends Error {
+  constructor(id: unknown) {
+    super(`Invalid offline pack id: ${JSON.stringify(id)}`);
+    this.name = 'InvalidPackIdError';
+  }
+}
+
+export function isValidPackId(id: unknown): id is string {
+  return typeof id === 'string' && PACK_ID_RE.test(id) && !id.includes('..');
+}
+
+export function assertPackId(id: unknown): string {
+  if (!isValidPackId(id)) throw new InvalidPackIdError(id);
+  return id;
+}
+
 export function sglPack(place: { id: string; name: string; center: LngLat }, outline: unknown, basemaps: PackBasemap[]): PackSpec {
   return {
-    id: `sgl-${place.id}`,
+    id: assertPackId(`sgl-${place.id}`),
     kind: 'sgl',
     name: place.name,
     bbox: bboxOfGeometry(outline) ?? bboxAround(place.center, SGL_FALLBACK_KM),
@@ -46,7 +65,7 @@ export function sglPack(place: { id: string; name: string; center: LngLat }, out
 
 export function areaPack(name: string, center: LngLat, km: number, basemaps: PackBasemap[]): PackSpec {
   return {
-    id: `area-${center.lng.toFixed(4)},${center.lat.toFixed(4)}-${km}`,
+    id: assertPackId(`area-${center.lng.toFixed(4)},${center.lat.toFixed(4)}-${km}`),
     kind: 'area',
     name: `${km} km around ${name}`,
     bbox: bboxAround(center, km),
