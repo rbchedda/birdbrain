@@ -1,3 +1,4 @@
+import { EntitlementsProvider, UpgradeSheet } from '@/entitlements';
 import { BarlowCondensed_600SemiBold, BarlowCondensed_700Bold } from '@expo-google-fonts/barlow-condensed';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, useFonts } from '@expo-google-fonts/inter';
 import { Stack } from 'expo-router';
@@ -27,6 +28,7 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
+      <EntitlementsProvider>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.ground } }}>
         <Stack.Screen
@@ -34,6 +36,8 @@ export default function RootLayout() {
           options={{ presentation: 'transparentModal', animation: 'fade', contentStyle: { backgroundColor: 'transparent' } }}
         />
       </Stack>
+      <UpgradeSheet />
+      </EntitlementsProvider>
     </SafeAreaProvider>
   );
 }
