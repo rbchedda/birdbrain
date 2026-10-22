@@ -118,7 +118,7 @@ describe('season and Sunday rules on fixed dates', () => {
     expect(regsFor('waterfowl').possession).toBe('See digest (federal exceptions)');
   });
   it('map place status uses the same official hours as the card', () => {
-    const place = { id: 'x', name: 'Field', type: 'stocking' as const, county: 'Dauphin', species: ['pheasant' as const, 'dove' as const], center: harrisburg, acres: null };
+    const place = { id: 'x', name: 'Field', type: 'stocking' as const, county: 'Dauphin', species: ['pheasant' as const, 'dove' as const], center: harrisburg, acres: null, access: 'state_game_land' as const };
     const today = placeToday(place, new Date('2026-11-03T16:00:00Z'));
     const day = officialDay('2026-11-03', harrisburg.lng)!;
     expect(today.statuses[0].status).toMatchObject({ kind: 'open', start: day.huntStart, end: day.huntEnd });

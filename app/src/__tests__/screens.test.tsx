@@ -52,7 +52,7 @@ describe('Map (Pheasant Planner)', () => {
     const spy = jest.spyOn(backend, 'listPlaces').mockResolvedValue([
       {
         id: 'sgl-straddle', name: 'State Game Lands 999', type: 'stocking', county: 'Centre', stockingCounty: 'Clinton',
-        species: ['pheasant'], center: { lng: -77.6, lat: 41.0 }, acres: null,
+        species: ['pheasant'], center: { lng: -77.6, lat: 41.0 }, acres: null, access: 'state_game_land',
       },
     ]);
     try {

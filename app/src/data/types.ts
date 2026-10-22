@@ -1,3 +1,5 @@
+import type { AccessType } from './access';
+
 export type Species = 'pheasant' | 'dove' | 'turkey' | 'grouse' | 'waterfowl';
 
 export type PlaceType = 'game_land' | 'stocking' | 'dove_field';
@@ -25,6 +27,19 @@ export interface Place {
   center: LngLat;
   acres: number | null;
   note?: string;
+  /** Who controls the land (data/access.ts). Places with unknown status never reach the app. */
+  access: AccessType;
+  /** Ingest source, e.g. "pgc:state_game_lands": keys the layer date in DataSource. */
+  source?: string;
+}
+
+/** One ingested layer and its dates, from public.ingest_state. */
+export interface DataSource {
+  source: string;
+  /** The layer's editingInfo.lastEditDate at PGC (ISO), or null if unknown. */
+  lastEditDate: string | null;
+  /** When BirdBrain last checked the layer (ISO). */
+  lastRunAt: string | null;
 }
 
 /** A row of public.stocking_events. */
