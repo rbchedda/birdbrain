@@ -6,6 +6,8 @@ import type { Session } from './backend';
 import { onReconnect as onConnectivityBack, startConnectivity } from '@/lib/connectivity';
 import { journalEntries, onJournalChange, startJournalSync, syncJournal } from './journal';
 import { backend } from './index';
+import { cachedSafetyPlaces, saveSafetyPlaces } from '@/offline/safetyCache';
+
 import type { DataSource, Place } from './types';
 
 /** Run an async loader, re-running when deps change. Stale results are dropped. */
@@ -66,10 +68,15 @@ export function loadPlaces(force = false) {
   if (placesPromise && !force) return placesPromise;
   setPlaces({ ...places, loading: true, error: undefined });
   placesPromise = backend.listPlaces().then(
-    (list) => setPlaces({ places: list, loading: false }),
-    (error: Error) => {
+    (list) => {
+      setPlaces({ places: list, loading: false });
+      void saveSafetyPlaces(list);
+    },
+    async (error: Error) => {
       placesPromise = null;
-      setPlaces({ ...places, loading: false, error });
+      // Offline: keep showing the last places we had so pins and access labels still draw.
+      const saved = places.places.length ? places.places : await cachedSafetyPlaces();
+      setPlaces({ places: saved, loading: false, error });
     },
   );
   return placesPromise;

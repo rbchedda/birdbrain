@@ -33,6 +33,12 @@ export interface PlaceMapProps {
   onSelect: (id: string | null) => void;
   /** The user's position (blue dot + accuracy circle); null hides it. */
   me?: { lng: number; lat: number; accuracy: number | null } | null;
+  /**
+   * Downloaded packs (premium). Basemaps listed here are drawn from bboffline://
+   * tiles answered by getTile (base64, or null to fall back to the network).
+   * Safety overlays never depend on this.
+   */
+  offline?: { basemaps: Basemap[]; getTile: (url: string) => Promise<string | null> };
   /** Tap on a bundled state park outline (pins win when both are hit). */
   onSelectPark?: (id: string) => void;
 }

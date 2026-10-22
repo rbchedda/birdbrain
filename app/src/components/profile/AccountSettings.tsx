@@ -7,9 +7,23 @@ import { Button, Chip, Notice, SectionTitle, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { useAsync, useSession } from '@/data/hooks';
 import { displayName } from '@/data/types';
+import { offlinePacks } from '@/offline';
 import { colors, space } from '@/theme/tokens';
 
 /** Settings: display name, username, dog flag, blocked users. */
+/**
+ * Downloaded map packs belong to the signed-in user (a paid feature), so they and their
+ * stored index go on sign-out and account deletion. The free safety cache (public game
+ * land list and outlines) is kept: it is public data and helps whoever uses the device next.
+ */
+async function clearOfflinePacks() {
+  try {
+    await offlinePacks.clear();
+  } catch {
+    // Never block signing out on storage cleanup.
+  }
+}
+
 export function ProfileSettings() {
   const session = useSession();
   const me = session?.userId;
@@ -85,6 +99,7 @@ export function AccountSettings() {
     setDeleteError(undefined);
     try {
       await backend.deleteAccount();
+      await clearOfflinePacks();
       router.replace('/');
     } catch (e) {
       setDeleteError((e as Error).message);
@@ -102,6 +117,7 @@ export function AccountSettings() {
           icon="log-out-outline"
           onPress={async () => {
             await backend.signOut();
+            await clearOfflinePacks();
             router.replace('/');
           }}
         />

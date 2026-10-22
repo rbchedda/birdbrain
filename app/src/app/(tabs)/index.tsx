@@ -43,6 +43,8 @@ import {
   STOCKING_PIN_NOTE,
 } from '@/data/mapNotice';
 import { legal } from '@/lib/env';
+import { useEntitlements } from '@/entitlements';
+import { useOfflineMapSource, withOfflineOutline } from '@/offline';
 import { STOCKING_SOURCE, stockingCountyOf, windowsForCounty } from '@/data/places';
 import { PGC_DIGEST_URL } from '@/data/regs';
 import { STATE_PARKS } from '@/data/stateParks';
@@ -127,7 +129,13 @@ export default function MapScreen() {
     setExpanded(true);
   };
 
-  const detail = useAsync(() => (selectedId ? backend.placeDetail(selectedId) : Promise.resolve(null)), [selectedId]);
+  const { canUse } = useEntitlements();
+  const offline = useOfflineMapSource(canUse('offlineMaps'));
+
+  const detail = useAsync(
+    () => (selectedId ? withOfflineOutline(selectedId, () => backend.placeDetail(selectedId)) : Promise.resolve(null)),
+    [selectedId],
+  );
 
   const chipShown = usePendingChipShown();
   const peek = selected || planner || park ? PEEK : PEEK_EMPTY;
@@ -155,6 +163,7 @@ export default function MapScreen() {
         basemap={basemap}
         focus={focus}
         onSelect={onMapSelect}
+        offline={offline}
         onSelectPark={onSelectPark}
         me={me}
       />
