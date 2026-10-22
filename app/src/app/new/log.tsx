@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { usePromptSignIn } from '@/auth/usePromptSignIn';
 import { ScreenHeader } from '@/components/Screen';
 import { Button, Chip, Notice, SectionTitle, Stepper, ui } from '@/components/ui';
 import { backend } from '@/data';
@@ -271,9 +272,8 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
 
 /**
  * Redesign Log hunt sheet (mockups 02 + 02b). Always private, never a post.
- * Signed out (hosted backend): the entry saves on the phone first, then a
- * sign-in sheet offers to back it up, with a "Not now" escape (designer's
- * recommendation; hard gate is an open question for RBChedda).
+ * Signed out (hosted backend): the entry saves on the phone first, then
+ * usePromptSignIn() asks to sign in (sheet owned by feat/guest-mode-hybrid).
  */
 export function LogHuntSheet() {
   const { placeId } = useLocalSearchParams<{ placeId?: string }>();
@@ -281,7 +281,7 @@ export function LogHuntSheet() {
   const session = useSession();
   const { data: journal } = useJournal();
   const [saved, setSaved] = useState<{ id: string; label: string } | null>(null);
-  const [askSignIn, setAskSignIn] = useState(false);
+  const promptSignIn = usePromptSignIn();
   const [formKey, setFormKey] = useState(0);
   const place = places.find((p) => p.id === placeId);
   const signedOut = backend.mode === 'supabase' && !session;
@@ -327,26 +327,10 @@ export function LogHuntSheet() {
             const e = await addJournalEntry(draft, { id: session?.userId ?? 'me', username: null, displayName: 'You' }, details);
             const label = [draft.counts[0]?.placeName, draft.species ? speciesLabel[draft.species] : null].filter(Boolean).join(' · ') || 'this hunt';
             setSaved({ id: e.id, label });
-            if (firstSave) setAskSignIn(true);
+            if (firstSave) promptSignIn({ reason: 'first-hunt-save', entryLabel: label });
           }}
         />
       )}
-      <Modal visible={askSignIn} transparent animationType="slide" onRequestClose={() => setAskSignIn(false)}>
-        <View style={styles.backdrop}>
-          <View style={styles.sheet} testID="signin-on-save">
-            <Text style={styles.sheetTitle}>Keep your hunt diary</Text>
-            <Text style={ui.body}>Sign in once so your hunts are backed up and only you can see them. Nothing is posted.</Text>
-            <Button
-              label="Continue with email"
-              icon="mail-outline"
-              variant="primary"
-              onPress={() => { setAskSignIn(false); router.push('/sign-in'); }}
-            />
-            <Notice>🔒 Your entry for {saved?.label ?? 'this hunt'} is held on this phone and backs up the moment you sign in.</Notice>
-            <Button label="Not now — keep on this phone only" onPress={() => setAskSignIn(false)} />
-          </View>
-        </View>
-      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -443,9 +427,6 @@ const styles = StyleSheet.create({
   placeName: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text },
   remove: { width: touchTarget, height: touchTarget, alignItems: 'center', justifyContent: 'center', marginRight: -space.sm },
   link: { color: colors.accent, fontFamily: fonts.bodySemi, fontSize: 15 },
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet: { gap: space.sm, padding: space.lg, paddingBottom: space.xxl, backgroundColor: colors.surface, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg },
-  sheetTitle: { fontFamily: fonts.headingSemi, fontSize: 20, color: colors.text },
   pick: { minHeight: touchTarget, justifyContent: 'center', paddingVertical: space.xs },
   photo: {
     flexDirection: 'row',
