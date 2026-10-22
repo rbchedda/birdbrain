@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomSheet } from '@/components/BottomSheet';
 import { PlaceMap } from '@/components/map/PlaceMap';
+import { StateParkSheet } from '@/components/StateParkSheet';
 import { StockingList, windowText } from '@/components/StockingList';
 import { pinColor, type Basemap } from '@/components/map/types';
 import { Tag } from '@/components/Tag';
@@ -40,6 +41,7 @@ import {
 import { legal } from '@/lib/env';
 import { STOCKING_SOURCE, stockingCountyOf, windowsForCounty } from '@/data/places';
 import { PGC_DIGEST_URL } from '@/data/regs';
+import { STATE_PARKS } from '@/data/stateParks';
 import { describeStatus, placeToday, SEASON_YEAR, type PlaceToday } from '@/data/seasons';
 import { migratory, placeTypeLabel, speciesLabel, type Place, type PlaceType } from '@/data/types';
 import { formatDay, formatTime, todayET } from '@/lib/time';
@@ -68,6 +70,7 @@ export default function MapScreen() {
   const [query, setQuery] = useState('');
   const [basemap, setBasemap] = useState<Basemap>('topo');
   const [selectedId, setSelectedId] = useState<string>();
+  const [parkId, setParkId] = useState<string>();
   const [expanded, setExpanded] = useState(false);
   const [focus, setFocus] = useState<{ center: Place['center']; key: number }>();
   const [planner, setPlanner] = useState(false);
@@ -103,8 +106,16 @@ export default function MapScreen() {
 
   const onMapSelect = useCallback((id: string | null) => {
     setSelectedId(id ?? undefined);
+    setParkId(undefined);
     if (id) setExpanded(true);
   }, []);
+  const onSelectPark = useCallback((id: string) => {
+    setSelectedId(undefined);
+    setPlanner(false);
+    setParkId(id);
+    setExpanded(true);
+  }, []);
+  const park = STATE_PARKS.find((p) => p.id === parkId);
 
   const pick = (place: Place) => {
     setSelectedId(place.id);
@@ -123,6 +134,7 @@ export default function MapScreen() {
         basemap={basemap}
         focus={focus}
         onSelect={onMapSelect}
+        onSelectPark={onSelectPark}
       />
 
       <View
@@ -213,10 +225,12 @@ export default function MapScreen() {
       <BottomSheet
         expanded={expanded}
         onExpandedChange={setExpanded}
-        peekHeight={selected || planner ? PEEK : PEEK_EMPTY}
+        peekHeight={selected || planner || park ? PEEK : PEEK_EMPTY}
         expandedHeight={sheetHeight(screenH, topH, height)}
       >
-        {selected ? (
+        {park && !selected ? (
+          <StateParkSheet park={park} onClose={() => setParkId(undefined)} />
+        ) : selected ? (
           <PlaceDetails place={selected} expanded={expanded} onClose={() => setSelectedId(undefined)} onSavedChange={refreshSaved} />
         ) : planner ? (
           <StockingList places={all} savedIds={savedIds} onPick={pick} />

@@ -17,6 +17,8 @@ export interface PlaceMapProps {
   /** Bump to recenter on the selected place (e.g. picked from the list). */
   focus?: { center: LngLat; key: number };
   onSelect: (id: string | null) => void;
+  /** Tap on a bundled state park outline (pins win when both are hit). */
+  onSelectPark?: (id: string) => void;
 }
 
 export const pinColor: Record<PlaceType, string> = {
