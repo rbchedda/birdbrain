@@ -241,6 +241,8 @@ export function syncJournal(backend: Backend, opts: SyncOptions = {}): Promise<S
 
 async function runSync(backend: Backend, { now = Date.now, force = false }: SyncOptions): Promise<SyncReport> {
   const report: SyncReport = { synced: 0, failed: 0, conflicts: 0, skipped: 0 };
+  // Signed out (hybrid guest mode): entries stay on this phone; nothing goes to the server.
+  if (typeof backend.getSession === 'function' && !(await backend.getSession().catch(() => null))) return report;
   const due = (await allEntries()).filter(
     (e) => e.sync.status !== 'synced' && (e.deleted || !e.sync.conflict) && (force || e.sync.nextAttemptAt <= now()),
   );
