@@ -33,9 +33,7 @@ export default function CrewScreen() {
   };
   const confirmLeave = () => {
     const lastAdmin = crew.data?.role === 'admin' && crew.data.members.filter((m) => m.role === 'admin').length === 1;
-    const msg = lastAdmin && crew.data!.memberCount > 1
-      ? 'You’re the only admin. If you leave, nobody can invite new members.'
-      : 'You’ll need a new invite to rejoin.';
+    const msg = leaveWarning(lastAdmin, crew.data?.memberCount ?? 1);
     if (Platform.OS === 'web') return void leave();
     Alert.alert('Leave crew?', msg, [
       { text: 'Cancel', style: 'cancel' },
@@ -85,6 +83,13 @@ export default function CrewScreen() {
       </ScrollView>
     </View>
   );
+}
+
+/** Mirrors public.leave_crew: last admin out promotes the longest-standing member; last member out deletes the crew. */
+export function leaveWarning(lastAdmin: boolean, memberCount: number): string {
+  if (memberCount <= 1) return 'You’re the last member, so leaving deletes this crew and its invites.';
+  if (lastAdmin) return 'You’re the only admin. If you leave, the longest-standing member becomes admin. You’ll need a new invite to rejoin.';
+  return 'You’ll need a new invite to rejoin.';
 }
 
 const styles = StyleSheet.create({

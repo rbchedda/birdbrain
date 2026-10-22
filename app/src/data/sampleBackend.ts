@@ -1,7 +1,7 @@
 import { readJson, writeJson } from '@/lib/localStore';
 import { publicAfterET } from '@/lib/time';
 
-import { blurPoint, postKind, sumCounts, type Backend, type FeedPage, type HuntLogUpload, type Session } from './backend';
+import { blurPoint, crewError, postKind, sumCounts, type Backend, type FeedPage, type HuntLogUpload, type LeaveCrewResult, type Session } from './backend';
 import { samplePlaces, sampleStocking } from './places';
 import { sampleAuthors, sampleComments, sampleMe, samplePosts } from './posts';
 import { containsObjectionable, OBJECTIONABLE_MESSAGE } from './moderation';
@@ -10,6 +10,25 @@ import type { Author, Comment, Crew, CrewDetail, Group, Post, Profile } from './
 const KEY = 'birdbrain.sample.v1';
 /** Stand-in for the server's hunt_log_entries table. */
 export const HUNT_LOG_KEY = 'birdbrain.sample.huntlog.v1';
+
+export const CREW_MEMBER_CAP = 25;
+export const CREW_INVITE_CAP = 10;
+
+/**
+ * Mirrors public.crew_after_member_delete. Members are kept in join order, so the
+ * first remaining one is the longest-standing (the DB breaks ties by user id).
+ */
+export function leaveSampleCrew(c: { members: { author: { id: string }; role: 'admin' | 'member' }[] }, userId: string): LeaveCrewResult {
+  const me = c.members.find((m) => m.author.id === userId);
+  if (!me) return 'left';
+  c.members = c.members.filter((m) => m !== me);
+  if (!c.members.length) return 'deleted';
+  if (!c.members.some((m) => m.role === 'admin')) {
+    c.members[0].role = 'admin';
+    return 'promoted';
+  }
+  return 'left';
+}
 
 interface SampleCrew {
   id: string;
@@ -296,7 +315,7 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
     async createCrew(name) {
       const s = await load();
       const n = name.trim();
-      if (n.length < 3 || n.length > 60) throw new Error('Crew names are 3 to 60 characters.');
+      if (n.length < 1 || n.length > 40) throw new Error('Crew names are 1 to 40 characters.');
       const id = `crew-${now().getTime().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
       s.crews.push({ id, name: n, members: [{ author: { id: sampleMe.id, username: s.profile.username, displayName: s.profile.displayName }, role: 'admin' }] });
       await persist(s);
@@ -307,6 +326,8 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
       const s = await load();
       const c = s.crews.find((x) => x.id === crewId);
       if (!c?.members.some((m) => m.author.id === sampleMe.id && m.role === 'admin')) throw new Error('Only crew admins can invite.');
+      const active = s.invites.filter((i) => i.crewId === crewId && new Date(i.expiresAt) > now()).length;
+      if (active >= CREW_INVITE_CAP) throw new Error(crewError('too many active invites'));
       const token = Array.from({ length: 4 }, () => Math.random().toString(36).slice(2, 10)).join('');
       const expiresAt = new Date(now().getTime() + 7 * 24 * 3600e3).toISOString();
       s.invites.push({ token, crewId, expiresAt });
@@ -319,7 +340,9 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
       const inv = s.invites.find((i) => i.token === token.trim() && new Date(i.expiresAt) > now());
       const c = inv && s.crews.find((x) => x.id === inv.crewId);
       if (!c) throw new Error('That invite is invalid or has expired.');
-      if (!c.members.some((m) => m.author.id === sampleMe.id))
+      const already = c.members.some((m) => m.author.id === sampleMe.id);
+      if (!already && c.members.length >= CREW_MEMBER_CAP) throw new Error(crewError('crew is full'));
+      if (!already)
         c.members.push({ author: { id: sampleMe.id, username: s.profile.username, displayName: s.profile.displayName }, role: 'member' });
       await persist(s);
       return c.id;
@@ -328,8 +351,13 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
     async leaveCrew(crewId) {
       const s = await load();
       const c = s.crews.find((x) => x.id === crewId);
-      if (c) c.members = c.members.filter((m) => m.author.id !== sampleMe.id);
+      const outcome = c ? leaveSampleCrew(c, sampleMe.id) : 'left';
+      if (outcome === 'deleted') {
+        s.crews = s.crews.filter((x) => x.id !== crewId);
+        s.invites = s.invites.filter((i) => i.crewId !== crewId);
+      }
       await persist(s);
+      return outcome;
     },
 
     // Mirrors public.upsert_hunt_log_entry: idempotent by client id, conflict on a stale base version.

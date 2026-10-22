@@ -29,7 +29,9 @@ export default function CrewInviteScreen() {
       <ScreenHeader title={title} back />
       {session === null ? (
         <SignInPrompt why="Sign in to start or join a private crew." />
-      ) : session === undefined ? null : (
+      ) : session === undefined ? null : session.anonymous ? (
+        <SignInPrompt why="Crews need an account. Guests can browse, but creating or joining a crew takes a free account." />
+      ) : (
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           {id ? <ShareInvite crewId={id} /> : <StartOrJoin initialToken={token} />}
           <Text style={ui.muted}>{PRIVACY}</Text>
@@ -90,7 +92,7 @@ function StartOrJoin({ initialToken }: { initialToken?: string }) {
 
   const create = async () => {
     const n = name.trim();
-    if (n.length < 3 || n.length > 60) return setError('Crew names are 3 to 60 characters.');
+    if (n.length < 1 || n.length > 40) return setError('Crew names are 1 to 40 characters.');
     setBusy('create');
     try {
       const id = await backend.createCrew(n);
@@ -132,7 +134,7 @@ function StartOrJoin({ initialToken }: { initialToken?: string }) {
             onChangeText={setName}
             placeholder="Crew name (e.g. Tuesday Dogs)"
             placeholderTextColor={colors.muted}
-            maxLength={60}
+            maxLength={40}
             style={ui.input}
             accessibilityLabel="Crew name"
           />

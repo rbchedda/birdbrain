@@ -4,7 +4,7 @@ import { parseGeometry, parsePoint, toEwkt } from '@/lib/geo';
 import { removeAllUnder, type StorageBucketApi } from '@/lib/storageCleanup';
 
 import { classifyAccess, type AccessType } from './access';
-import { NotSignedInError, postKind, type Backend, type Session } from './backend';
+import { crewError, NotSignedInError, postKind, type Backend, type LeaveCrewResult, type Session } from './backend';
 import placeDetailQuery from './placeDetailQuery.json';
 import type { Author, BirdCounts, Crew, Comment, Place, PlaceType, Post, Profile, Species, StockingEvent } from './types';
 
@@ -32,6 +32,11 @@ const toSession = (s: AuthSession | null): Session | null =>
 
 function check<T>(res: { data: T; error: { message: string } | null }): T {
   if (res.error) throw new Error(res.error.message);
+  return res.data;
+}
+
+function checkCrew<T>(res: { data: T; error: { message: string } | null }): T {
+  if (res.error) throw new Error(crewError(res.error.message));
   return res.data;
 }
 
@@ -247,8 +252,9 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
     async feed(cursor, limit) {
       const userId = await me();
       if (!cursor) await refreshBlocks(userId);
-      // RLS already hides posts before public_after and across blocks.
-      let q = sb.from('posts').select(POST_COLUMNS).order('created_at', { ascending: false }).limit(limit + 1);
+      // RLS already hides posts before public_after and across blocks. Crew posts
+      // never appear in the community feed, even for members.
+      let q = sb.from('posts').select(POST_COLUMNS).eq('crew_only', false).order('created_at', { ascending: false }).limit(limit + 1);
       if (cursor) q = q.lt('created_at', cursor);
       const rows = (check(await q) ?? []) as Row[];
       const page = rows.slice(0, limit);
@@ -270,7 +276,10 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
     async postsBy(authorId) {
       const userId = await me();
       const rows = check(
-        await sb.from('posts').select(POST_COLUMNS).eq('author_id', authorId).order('created_at', { ascending: false }).limit(50),
+        await (authorId === userId
+          ? sb.from('posts').select(POST_COLUMNS).eq('author_id', authorId)
+          : sb.from('posts').select(POST_COLUMNS).eq('author_id', authorId).eq('crew_only', false)
+        ).order('created_at', { ascending: false }).limit(50),
       );
       return decorate((rows ?? []) as Row[], userId);
     },
@@ -477,24 +486,24 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
 
     async createCrew(name) {
       await me();
-      return check(await sb.rpc('create_crew', { crew_name: name.trim() })) as string;
+      return checkCrew(await sb.rpc('create_crew', { crew_name: name.trim() })) as string;
     },
 
     async createCrewInvite(crewId) {
       await me();
-      const rows = check(await sb.rpc('create_crew_invite', { gid: crewId })) as Row[] | Row;
+      const rows = checkCrew(await sb.rpc('create_crew_invite', { gid: crewId })) as Row[] | Row;
       const r = Array.isArray(rows) ? rows[0] : rows;
       return { token: r.token, expiresAt: r.expires_at };
     },
 
     async joinCrew(token) {
       await me();
-      return check(await sb.rpc('join_crew', { invite_token: token.trim() })) as string;
+      return checkCrew(await sb.rpc('join_crew', { invite_token: token.trim() })) as string;
     },
 
     async leaveCrew(crewId) {
-      const userId = await me();
-      check(await sb.from('group_members').delete().eq('group_id', crewId).eq('user_id', userId));
+      await me();
+      return checkCrew(await sb.rpc('leave_crew', { gid: crewId })) as LeaveCrewResult;
     },
 
     async upsertHuntLogEntry(e) {

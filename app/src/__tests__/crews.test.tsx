@@ -45,11 +45,11 @@ describe('crews (sample backend)', () => {
     expect(await crew.crewSize()).toBe(1);
   });
 
-  it('rejects too-short names', async () => {
+  it.each([['blank', '   '], ['too long', 'x'.repeat(41)]])('rejects %s names', async (_label, name) => {
     await open('/crew/invite');
-    await fireEvent.changeText(await screen.findByLabelText('Crew name'), 'ab');
+    await fireEvent.changeText(await screen.findByLabelText('Crew name'), name);
     await fireEvent.press(screen.getByText('Start crew'));
-    expect(await screen.findByText('Crew names are 3 to 60 characters.')).toBeTruthy();
+    expect(await screen.findByText('Crew names are 1 to 40 characters.')).toBeTruthy();
   });
 
   it('Feed defaults to Crew and lists the crew once the user has one', async () => {
@@ -100,4 +100,43 @@ describe('crews (sample backend)', () => {
     await open('/crew/not-a-real-crew');
     expect(await screen.findByText('This crew doesn’t exist, or you’re not a member.')).toBeTruthy();
   });
+});
+
+describe('crew rules (follow-up)', () => {
+  const { leaveSampleCrew, CREW_MEMBER_CAP, CREW_INVITE_CAP } = jest.requireActual('@/data/sampleBackend');
+  const { crewError } = jest.requireActual('@/data/backend');
+  const { leaveWarning } = jest.requireActual('@/app/crew/[id]');
+  const m = (id: string, role: 'admin' | 'member' = 'member') => ({ author: { id }, role });
+
+  it('leaving as last admin promotes the longest-standing member; last member deletes', () => {
+    const c = { members: [m('me', 'admin'), m('old'), m('new')] };
+    expect(leaveSampleCrew(c, 'me')).toBe('promoted');
+    expect(c.members).toEqual([m('old', 'admin'), m('new')]);
+    expect(leaveSampleCrew(c, 'new')).toBe('left');
+    expect(leaveSampleCrew(c, 'old')).toBe('deleted');
+    expect(leaveSampleCrew({ members: [m('a', 'admin'), m('me', 'admin')] }, 'me')).toBe('left');
+  });
+
+  it('warns about promotion or deletion before leaving', () => {
+    expect(leaveWarning(true, 3)).toMatch(/longest-standing member becomes admin/);
+    expect(leaveWarning(true, 1)).toMatch(/deletes this crew/);
+    expect(leaveWarning(false, 3)).toBe('You’ll need a new invite to rejoin.');
+  });
+
+  it('maps server errors to plain language', () => {
+    expect(crewError('crew is full')).toMatch(/25 members/);
+    expect(crewError('too many active invites')).toMatch(/10 active invites/);
+    expect(crewError('create an account to join a crew')).toMatch(/Create an account/);
+    expect(crewError('boom')).toBe('boom');
+    expect([CREW_MEMBER_CAP, CREW_INVITE_CAP]).toEqual([25, 10]);
+  });
+
+  it('the sample backend caps active invites at 10 and deletes a crew when its last member leaves', async () => {
+    const id = await backend.createCrew('Cap Test');
+    for (let i = 0; i < 10; i++) await backend.createCrewInvite(id);
+    await expect(backend.createCrewInvite(id)).rejects.toThrow(/10 active invites/);
+    expect(await backend.leaveCrew(id)).toBe('deleted');
+    expect(await backend.crew(id)).toBeNull();
+  });
+
 });
