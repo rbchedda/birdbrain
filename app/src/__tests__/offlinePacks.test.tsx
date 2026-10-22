@@ -7,6 +7,7 @@ import { loadPlaces } from '@/data/hooks';
 import { MAP_BANNER_SHORT } from '@/data/mapNotice';
 import { samplePlaces } from '@/data/places';
 import { canUse, FREE_STATE, isPremium, SAFETY_FEATURES } from '@/entitlements';
+import { useOfflineMapSource } from '@/offline';
 import { OfflineGateError, PackDownloader } from '@/offline/downloader';
 import { areaPack, planPack, sglPack, type PackManifest, type PackSpec } from '@/offline/packs';
 import { cachedOutline, cachedSafetyPlaces, saveOutline, saveSafetyPlaces, withOfflineOutline } from '@/offline/safetyCache';
@@ -160,7 +161,6 @@ describe('offline packs: gating', () => {
     mockDevice.manifests = {
       [spec.id]: { spec, status: 'complete', total: 1, done: 1, bytes: 1, failed: 0, updatedAt: 0 },
     };
-    const { useOfflineMapSource } = require('@/offline') as typeof import('@/offline');
     const free = await renderHook(() => useOfflineMapSource(false));
     expect(free.result.current).toBeUndefined();
     const paid = await renderHook(() => useOfflineMapSource(true));
@@ -277,7 +277,7 @@ jest.mock('react-native-safe-area-context', () => {
 });
 const mapProps: { outline?: unknown; offline?: unknown; places?: unknown[] }[] = [];
 jest.mock('@/components/map/PlaceMap', () => {
-  const { View } = require('react-native');
+  const { View } = jest.requireActual<typeof import('react-native')>('react-native');
   return {
     PlaceMap: (p: never) => {
       mapProps.push(p);
