@@ -4,7 +4,7 @@ import { fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-li
 import { backend } from '@/data';
 import type { Session } from '@/data/backend';
 import { consentBullets, consentCheckboxLabel, TERMS_VERSION, tosSection } from '@/data/terms';
-import { appVersion, flushTermsQueue, needsConsent, readQueue, resetTermsConsentCache } from '@/lib/termsConsent';
+import { acceptTerms, appVersion, flushTermsQueue, getConsent, needsConsent, readQueue, resetTermsConsentCache, syncConsentOnSignIn } from '@/lib/termsConsent';
 
 jest.unmock('@/components/ConsentGate');
 
@@ -142,5 +142,66 @@ describe('Terms page', () => {
     await fireEvent.press(await screen.findByText('Terms of Service: Maps, Data and Your Responsibility'));
     expect(await screen.findByTestId('tos-maps-data')).toBeTruthy();
     expect(screen.getByTestId('tos-maps-data')).toHaveTextContent(tosSection[1].body, { exact: false });
+  });
+});
+
+describe('Hybrid guest mode (no anonymous accounts)', () => {
+  const guest = () => {
+    jest.spyOn(backend, 'getSession').mockResolvedValue(null);
+    return [
+      jest.spyOn(backend, 'signInAsGuest'),
+      jest.spyOn(backend, 'signIn'),
+      jest.spyOn(backend, 'signUp'),
+    ];
+  };
+
+  it('lets a guest with no user_id pass the gate without any auth call', async () => {
+    const auth = guest();
+    const record = jest.spyOn(backend, 'recordTermsAcceptance');
+    await open('/');
+    await fireEvent.press(await screen.findByRole('checkbox', { name: consentCheckboxLabel }));
+    await fireEvent.press(continueButton());
+    expect(await screen.findByText('6 spots')).toBeTruthy();
+
+    for (const fn of auth) expect(fn).not.toHaveBeenCalled();
+    expect(record).not.toHaveBeenCalled();
+    const c = await getConsent();
+    expect(c.state).toBe('accepted');
+    expect(c.acceptance).toMatchObject({ termsVersion: TERMS_VERSION, appVersion: appVersion() });
+    expect(c.pendingSync).toBe(1);
+  });
+
+  it('getConsent reports needed before acceptance and reads storage only', async () => {
+    const auth = guest();
+    const getSession = backend.getSession as jest.Mock;
+    getSession.mockClear();
+    expect(await getConsent()).toEqual({ state: 'needed', acceptance: null, pendingSync: 0 });
+    expect(getSession).not.toHaveBeenCalled();
+    for (const fn of auth) expect(fn).not.toHaveBeenCalled();
+  });
+
+  it('syncConsentOnSignIn sends the stored acceptance once a real account signs in', async () => {
+    let session: Session | null = null;
+    jest.spyOn(backend, 'getSession').mockImplementation(async () => session);
+    const record = jest.spyOn(backend, 'recordTermsAcceptance');
+    const a = await acceptTerms(new Date('2026-10-22T14:00:00Z'));
+    expect(await syncConsentOnSignIn()).toEqual({ sent: 0, pending: 1 });
+
+    session = signedIn;
+    expect(await syncConsentOnSignIn()).toEqual({ sent: 1, pending: 0 });
+    expect(record).toHaveBeenCalledWith(a);
+
+    // A second account signing in on the same device gets its own row (server ignores duplicates).
+    session = { userId: 'other', email: null, anonymous: false };
+    expect(await syncConsentOnSignIn()).toEqual({ sent: 1, pending: 0 });
+    expect(record).toHaveBeenCalledTimes(2);
+  });
+
+  it('never syncs for an anonymous session', async () => {
+    jest.spyOn(backend, 'getSession').mockResolvedValue({ userId: 'anon', email: null, anonymous: true });
+    const record = jest.spyOn(backend, 'recordTermsAcceptance');
+    await acceptTerms();
+    expect(await syncConsentOnSignIn()).toEqual({ sent: 0, pending: 1 });
+    expect(record).not.toHaveBeenCalled();
   });
 });
