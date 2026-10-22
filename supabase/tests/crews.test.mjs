@@ -103,8 +103,12 @@ describe('join by invite', () => {
   });
 
   it('rejects expired invites', async () => {
-    const t = (await rows(alice, 'select * from public.create_crew_invite($1, 1)', [crew]))[0].token;
-    await db.query(`update public.crew_invites set created_at = now() - interval '2 hours', expires_at = now() - interval '1 second' where expires_at < now() + interval '2 hours'`);
+    const t = (await rows(alice, 'select * from public.create_crew_invite($1)', [crew]))[0].token;
+    await db.query(
+      `update public.crew_invites set created_at = now() - interval '7 days', expires_at = now() - interval '1 second'
+        where token_hash = sha256(convert_to($1, 'UTF8'))`,
+      [t],
+    );
     await assert.rejects(q(eve, 'select public.join_crew($1)', [t]), /invalid or expired/);
   });
 
