@@ -14,7 +14,8 @@ create table public.accepted_terms (
   unique (user_id, terms_version)
 );
 
-create index accepted_terms_user_idx on public.accepted_terms (user_id);
+-- No separate user_id index: unique (user_id, terms_version) already covers
+-- lookups by user_id (leading column).
 
 alter table public.accepted_terms enable row level security;
 
@@ -24,7 +25,12 @@ create policy accepted_terms_select_own on public.accepted_terms
 
 create policy accepted_terms_insert_own on public.accepted_terms
   for insert to authenticated
-  with check (user_id = (select auth.uid()));
+  -- Anonymous sign-ins also use the authenticated role; they are not signed in
+  -- for consent purposes, so only real accounts may log an acceptance.
+  with check (
+    user_id = (select auth.uid())
+    and not coalesce(((select auth.jwt()) ->> 'is_anonymous')::boolean, false)
+  );
 
 revoke all on public.accepted_terms from anon, authenticated;
 grant select, insert (user_id, accepted_at, app_version, terms_version) on public.accepted_terms to authenticated;

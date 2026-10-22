@@ -70,6 +70,43 @@ describe('accepted_terms', () => {
     );
   });
 
+  it('refuses inserts from anonymous (guest) sign-ins, which use the authenticated role', async () => {
+    const guest = '00000000-0000-4000-8000-0000000000c1';
+    await db.query('insert into auth.users (id, email, is_anonymous) values ($1, null, true)', [guest]);
+    await assert.rejects(
+      db.transaction(async (tx) => {
+        await tx.query('set local role authenticated');
+        await tx.query(`select set_config('request.jwt.claims', $1, true)`, [
+          JSON.stringify({ sub: guest, role: 'authenticated', is_anonymous: true }),
+        ]);
+        await tx.query(`insert into public.accepted_terms (app_version, terms_version) values ('1', '1')`);
+      }),
+      /row-level security/,
+    );
+    const { rows } = await db.query('select 1 from public.accepted_terms where user_id = $1', [guest]);
+    assert.equal(rows.length, 0);
+  });
+
+  it('gives two accounts accepting on one device a row each', async () => {
+    const carol = '00000000-0000-4000-8000-0000000000d1';
+    const dave = '00000000-0000-4000-8000-0000000000d2';
+    await createUser(db, carol, 'carol@example.test');
+    await createUser(db, dave, 'dave@example.test');
+    // Same device acceptance (same time, build and version) sent for each sign-in.
+    const device = { acceptedAt: '2026-10-22T13:00:00Z', appVersion: '1.0.0' };
+    await accept(carol, '2026-10-22', device);
+    await accept(dave, '2026-10-22', device);
+    await accept(carol, '2026-10-22', device); // carol signs in again: no duplicate
+    const { rows } = await db.query('select user_id from public.accepted_terms where user_id in ($1, $2) order by id', [carol, dave]);
+    assert.deepEqual(rows.map((r) => r.user_id), [carol, dave]);
+  });
+
+  it('has no index duplicating the (user_id, terms_version) unique key', async () => {
+    const { rows } = await db.query(`select indexname from pg_indexes where schemaname = 'public' and tablename = 'accepted_terms'`);
+    assert.ok(!rows.some((r) => r.indexname === 'accepted_terms_user_idx'));
+    assert.equal(rows.length, 2); // primary key + unique (user_id, terms_version)
+  });
+
   it('treats re-sending the same terms version as a no-op and records a new version', async () => {
     await accept(alice, '2026-10-22');
     await accept(alice, '2026-11-01');
