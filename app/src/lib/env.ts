@@ -25,6 +25,8 @@ export const useSampleData =
 export const legal = {
   privacyPolicyUrl: 'https://example.com/birdbrain/privacy-TODO',
   termsUrl: 'https://example.com/birdbrain/terms-TODO',
+  /** Placeholder until a support inbox exists; gets ?place=<id>&name=<name>. */
+  mapErrorReportUrl: 'https://example.com/birdbrain/map-error-TODO',
 };
 
 /** Minimum age to use BirdBrain (COPPA / store policy). */

@@ -122,6 +122,7 @@ export function AccountSettings() {
         ))}
       <SectionTitle>Legal</SectionTitle>
       <Button label="Community rules" icon="document-text-outline" onPress={() => router.push('/rules')} />
+      <Button label="Data sources" icon="layers-outline" onPress={() => router.push('/data-sources')} />
       <LegalLinks credits />
     </View>
   );

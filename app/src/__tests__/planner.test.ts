@@ -20,7 +20,7 @@ import type { Place } from '@/data/types';
 
 const seed = JSON.parse(readFileSync(join(__dirname, '..', '..', '..', 'data', 'pgc', 'pheasant-allocation-2026-27.json'), 'utf8'));
 const point = (id: string, county: string | null, lng: number, lat: number): Place => ({
-  id, name: id, type: 'stocking', county, species: ['pheasant'], center: { lng, lat }, acres: null,
+  id, name: id, type: 'stocking', county, species: ['pheasant'], center: { lng, lat }, acres: null, access: 'state_game_land',
 });
 
 describe('stocking data comes only from the PGC ingest seed', () => {

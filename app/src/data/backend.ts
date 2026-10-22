@@ -1,6 +1,7 @@
 import type {
   Author,
   Comment,
+  DataSource,
   DiaryDetails,
   Group,
   Place,
@@ -63,7 +64,10 @@ export interface Backend {
   /** Permanently delete the signed-in account and everything it owns, then sign out. */
   deleteAccount(): Promise<void>;
 
+  /** Places with a known access_type only; unknown land status is never shown. */
   listPlaces(): Promise<Place[]>;
+  /** Per-layer dates from ingest_state for the Data sources page and place sheets. */
+  dataSources(): Promise<DataSource[]>;
   placeDetail(id: string): Promise<PlaceDetail>;
   savedPlaceIds(): Promise<string[]>;
   setPlaceSaved(id: string, saved: boolean): Promise<void>;

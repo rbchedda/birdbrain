@@ -3,6 +3,7 @@ import type { Session as AuthSession, SupabaseClient } from '@supabase/supabase-
 import { parseGeometry, parsePoint, toEwkt } from '@/lib/geo';
 import { removeAllUnder, type StorageBucketApi } from '@/lib/storageCleanup';
 
+import { classifyAccess, type AccessType } from './access';
 import { NotSignedInError, postKind, type Backend, type Session } from './backend';
 import placeDetailQuery from './placeDetailQuery.json';
 import type { Author, BirdCounts, Comment, Place, PlaceType, Post, Profile, Species, StockingEvent } from './types';
@@ -146,14 +147,23 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
         const rows = check(
           await sb
             .from('places')
-            .select('id, type, name, county, species, centroid, acres')
+            .select(
+              'id, type, name, county, species, centroid, acres, source, property_type:properties->>property_type, sgl:properties->>sgl, description:properties->>description, access_type:properties->>access_type',
+            )
             .order('name')
             .range(from, from + page - 1),
         );
         for (const r of (rows ?? []) as Row[]) {
           const center = parsePoint(r.centroid);
           if (!center) continue;
+          // Stored label first; re-derive for rows ingested before access_type existed.
+          const access =
+            (r.access_type as AccessType | null) ??
+            classifyAccess({ type: r.type, name: r.name, propertyType: r.property_type, sgl: r.sgl, description: r.description });
+          if (!access) continue; // unknown land status: hide rather than guess
           out.push({
+            access,
+            source: r.source,
             id: r.id,
             name: r.name,
             type: r.type as PlaceType,
@@ -182,6 +192,11 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
         if (rows.length < page) break;
       }
       return out;
+    },
+
+    async dataSources() {
+      const rows = check(await sb.from('ingest_state').select('source, last_edit_date, last_run_at').order('source'));
+      return ((rows ?? []) as Row[]).map((r) => ({ source: r.source, lastEditDate: r.last_edit_date, lastRunAt: r.last_run_at }));
     },
 
     async placeDetail(id) {

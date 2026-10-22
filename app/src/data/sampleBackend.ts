@@ -103,6 +103,8 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
     },
 
     listPlaces: async () => samplePlaces,
+    // Sample data has no ingest: the Data sources page shows dates as unknown.
+    dataSources: async () => [],
     placeDetail: async (id) => ({ stocking: sampleStocking.filter((e) => e.placeId === id), outline: null }),
     savedPlaceIds: async () => (await load()).saved,
     async setPlaceSaved(id, on) {

@@ -23,7 +23,7 @@ it('falls back to sample data when Supabase env vars are unset', () => {
 describe('Map (Pheasant Planner)', () => {
   it('lists places and shows land info and today’s status for a selection', async () => {
     await open('/');
-    expect(await screen.findByText('6 public spots')).toBeTruthy();
+    expect(await screen.findByText('6 spots')).toBeTruthy();
     expect(screen.getByTestId('place-map')).toBeTruthy();
 
     await fireEvent.press(screen.getByLabelText('Managed dove field (sample C)'));
@@ -52,7 +52,7 @@ describe('Map (Pheasant Planner)', () => {
     const spy = jest.spyOn(backend, 'listPlaces').mockResolvedValue([
       {
         id: 'sgl-straddle', name: 'State Game Lands 999', type: 'stocking', county: 'Centre', stockingCounty: 'Clinton',
-        species: ['pheasant'], center: { lng: -77.6, lat: 41.0 }, acres: null,
+        species: ['pheasant'], center: { lng: -77.6, lat: 41.0 }, acres: null, access: 'state_game_land',
       },
     ]);
     try {
@@ -69,9 +69,9 @@ describe('Map (Pheasant Planner)', () => {
 
   it('filters by place type and searches by county', async () => {
     await open('/');
-    await screen.findByText('6 public spots');
+    await screen.findByText('6 spots');
     await fireEvent.press(screen.getByText('Dove Fields'));
-    expect(screen.getByText('1 public spot')).toBeTruthy();
+    expect(screen.getByText('1 spot')).toBeTruthy();
     expect(screen.queryByLabelText('State Game Lands (sample A)')).toBeNull();
 
     await fireEvent.press(screen.getByText('All'));
@@ -84,7 +84,7 @@ describe('Map (Pheasant Planner)', () => {
 describe('Stocking planner', () => {
   it('opens from the map with the disclaimer, PGC link, points, dove fields and tips', async () => {
     await open('/');
-    await screen.findByText('6 public spots');
+    await screen.findByText('6 spots');
     await fireEvent.press(screen.getByText('Stocking planner'));
     expect(await screen.findByTestId('stocking-disclaimer')).toHaveTextContent(/Always verify with PGC/);
     expect(screen.getByRole('link', { name: 'Open PGC pheasant allocation' })).toBeTruthy();

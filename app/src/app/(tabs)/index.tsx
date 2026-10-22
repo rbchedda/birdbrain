@@ -22,7 +22,20 @@ import { pinColor, type Basemap } from '@/components/map/types';
 import { Tag } from '@/components/Tag';
 import { Button, Chip, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
-import { loadPlaces, useAsync, usePlaces, useSession } from '@/data/hooks';
+import { accessLabel } from '@/data/access';
+import { loadPlaces, useAsync, useDataSources, usePlaces, useSession } from '@/data/hooks';
+import {
+  DOVE_LINE,
+  ENROLLED_PRIVATE_LINE,
+  layerDateFor,
+  MAP_BANNER,
+  SEASON_ONLY_NOTE,
+  SHEET_HEADING,
+  sheetText,
+  STOCKING_LINE,
+  STOCKING_PIN_NOTE,
+} from '@/data/mapNotice';
+import { legal } from '@/lib/env';
 import { STOCKING_SOURCE, stockingCountyOf, windowsForCounty } from '@/data/places';
 import { PGC_DIGEST_URL } from '@/data/regs';
 import { describeStatus, placeToday, SEASON_YEAR } from '@/data/seasons';
@@ -129,6 +142,17 @@ export default function MapScreen() {
             <Chip key={f.key} label={f.label} active={f.key === filter} onPress={() => setFilter(f.key)} />
           ))}
         </ScrollView>
+        {/* Legal notice: always visible, never dismissible, scales with system text size. */}
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel={`${MAP_BANNER} Opens the full map notice.`}
+          onPress={() => router.push('/data-sources')}
+          style={styles.banner}
+          testID="map-banner"
+        >
+          <Ionicons name="information-circle-outline" size={16} color={colors.text} />
+          <Text style={styles.bannerText}>{MAP_BANNER}</Text>
+        </Pressable>
       </View>
 
       <BottomSheet
@@ -146,10 +170,10 @@ export default function MapScreen() {
             <Text style={styles.sheetTitle}>
               {loading && !all.length
                 ? 'Loading public land…'
-                : `${places.length} public ${places.length === 1 ? 'spot' : 'spots'}`}
+                : `${places.length} ${places.length === 1 ? 'spot' : 'spots'}`}
             </Text>
             <Text style={ui.muted}>
-              {openIds.size} open today ({formatDay(today)}).{' '}
+              {openIds.size} with a season open today ({formatDay(today)}).{' '}
               {backend.mode === 'sample'
                 ? 'Sample data (dev flag).'
                 : backend.mode === 'unconfigured'
@@ -224,6 +248,11 @@ function PlaceDetails({
   const needsMigratory = today.statuses.some((s) => migratory.includes(s.species) && s.status.kind !== 'closed');
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string>();
+  const layerDate = layerDateFor(place.type, useDataSources());
+  const reportError = () =>
+    Linking.openURL(
+      `${legal.mapErrorReportUrl}?place=${encodeURIComponent(place.id)}&name=${encodeURIComponent(place.name)}`,
+    ).catch(() => {});
 
   useEffect(() => {
     let live = true;
@@ -268,10 +297,19 @@ function PlaceDetails({
         </Text>
       </View>
       <Text style={styles.sheetTitle}>{place.name}</Text>
+      <Text style={ui.muted} testID="place-access">
+        {accessLabel[place.access]}
+        {place.type === 'stocking' ? ` · ${STOCKING_PIN_NOTE}` : ''}
+      </Text>
       {place.note && <Text style={ui.body}>{place.note}</Text>}
 
       <View style={styles.callout}>
-        <Text style={styles.calloutTitle}>{today.open ? 'Open today' : 'Nothing open today'} · {formatDay(today.date)}</Text>
+        <Text style={styles.calloutTitle}>
+          {today.open ? 'Season open today' : 'No season open today'} · {formatDay(today.date)}
+        </Text>
+        <Text style={styles.fine} testID="season-only-note">
+          {SEASON_ONLY_NOTE}
+        </Text>
         {today.statuses.map(({ species, status }) => (
           <View key={species} style={styles.statusRow}>
             <Text style={styles.statusSpecies}>{speciesLabel[species]}</Text>
@@ -331,6 +369,27 @@ function PlaceDetails({
           </Text>
         </View>
       )}
+
+      <View style={styles.notice} testID="place-notice">
+        {place.access === 'enrolled_private' && (
+          <Text style={ui.body} testID="enrolled-line">
+            {ENROLLED_PRIVATE_LINE}
+          </Text>
+        )}
+        <Text style={styles.noticeText}>
+          <Text style={{ fontFamily: fonts.bodySemi }}>{SHEET_HEADING}</Text> {sheetText(layerDate)}
+          {place.type === 'stocking' ? ` ${STOCKING_LINE}` : ''}
+          {place.type === 'dove_field' ? ` ${DOVE_LINE}` : ''}
+        </Text>
+        <View style={[ui.row, { gap: space.lg, flexWrap: 'wrap' }]}>
+          <Text accessibilityRole="link" style={styles.link} onPress={reportError}>
+            Report a map error
+          </Text>
+          <Text accessibilityRole="link" style={styles.link} onPress={() => router.push('/data-sources')}>
+            Data sources
+          </Text>
+        </View>
+      </View>
 
       <View style={styles.actions}>
         <Button label="Directions" icon="navigate" variant="primary" onPress={directions} style={{ flex: 1 }} />
@@ -404,4 +463,26 @@ const styles = StyleSheet.create({
   statusSpecies: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text, width: 76 },
   fine: { fontFamily: fonts.body, fontSize: 12, lineHeight: 17, color: colors.muted },
   actions: { flexDirection: 'row', gap: space.sm },
+  banner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: space.xs,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: space.md,
+    paddingVertical: space.xs,
+  },
+  // No maxFontSizeMultiplier and no numberOfLines: the banner must stay fully readable at large text sizes.
+  bannerText: { flex: 1, fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 16, color: colors.text },
+  notice: {
+    gap: space.sm,
+    padding: space.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  noticeText: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.text },
+  link: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.accent, textDecorationLine: 'underline' },
 });

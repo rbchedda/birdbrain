@@ -65,7 +65,7 @@ describe('season status', () => {
   it('marks a stocking field open today during pheasant season', () => {
     const place: Place = {
       id: 'x', name: 'Field', type: 'stocking', county: 'Dauphin', species: ['pheasant'],
-      center: harrisburg, acres: null,
+      center: harrisburg, acres: null, access: 'state_game_land',
     };
     const midday = new Date('2026-11-03T16:00:00Z');
     const today = placeToday(place, midday);
