@@ -197,6 +197,70 @@ describe('Hybrid guest mode (no anonymous accounts)', () => {
     expect(record).toHaveBeenCalledTimes(2);
   });
 
+  it('records the current acceptance for every real account that signs in on the device', async () => {
+    let session: Session | null = null;
+    jest.spyOn(backend, 'getSession').mockImplementation(async () => session);
+    const rows: string[] = [];
+    jest.spyOn(backend, 'recordTermsAcceptance').mockImplementation(async (a) => {
+      // Like the server: one row per (user, terms_version), duplicates ignored.
+      const key = `${session!.userId}|${a.termsVersion}`;
+      if (!rows.includes(key)) rows.push(key);
+    });
+    await acceptTerms(new Date('2026-10-22T14:00:00Z'));
+    for (const userId of ['alice', 'bob', 'alice', 'bob']) {
+      session = { userId, email: null, anonymous: false };
+      expect(await syncConsentOnSignIn()).toEqual({ sent: 1, pending: 0 });
+    }
+    expect(rows).toEqual([`alice|${TERMS_VERSION}`, `bob|${TERMS_VERSION}`]);
+  });
+
+  it('does not lose the second account\'s row when a flush is already in flight', async () => {
+    let session: Session | null = { userId: 'alice', email: null, anonymous: false };
+    jest.spyOn(backend, 'getSession').mockImplementation(async () => session);
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    let started!: () => void;
+    const inFlight = new Promise<void>((r) => (started = r));
+    const users: string[] = [];
+    let calls = 0;
+    jest.spyOn(backend, 'recordTermsAcceptance').mockImplementation(async () => {
+      const who = session!.userId;
+      if (calls++ === 0) {
+        started();
+        await gate;
+      }
+      users.push(who);
+    });
+    await AsyncStorage.setItem(ACCEPTED_KEY, JSON.stringify({ acceptedAt: '2026-10-22T14:00:00Z', appVersion: '1', termsVersion: TERMS_VERSION }));
+    const first = syncConsentOnSignIn();
+    await inFlight; // alice's send is in progress
+    session = { userId: 'bob', email: null, anonymous: false };
+    const second = syncConsentOnSignIn();
+    release();
+    await first;
+    await second;
+    expect(users).toEqual(['alice', 'bob']);
+    expect(await readQueue()).toEqual([]);
+  });
+
+  it('treats anonymous sessions as signed out on session change and in the queue flush', async () => {
+    const anon: Session = { userId: 'anon', email: null, anonymous: true };
+    jest.spyOn(backend, 'getSession').mockResolvedValue(anon);
+    let emit: ((s: Session | null) => void) | undefined;
+    jest.spyOn(backend, 'onSessionChange').mockImplementation((cb) => {
+      emit = cb;
+      return () => {};
+    });
+    const record = jest.spyOn(backend, 'recordTermsAcceptance');
+    await open('/');
+    await fireEvent.press(await screen.findByRole('checkbox', { name: consentCheckboxLabel }));
+    await fireEvent.press(continueButton());
+    emit?.(anon);
+    expect(await flushTermsQueue()).toBe(0);
+    expect(record).not.toHaveBeenCalled();
+    expect((await getConsent()).pendingSync).toBe(1);
+  });
+
   it('never syncs for an anonymous session', async () => {
     jest.spyOn(backend, 'getSession').mockResolvedValue({ userId: 'anon', email: null, anonymous: true });
     const record = jest.spyOn(backend, 'recordTermsAcceptance');
