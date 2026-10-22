@@ -13,7 +13,7 @@ export default function SignInScreen() {
   const [mode, setMode] = useState<'in' | 'up'>('in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [busy, setBusy] = useState<'email' | 'guest' | null>(null);
+  const [busy, setBusy] = useState<'email' | null>(null);
   const [message, setMessage] = useState<{ tone: 'error' | 'success'; text: string }>();
 
   const done = () => (router.canGoBack() ? router.back() : router.replace('/feed'));
@@ -37,17 +37,6 @@ export default function SignInScreen() {
     }
   };
 
-  const guest = async () => {
-    setBusy('guest');
-    try {
-      await backend.signInAsGuest();
-      done();
-    } catch (e) {
-      setMessage({ tone: 'error', text: `Guest sign-in failed: ${(e as Error).message}` });
-    } finally {
-      setBusy(null);
-    }
-  };
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -90,8 +79,7 @@ export default function SignInScreen() {
           label={mode === 'in' ? 'New here? Create an account' : 'Have an account? Sign in'}
           onPress={() => setMode(mode === 'in' ? 'up' : 'in')}
         />
-        <Button label="Continue as guest" icon="person-outline" busy={busy === 'guest'} onPress={guest} />
-        <Text style={ui.muted}>Guest accounts can post and comment from this device only.</Text>
+        <Text style={ui.muted}>No account needed to browse the map, stocking, hours, regs or the Guide.</Text>
         <Text style={ui.muted}>By continuing you agree to the Terms of Service and Privacy Policy.</Text>
         <LegalLinks />
       </ScrollView>

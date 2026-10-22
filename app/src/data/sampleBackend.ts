@@ -31,7 +31,7 @@ const sampleGroups: Omit<Group, 'member'>[] = [
   { id: 'g-waterfowl', slug: 'pa-waterfowl', name: 'PA Waterfowl', description: 'Ducks and geese: zones, stamps and blinds.', species: 'waterfowl' },
 ];
 
-const session: Session = { userId: sampleMe.id, email: null, anonymous: false };
+const session: Session = { userId: sampleMe.id, email: null };
 
 /**
  * Offline backend. Applies the same rules the database enforces (next-day
@@ -94,7 +94,6 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
     onSessionChange: () => () => {},
     signIn: async () => {},
     signUp: async () => ({ needsConfirmation: false }),
-    signInAsGuest: async () => {},
     signOut: async () => {},
     async deleteAccount() {
       // Drop everything this device stored for the sample user and rebuild from seed data.
