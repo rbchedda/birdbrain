@@ -93,12 +93,12 @@ describe('must 2: deleting a crew deletes its content', () => {
     const rls = (await db.query(`select relrowsecurity from pg_class where oid = 'public.storage_deletion_queue'::regclass`)).rows[0];
     assert.equal(rls.relrowsecurity, true);
   });
-  it('no SQL delete from storage.objects remains in crew code', async () => {
+  it('no function deletes from storage.objects in SQL', async () => {
     const src = (await db.query(`select prosrc from pg_proc where proname = 'delete_crew_content'`)).rows[0].prosrc;
     assert.doesNotMatch(src, /storage\.objects/);
     const offenders = (await db.query(`select proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
        where n.nspname = 'public' and prosrc ~* 'delete\s+from\s+storage\.objects' order by 1`)).rows.map((r) => r.proname);
-    assert.deepEqual(offenders.filter((n) => n !== 'delete_my_account'), [], 'only the legacy account-deletion path may remain');
+    assert.deepEqual(offenders, [], 'no function deletes from storage.objects; use storage_deletion_queue');
   });
   it('the last member leaving (auto-delete) also deletes the posts', async () => {
     const crew = await newCrew(alice);

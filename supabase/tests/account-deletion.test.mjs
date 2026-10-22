@@ -23,7 +23,12 @@ const footprint = async (u) => ({
   members: await count('select count(*) n from public.group_members where user_id = $1', [u]),
   blocks: await count('select count(*) n from public.user_blocks where blocker_id = $1 or blocked_id = $1', [u]),
   reports: await count('select count(*) n from public.reports where reporter_id = $1 or profile_id = $1', [u]),
-  photos: await count(`select count(*) n from storage.objects where bucket_id = 'post-photos' and name like $1`, [`${u}/%`]),
+  // Files not yet queued for Storage API deletion (the DB never deletes them itself).
+  photos: await count(
+    `select count(*) n from storage.objects o where o.bucket_id = 'post-photos' and o.name like $1
+        and not exists (select 1 from public.storage_deletion_queue q where q.bucket_id = o.bucket_id and q.path = o.name)`,
+    [`${u}/%`],
+  ),
   groupsCreated: await count('select count(*) n from public.groups where created_by = $1', [u]),
 });
 

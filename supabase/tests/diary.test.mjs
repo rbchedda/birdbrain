@@ -131,7 +131,9 @@ describe('diary and account deletion', () => {
     await as(db, 'authenticated', alice, (tx) => tx.query('select public.delete_my_account()'));
     const { rows } = await db.query('select count(*)::int as n from public.diary_entries');
     assert.equal(rows[0].n, 0);
-    const photos = await db.query(`select count(*)::int as n from storage.objects where bucket_id = 'diary-photos'`);
+    // Files are queued for the Storage API job, never deleted in SQL.
+    const photos = await db.query(`select count(*)::int as n from storage.objects o where bucket_id = 'diary-photos'
+      and not exists (select 1 from public.storage_deletion_queue q where q.bucket_id = o.bucket_id and q.path = o.name)`);
     assert.equal(photos.rows[0].n, 0);
   });
 
