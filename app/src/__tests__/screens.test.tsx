@@ -275,16 +275,29 @@ describe('Guide tab', () => {
     expect(screen.getByLabelText('Open the PGC Hunting & Trapping Digest')).toBeTruthy();
   });
 
-  it('keeps the zone picker on the PGC table only; the Guide uses the picked zone', async () => {
+  it('does not present a default PGC hours zone as the user\'s until they pick one', async () => {
     await open('/guide');
     expect(await screen.findByTestId('guide-today')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Zone 7' })).toBeNull();
+    expect(screen.getByTestId('guide-zone')).toHaveTextContent('Pick your hours zone ›');
+    expect(screen.getByTestId('guide-today-default-zone')).toHaveTextContent(/\(default\), pick yours/);
+    expect(screen.getByText('In season now')).toBeTruthy();
+    expect(screen.queryByText(/^Zone \d/)).toBeNull();
+    expect(screen.queryByText(/In season now ·/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /hours zone 7/ })).toBeNull();
     await fireEvent.press(screen.getByText('PGC table ›'));
-    await fireEvent.press(await screen.findByRole('button', { name: 'Zone 7' }));
-    expect(await screen.findByText('Shooting times · Zone 7')).toBeTruthy();
+    expect(await screen.findByText(/Shooting times · PGC hours zone \d \(default\), pick yours/)).toBeTruthy();
+  });
+
+  it('shows the picked PGC hours zone after picking, and keeps it on re-open', async () => {
+    await open('/guide/hours');
+    await fireEvent.press(await screen.findByRole('button', { name: 'PGC hours zone 7' }));
+    expect(await screen.findByText('Shooting times · PGC hours zone 7')).toBeTruthy();
     expect(screen.getByTestId('guide-bag')).toBeTruthy();
     await open('/guide');
-    expect(await screen.findByText('In season now · Zone 7')).toBeTruthy();
+    expect(await screen.findByTestId('guide-zone')).toHaveTextContent('PGC hours zone 7 · today ·');
+    expect(screen.queryByTestId('guide-today-default-zone')).toBeNull();
+    expect(screen.queryByText('Pick your hours zone ›')).toBeNull();
+    expect(screen.getByText('In season now')).toBeTruthy();
   });
 
   it('designer feedback: no Open today card, no migratory line, no bag or Closed in list rows', async () => {
@@ -307,12 +320,12 @@ describe('Guide tab', () => {
     expect(screen.getByTestId('bird-limits-digest')).toBeTruthy();
   });
 
-  it('hides "Buy on HuntFishPA" while the URL is unverified (null)', async () => {
+  it('shows "Buy on HuntFishPA" on the Licenses page', async () => {
     await open('/guide');
     await fireEvent.press(await screen.findByRole('button', { name: 'Licenses' }));
     expect(await screen.findByTestId('reg-licenses')).toBeTruthy();
-    expect(screen.queryByText('Buy on HuntFishPA ›')).toBeNull();
-    expect(screen.queryByTestId('buy-huntfishpa')).toBeNull();
+    expect(screen.getByText('Buy on HuntFishPA ›')).toBeTruthy();
+    expect(screen.getByTestId('buy-huntfishpa')).toBeTruthy();
   });
 
   it('Gear checklist tile opens the per-species checklist', async () => {
