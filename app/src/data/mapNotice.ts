@@ -12,7 +12,7 @@ export const MAP_BANNER =
 
 /** §3: shown above the general sheet text on enrolled private land. */
 export const ENROLLED_PRIVATE_LINE =
-  'Private land enrolled in a PGC public-access program. The owner allows hunting only under the program’s terms. Follow all posted rules, closed areas, and safety zones, and respect any restrictions on vehicles, seasons, or species. Enrollment can change or end; verify at pa.gov/pgc.';
+  "Private land enrolled in a PGC public-access program. The owner allows hunting only under the program's terms. Follow all posted rules, closed areas, and safety zones, and respect any restrictions on vehicles, seasons, or species. Enrollment can change or end; verify at pa.gov/pgc.";
 
 /** Memo §4B general place-sheet text; {date} is the layer's last PGC update. */
 export const SHEET_HEADING = 'Check before you hunt.';
