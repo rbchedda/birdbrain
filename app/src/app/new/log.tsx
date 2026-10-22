@@ -13,14 +13,14 @@ import { useJournal, usePlaces, useSession } from '@/data/hooks';
 import { DiaryForm, diaryDraft } from '@/app/diary/new';
 import { addJournalEntry, type JournalEntry } from '@/data/journal';
 import { emptyDiaryDetails, type DiaryDetails } from '@/data/types';
-import { allSpecies, placeTypeLabel, speciesLabel, type LocationVisibility, type Place, type PlaceCount, type Species } from '@/data/types';
+import { loggableSpecies, placeTypeLabel, speciesLabel, type LocationVisibility, type Place, type LoggableSpecies, type PlaceCount, type Species } from '@/data/types';
 import { addDays, etParts, formatDay, formatTime, publicAfterET, todayET } from '@/lib/time';
 import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
 
 const SIGN_IN_PROMPT_KEY = 'birdbrain.signInPromptSeen.v1';
 type PostDraft = Parameters<typeof addJournalEntry>[0];
 
-const groupFor: Record<Species, string> = {
+const groupFor: Record<LoggableSpecies, string> = {
   pheasant: 'pa-pheasant',
   dove: 'pa-dove',
   turkey: 'pa-turkey',
@@ -112,7 +112,7 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
       exact: location === 'blurred' ? exact : null,
       location: exact ? location : ('hidden' as const),
       audience,
-      groupSlug: toGroup && species ? groupFor[species] : null,
+      groupSlug: toGroup && species ? (groupFor[species as LoggableSpecies] ?? null) : null,
     };
     try {
       if (audience === 'private') {
@@ -158,7 +158,7 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
 
         <SectionTitle>Species</SectionTitle>
         <View style={ui.row}>
-          {allSpecies.map((s) => (
+          {loggableSpecies.map((s) => (
             <Chip key={s} label={speciesLabel[s]} active={species === s} onPress={() => setSpecies(species === s ? null : s)} />
           ))}
         </View>
