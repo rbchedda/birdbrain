@@ -13,7 +13,7 @@ type Inbound = { type: 'ready' } | { type: 'select'; id: string | null } | { typ
  * page; the returned `receive` handles messages coming back.
  */
 export function useMapBridge(post: (m: Outbound) => void, props: PlaceMapProps) {
-  const { places, selectedId, outline, basemap, focus, onSelect, onSelectPark } = props;
+  const { places, selectedId, outline, basemap, focus, onSelect, onSelectPark, me } = props;
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string>();
 
@@ -50,8 +50,12 @@ export function useMapBridge(post: (m: Outbound) => void, props: PlaceMapProps) 
   }, [ready, basemap, post]);
 
   useEffect(() => {
-    if (ready && focus) post({ type: 'focus', center: [focus.center.lng, focus.center.lat] });
+    if (ready && focus) post({ type: 'focus', center: [focus.center.lng, focus.center.lat], zoom: focus.zoom ?? 11 });
   }, [ready, focus, post]);
+
+  useEffect(() => {
+    if (ready) post(meMessage(me));
+  }, [ready, me, post]);
 
   const receive = useCallback(
     (raw: string) => {
@@ -70,4 +74,11 @@ export function useMapBridge(post: (m: Outbound) => void, props: PlaceMapProps) 
   );
 
   return { receive, error, ready };
+}
+
+/** Bridge message for the user's position; accuracy is meters (0 when unknown). */
+export function meMessage(me: PlaceMapProps['me']) {
+  return me
+    ? { type: 'me', center: [me.lng, me.lat], accuracy: Math.max(0, me.accuracy ?? 0) }
+    : { type: 'me', center: null, accuracy: 0 };
 }

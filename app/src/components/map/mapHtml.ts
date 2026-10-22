@@ -1,12 +1,23 @@
 import { colors } from '@/theme/tokens';
 
 import { pinColor } from './types';
-
-// UMD build with an inline worker, so it runs from an about:blank WebView/iframe.
-const MAPLIBRE = 'https://unpkg.com/maplibre-gl@5.24.0/dist';
+// UMD build with an inline worker, bundled into the page (no CDN at runtime), so it
+// runs from an about:blank WebView/iframe. Regenerate with app/scripts/vendor-maplibre.mjs.
+import { maplibreCss, maplibreJs } from './vendor/maplibreGl';
 
 // USGS National Map tiles: public domain, no API key.
-const USGS = 'https://basemap.nationalmap.gov/arcgis/rest/services';
+export const USGS = 'https://basemap.nationalmap.gov/arcgis/rest/services';
+/** Credit line USGS asks for (usgs.gov FAQ: terms of use for The National Map). */
+export const USGS_ATTRIBUTION = 'Map services and data available from U.S. Geological Survey, National Geospatial Program.';
+/** USGSImageryOnly service copyright (NAIP orthoimagery). */
+export const USGS_IMAGERY_ATTRIBUTION = 'USDA, USGS The National Map: Orthoimagery.';
+
+/**
+ * Layer ids per basemap. Only one group is visible at a time; MapLibre only
+ * requests tiles for sources with a visible layer, so hidden basemaps cost nothing.
+ * Terrain is empty until PR 2 (brand terrain on Protomaps + 3DEP).
+ */
+export const basemapLayers = { topo: ['topo'], satellite: ['satellite'], terrain: [] as string[] };
 
 /** Self-contained map page. Talks to the app through postMessage only. */
 export const mapHtml = `<!doctype html>
@@ -14,7 +25,7 @@ export const mapHtml = `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<link rel="stylesheet" href="${MAPLIBRE}/maplibre-gl.css">
+<style>${maplibreCss}</style>
 <style>
   html, body, #map { margin: 0; height: 100%; background: ${colors.ground}; }
   .maplibregl-ctrl-attrib { font: 11px system-ui, sans-serif; }
@@ -22,7 +33,7 @@ export const mapHtml = `<!doctype html>
 </head>
 <body>
 <div id="map"></div>
-<script src="${MAPLIBRE}/maplibre-gl.js"></script>
+<script>${maplibreJs}</script>
 <script>
 (function () {
   function send(m) {
@@ -31,9 +42,10 @@ export const mapHtml = `<!doctype html>
     else if (window.parent !== window) window.parent.postMessage({ birdbrain: s }, '*');
   }
   if (!window.maplibregl) {
-    send({ type: 'error', message: 'The map could not load. Check your connection.' });
+    send({ type: 'error', message: 'The map could not load.' });
     return;
   }
+  var GROUPS = ${JSON.stringify(basemapLayers)};
   var empty = { type: 'FeatureCollection', features: [] };
   var map = new maplibregl.Map({
     container: 'map',
@@ -47,18 +59,19 @@ export const mapHtml = `<!doctype html>
       sources: {
         topo: { type: 'raster', tileSize: 256, maxzoom: 16,
           tiles: ['${USGS}/USGSTopo/MapServer/tile/{z}/{y}/{x}'],
-          attribution: 'USGS The National Map' },
-        imagery: { type: 'raster', tileSize: 256, maxzoom: 16,
-          tiles: ['${USGS}/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}'],
-          attribution: 'USGS The National Map' }
+          attribution: '${USGS_ATTRIBUTION}' },
+        satellite: { type: 'raster', tileSize: 256, maxzoom: 16,
+          tiles: ['${USGS}/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}'],
+          attribution: '${USGS_IMAGERY_ATTRIBUTION} ${USGS_ATTRIBUTION}' }
       },
       layers: [
         { id: 'topo', type: 'raster', source: 'topo' },
-        { id: 'imagery', type: 'raster', source: 'imagery', layout: { visibility: 'none' } }
+        { id: 'satellite', type: 'raster', source: 'satellite', layout: { visibility: 'none' } }
       ]
     }
   });
-  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
+  // No +/- control: bottom-right sits under the sheet and the header owns the top.
+  // Pinch (touch) and scroll/double-click (web) zoom; 'center on me' handles recentering.
 
   var loaded = false, queue = [], selected = null;
   function apply(m) {
@@ -66,15 +79,34 @@ export const mapHtml = `<!doctype html>
     if (m.type === 'parks') map.getSource('parks').setData(m.data);
     if (m.type === 'outline') map.getSource('outline').setData(m.geometry ? { type: 'Feature', properties: {}, geometry: m.geometry } : empty);
     if (m.type === 'basemap') {
-      map.setLayoutProperty('topo', 'visibility', m.name === 'topo' ? 'visible' : 'none');
-      map.setLayoutProperty('imagery', 'visibility', m.name === 'imagery' ? 'visible' : 'none');
+      // Unknown or not-yet-built basemaps (terrain before PR 2) fall back to topo.
+      var name = GROUPS[m.name] && GROUPS[m.name].length ? m.name : 'topo';
+      Object.keys(GROUPS).forEach(function (g) {
+        GROUPS[g].forEach(function (id) { map.setLayoutProperty(id, 'visibility', g === name ? 'visible' : 'none'); });
+      });
+      send({ type: 'basemap', name: name });
     }
     if (m.type === 'select') {
       selected = m.id;
       map.setFilter('places-selected', ['==', ['get', 'id'], m.id || '']);
       if (m.id === null) map.getSource('outline').setData(empty);
     }
-    if (m.type === 'focus') map.easeTo({ center: m.center, zoom: Math.max(map.getZoom(), 11), duration: 600 });
+    if (m.type === 'me') {
+      map.getSource('me').setData(m.center ? { type: 'FeatureCollection', features: [
+        { type: 'Feature', properties: { kind: 'accuracy' }, geometry: circle(m.center, m.accuracy) },
+        { type: 'Feature', properties: { kind: 'dot' }, geometry: { type: 'Point', coordinates: m.center } }
+      ] } : empty);
+    }
+    if (m.type === 'focus') map.easeTo({ center: m.center, zoom: Math.max(map.getZoom(), m.zoom || 11), duration: 600 });
+  }
+  // Accuracy ring as a 64-point polygon, meters to degrees on a sphere.
+  function circle(c, meters) {
+    var pts = [], r = Math.max(meters, 1) / 6371008.8, lat = c[1] * Math.PI / 180;
+    for (var i = 0; i <= 64; i++) {
+      var a = (i / 64) * 2 * Math.PI;
+      pts.push([c[0] + (r * Math.sin(a) / Math.cos(lat)) * 180 / Math.PI, c[1] + (r * Math.cos(a)) * 180 / Math.PI]);
+    }
+    return { type: 'Polygon', coordinates: [pts] };
   }
   window.bbReceive = function (m) { if (loaded) apply(m); else queue.push(m); };
   window.addEventListener('message', function (e) {
@@ -100,6 +132,11 @@ export const mapHtml = `<!doctype html>
         'stocking', '${pinColor.stocking}', 'dove_field', '${pinColor.dove_field}', '${pinColor.game_land}'],
       'circle-opacity': ['case', ['get', 'open'], 1, 0.55],
       'circle-stroke-width': 2, 'circle-stroke-color': '${colors.ground}' } });
+    map.addSource('me', { type: 'geojson', data: empty });
+    map.addLayer({ id: 'me-accuracy', type: 'fill', source: 'me', filter: ['==', ['get', 'kind'], 'accuracy'],
+      paint: { 'fill-color': '#2F80ED', 'fill-opacity': 0.15, 'fill-outline-color': '#2F80ED' } });
+    map.addLayer({ id: 'me-dot', type: 'circle', source: 'me', filter: ['==', ['get', 'kind'], 'dot'],
+      paint: { 'circle-radius': 7, 'circle-color': '#2F80ED', 'circle-stroke-width': 3, 'circle-stroke-color': '#FFFFFF' } });
     // Generous hit box so pins are easy to tap with a glove on.
     map.on('click', function (e) {
       var p = e.point;

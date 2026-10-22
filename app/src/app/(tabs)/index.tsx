@@ -1,4 +1,4 @@
-import { PendingChip } from '@/components/FieldSync';
+import { PENDING_CHIP_HEIGHT, PendingChip, usePendingChipShown } from '@/components/FieldSync';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -17,15 +17,18 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomSheet } from '@/components/BottomSheet';
+import { LocateButton } from '@/components/map/LocateButton';
 import { PlaceMap } from '@/components/map/PlaceMap';
 import { StateParkSheet } from '@/components/StateParkSheet';
 import { StockingList, windowText } from '@/components/StockingList';
-import { pinColor, type Basemap } from '@/components/map/types';
+import { pinColor, visibleBasemaps, type Basemap } from '@/components/map/types';
 import { Tag } from '@/components/Tag';
 import { Button, Chip, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { accessLabel } from '@/data/access';
+import { pointInGeometry } from '@/lib/geo';
 import { needsAccount } from '@/lib/gate';
+import { openLocationSettings, useMyLocation } from '@/lib/location';
 import { loadPlaces, useAsync, useDataSources, usePlaces, useSession } from '@/data/hooks';
 import {
   DOVE_LINE,
@@ -73,7 +76,7 @@ export default function MapScreen() {
   const [selectedId, setSelectedId] = useState<string>();
   const [parkId, setParkId] = useState<string>();
   const [expanded, setExpanded] = useState(false);
-  const [focus, setFocus] = useState<{ center: Place['center']; key: number }>();
+  const [focus, setFocus] = useState<{ center: Place['center']; key: number; zoom?: number }>();
   const [planner, setPlanner] = useState(false);
   const [fullNotice, setFullNotice] = useState(false);
   const [layersOpen, setLayersOpen] = useState(false);
@@ -126,6 +129,23 @@ export default function MapScreen() {
 
   const detail = useAsync(() => (selectedId ? backend.placeDetail(selectedId) : Promise.resolve(null)), [selectedId]);
 
+  const chipShown = usePendingChipShown();
+  const peek = selected || planner || park ? PEEK : PEEK_EMPTY;
+  const { status: locStatus, location: me, start: startLocation } = useMyLocation();
+  const [locMessage, setLocMessage] = useState(false);
+  const centerOnMe = async () => {
+    if (me) setFocus({ center: { lng: me.lng, lat: me.lat }, key: Date.now(), zoom: 14 });
+    const fix = await startLocation();
+    if (fix) {
+      setLocMessage(false);
+      if (!me) setFocus({ center: { lng: fix.lng, lat: fix.lat }, key: Date.now(), zoom: 14 });
+    } else setLocMessage(true);
+  };
+  // Only the selected place's boundary is loaded, so that's the one we can test against.
+  const outline = detail.data?.outline;
+  const hereLabel =
+    me && selected && outline && pointInGeometry(me.lng, me.lat, outline) ? accessLabel[selected.access] : null;
+
   return (
     <View style={styles.root} onLayout={(e) => setScreenH(e.nativeEvent.layout.height)}>
       <PlaceMap
@@ -136,7 +156,23 @@ export default function MapScreen() {
         focus={focus}
         onSelect={onMapSelect}
         onSelectPark={onSelectPark}
+        me={me}
       />
+
+      {!expanded && (
+        <View style={[StyleSheet.absoluteFill, { bottom: locateBottom(peek, chipShown) }]} pointerEvents="box-none" testID="locate-slot">
+          <View style={{ flex: 1, justifyContent: 'flex-end' }} pointerEvents="box-none">
+            <LocateButton
+              status={locStatus}
+              onPress={centerOnMe}
+              onOpenSettings={openLocationSettings}
+              onDismiss={() => setLocMessage(false)}
+              showMessage={locMessage}
+              hereLabel={hereLabel}
+            />
+          </View>
+        </View>
+      )}
 
       <View
         style={[styles.top, { paddingTop: insets.top + space.sm }]}
@@ -173,8 +209,9 @@ export default function MapScreen() {
           <View style={styles.layers} testID="layers-panel">
             <Text style={styles.layersTitle}>Map</Text>
             <View style={styles.chips}>
-              <Chip label="Topo" icon="map-outline" active={basemap === 'topo'} onPress={() => setBasemap('topo')} />
-              <Chip label="Satellite" icon="earth-outline" active={basemap === 'imagery'} onPress={() => setBasemap('imagery')} />
+              {visibleBasemaps().map((o) => (
+                <Chip key={o.key} label={o.label} icon={o.icon} active={basemap === o.key} onPress={() => setBasemap(o.key)} />
+              ))}
             </View>
             <Text style={styles.layersTitle}>Show</Text>
             <View style={styles.chips}>
@@ -224,7 +261,7 @@ export default function MapScreen() {
       </View>
 
       {/* Spec 04: above the sheet/action bar, never over the trespass banner or map controls. */}
-      {!expanded && <PendingChip bottom={(selected || planner ? PEEK : PEEK_EMPTY) + space.sm} />}
+      {!expanded && <PendingChip bottom={peek + space.sm} />}
       <BottomSheet
         expanded={expanded}
         onExpandedChange={setExpanded}
@@ -316,6 +353,11 @@ export function knownHours(today: PlaceToday) {
 }
 
 /** Sheet height that keeps a strip of map visible below the banner block at every snap point. */
+/** Locate button's bottom: above the sheet peek, or stacked above the pending chip when it shows. */
+export function locateBottom(peek: number, chipShown: boolean) {
+  return chipShown ? peek + space.sm + PENDING_CHIP_HEIGHT + space.sm : peek + space.lg;
+}
+
 export function sheetHeight(screenH: number, topH: number, windowH: number) {
   const room = screenH - topH - MAP_GAP;
   return Math.max(PEEK, Math.min(560, windowH * 0.66, room));
