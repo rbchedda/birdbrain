@@ -1,7 +1,7 @@
 import { colors } from '@/theme/tokens';
 import type { GeoJSONGeometry, LngLat, Place, PlaceType } from '@/data/types';
 
-export type Basemap = 'topo' | 'imagery';
+export type Basemap = 'topo' | 'terrain' | 'imagery';
 
 /**
  * Contract for the map. Today it's MapLibre GL JS in a WebView (native) or an

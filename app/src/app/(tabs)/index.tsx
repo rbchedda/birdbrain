@@ -13,6 +13,8 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { readJson, writeJson } from '@/lib/localStore';
+import { mapAssets } from '@/lib/mapConfig';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomSheet } from '@/components/BottomSheet';
@@ -58,6 +60,8 @@ const PEEK_EMPTY = 84;
 const MAP_GAP = 72;
 const LIST_LIMIT = 60;
 
+const BASEMAP_KEY = 'birdbrain.basemap.v1';
+
 export default function MapScreen() {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
@@ -65,7 +69,15 @@ export default function MapScreen() {
   const [filter, setFilter] = useState<PlaceType | 'all'>('all');
   const [openOnly, setOpenOnly] = useState(false);
   const [query, setQuery] = useState('');
-  const [basemap, setBasemap] = useState<Basemap>('topo');
+  const [basemap, setBasemapState] = useState<Basemap>('topo');
+  // Persisted (spec §5); defaults to Standard. Terrain only when its tile host is configured.
+  useEffect(() => {
+    readJson<Basemap>(BASEMAP_KEY, 'topo').then((b) => setBasemapState(b === 'terrain' && !mapAssets ? 'topo' : b), () => {});
+  }, []);
+  const setBasemap = (b: Basemap) => {
+    setBasemapState(b);
+    void writeJson(BASEMAP_KEY, b);
+  };
   const [selectedId, setSelectedId] = useState<string>();
   const [expanded, setExpanded] = useState(false);
   const [focus, setFocus] = useState<{ center: Place['center']; key: number }>();
@@ -160,6 +172,7 @@ export default function MapScreen() {
             <Text style={styles.layersTitle}>Map</Text>
             <View style={styles.chips}>
               <Chip label="Topo" icon="map-outline" active={basemap === 'topo'} onPress={() => setBasemap('topo')} />
+              {mapAssets && <Chip label="Terrain" icon="trail-sign-outline" active={basemap === 'terrain'} onPress={() => setBasemap('terrain')} />}
               <Chip label="Satellite" icon="earth-outline" active={basemap === 'imagery'} onPress={() => setBasemap('imagery')} />
             </View>
             <Text style={styles.layersTitle}>Show</Text>
