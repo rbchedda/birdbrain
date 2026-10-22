@@ -114,16 +114,14 @@ export class PackDownloader {
       while (!job.cancelled && next < queue.length) {
         const item = queue[next++];
         try {
-          if (await this.store.exists(item.path)) {
-            m.bytes += await this.store.size(item.path);
-          } else {
-            m.bytes += await this.store.download(item.url, item.path);
-          }
-          m.done += 1;
+          const bytes = (await this.store.exists(item.path))
+            ? await this.store.size(item.path)
+            : await this.store.download(item.url, item.path);
+          // Read m only after the await: other workers replace it meanwhile.
+          m = { ...m, bytes: m.bytes + bytes, done: m.done + 1, updatedAt: now() };
         } catch {
-          m.failed += 1;
+          m = { ...m, failed: m.failed + 1, updatedAt: now() };
         }
-        m = { ...m, updatedAt: now() };
         this.manifests = { ...this.manifests, [spec.id]: m };
         this.emit();
         if (m.done - lastWrite >= 50) {
