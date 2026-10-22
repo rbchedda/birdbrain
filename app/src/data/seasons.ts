@@ -12,10 +12,13 @@ import { allSpecies, migratory, type Place, type Species } from './types';
 export const SEASON_YEAR = '2026-27';
 
 /**
- * Hours rules from the 2026-27 digest (Hunting Hours Table, p. 12; Migratory
- * Game Bird Hunting Hours, p. 44):
+ * Hours rules from the 2026-27 digest
+ * (https://www.pa.gov/content/dam/copapwp-pagov/en/pgc/documents/hunttrap/law/pa%20game%20hunttrap%20digest%2026-27.pdf;
+ * page numbers are PDF pages, printed page = PDF page - 2): Hunting Hours Table, PDF p. 12
+ * (printed p. 10), exception 4 covers woodcock; Migratory Game Bird Hunting Hours, PDF p. 44.
+ * No special opening-day start time for pheasant appears anywhere in the 2026-27 digest.
  * - smallGame: ½ hour before sunrise to ½ hour after sunset (pheasant, grouse, fall turkey).
- * - migratory: ½ hour before sunrise to sunset (doves, waterfowl).
+ * - migratory: ½ hour before sunrise to sunset (doves, waterfowl, woodcock).
  * - springTurkey: ½ hour before sunrise to noon through SPRING_NOON_UNTIL, then to ½ hour after sunset.
  */
 export type Hours = 'smallGame' | 'migratory' | 'springTurkey';
@@ -37,6 +40,8 @@ export interface Season {
   note?: string;
 }
 
+// Pheasant dates: digest PDF p. 42 (printed p. 40, junior Oct 10-18) and PDF p. 43 (printed p. 41,
+// statewide Oct 24-Dec 24 & Dec 26-Feb 28, 2027). Verified 2026-10-22; also matches pa.gov seasons page.
 export const seasons: Season[] = [
   {
     species: 'pheasant',
@@ -98,6 +103,15 @@ export const seasons: Season[] = [
     windows: null,
     hours: 'migratory',
     note: 'Dates vary by zone. Federal duck stamp and migratory bird license required.',
+  },
+  {
+    // Digest PDF p. 47 (printed p. 45): woodcock statewide Oct 17-Dec 8, 3 daily, 9 possession,
+    // closed Sundays. Hours: ½ hour before sunrise to sunset (Hunting Hours Table exception 4).
+    species: 'woodcock',
+    label: 'American woodcock',
+    windows: [['2026-10-17', '2026-12-08']],
+    hours: 'migratory',
+    note: 'Daily limit 3. Closed Sundays. Migratory bird license required. Hunting ends at sunset.',
   },
 ];
 

@@ -26,6 +26,7 @@ import {
 } from '@/entitlements';
 import { Linking, Text } from 'react-native';
 
+import { backend } from '@/data';
 import { legal } from '@/lib/env';
 
 import { StockingList } from '@/components/StockingList';
@@ -208,6 +209,31 @@ describe('Gated UI', () => {
     const Probe = () => { can = useEntitlements().canUse('export'); return null; };
     await render(<Probe />);
     expect(can).toBe(false);
+  });
+});
+
+describe('buy/restore needs an account (hybrid guest mode)', () => {
+  it('signed out: Get Weekend Pass, Get Season Pass and Restore are refused and offer sign-in; the store is never called', async () => {
+    const session = jest.spyOn(backend, 'getSession').mockResolvedValue(null);
+    const provider = new MockPurchaseProvider();
+    const buy = jest.spyOn(provider, 'purchase');
+    const restore = jest.spyOn(provider, 'restore');
+    await render(
+      <EntitlementsProvider provider={provider}>
+        <Gated feature="offlineMaps"><Text>maps-content</Text></Gated>
+        <UpgradeSheet />
+      </EntitlementsProvider>,
+    );
+    await fireEvent.press(screen.getByText('See passes'));
+    for (const label of ['Get Weekend Pass', 'Get Season Pass', 'Restore purchases']) {
+      await fireEvent.press(await screen.findByText(label));
+      expect(await screen.findByText(/Sign in to buy or restore a pass/)).toBeTruthy();
+      expect(screen.getByText('Sign in or create an account')).toBeTruthy();
+    }
+    expect(buy).not.toHaveBeenCalled();
+    expect(restore).not.toHaveBeenCalled();
+    expect(screen.queryByText('maps-content')).toBeNull();
+    session.mockRestore();
   });
 });
 

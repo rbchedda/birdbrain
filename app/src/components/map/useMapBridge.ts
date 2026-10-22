@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { placeToday } from '@/data/seasons';
+import { stateParksGeoJSON } from '@/data/stateParks';
 
 import type { PlaceMapProps } from './types';
 
@@ -8,6 +9,7 @@ type Outbound = Record<string, unknown> & { type: string };
 type Inbound =
   | { type: 'ready' }
   | { type: 'select'; id: string | null }
+  | { type: 'selectPark'; id: string }
   | { type: 'error'; message: string }
   | { type: 'tile'; id: number; url: string };
 
@@ -16,7 +18,7 @@ type Inbound =
  * page; the returned `receive` handles messages coming back.
  */
 export function useMapBridge(post: (m: Outbound) => void, props: PlaceMapProps) {
-  const { places, selectedId, outline, basemap, focus, onSelect, offline } = props;
+  const { places, selectedId, outline, basemap, focus, onSelect, onSelectPark, offline } = props;
   const offlineKey = (offline?.basemaps ?? []).join(',');
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string>();
@@ -36,6 +38,10 @@ export function useMapBridge(post: (m: Outbound) => void, props: PlaceMapProps) 
       },
     });
   }, [ready, places, post]);
+
+  useEffect(() => {
+    if (ready) post({ type: 'parks', data: stateParksGeoJSON() });
+  }, [ready, post]);
 
   useEffect(() => {
     if (ready) post({ type: 'select', id: selectedId ?? null });
@@ -67,6 +73,7 @@ export function useMapBridge(post: (m: Outbound) => void, props: PlaceMapProps) 
       }
       if (m.type === 'ready') setReady(true);
       if (m.type === 'select') onSelect(m.id);
+      if (m.type === 'selectPark') onSelectPark?.(m.id);
       if (m.type === 'error') setError(m.message);
       if (m.type === 'tile') {
         const get = offline?.getTile ?? (async () => null);
@@ -76,7 +83,7 @@ export function useMapBridge(post: (m: Outbound) => void, props: PlaceMapProps) 
         );
       }
     },
-    [onSelect, offline, post],
+    [onSelect, onSelectPark, offline, post],
   );
 
   return { receive, error, ready };

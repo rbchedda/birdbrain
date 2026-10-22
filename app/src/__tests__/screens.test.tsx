@@ -261,32 +261,90 @@ describe('Report and block on posts, comments and profiles', () => {
 });
 
 describe('Guide tab', () => {
-  it('labels the tab "Guide", renders all 6 chips and keeps the Open today card', async () => {
+  it('labels the tab "Guide" and shows Today, In season now and the Explore grid', async () => {
     await open('/guide');
-    expect(await screen.findByText('Open today?')).toBeTruthy();
+    expect(await screen.findByTestId('guide-today')).toHaveTextContent(/Shooting starts/);
     expect(screen.getByRole('tab', { name: 'Guide' })).toBeTruthy();
-    for (const label of ['In season', 'Regs', 'Bird ID', 'Gear', 'Bag', 'Hours']) {
-      expect(screen.getByRole('button', { name: label })).toBeTruthy();
-    }
-    for (const id of ['season', 'regs', 'birds', 'gear', 'bag', 'hours']) expect(screen.getByTestId(`guide-${id}`)).toBeTruthy();
-    // Digest link + regs version at the top and on every section.
+    expect(screen.getByTestId('guide-season')).toBeTruthy();
+    // The six-chip filter row is gone.
+    for (const label of ['In season', 'Regs', 'Bag', 'Hours']) expect(screen.queryByRole('button', { name: label })).toBeNull();
+    for (const label of ['Bird ID', 'Regulations', 'Gear checklist', 'Licenses']) expect(screen.getByRole('button', { name: label })).toBeTruthy();
     expect(screen.getByTestId('guide-digest-top')).toHaveTextContent(/Verify with the PGC digest ↗ · regs v2026-27\.3\+guide\.2/);
-    expect(screen.getAllByLabelText('Verify with the PGC digest').length).toBeGreaterThanOrEqual(7);
+    // The unofficial-summary disclaimer and digest link stay, verbatim.
+    expect(screen.getByTestId('guide-disclaimer')).toHaveTextContent('Unofficial summary, always verify with the PGC Hunting & Trapping Digest');
     expect(screen.getByLabelText('Open the PGC Hunting & Trapping Digest')).toBeTruthy();
   });
 
-  it('switches zone and gear species', async () => {
+  it('does not present a default PGC hours zone as the user\'s until they pick one', async () => {
     await open('/guide');
-    await fireEvent.press(await screen.findByRole('button', { name: 'Zone 7' }));
-    expect(await screen.findByText('In season now · Zone 7')).toBeTruthy();
-    expect(screen.getByText('Shooting times · Zone 7')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Mourning dove' }));
+    expect(await screen.findByTestId('guide-today')).toBeTruthy();
+    expect(screen.getByTestId('guide-zone')).toHaveTextContent('Pick your hours zone ›');
+    expect(screen.getByTestId('guide-today-default-zone')).toHaveTextContent(/\(default\), pick yours/);
+    expect(screen.getByText('In season now')).toBeTruthy();
+    expect(screen.queryByText(/^Zone \d/)).toBeNull();
+    expect(screen.queryByText(/In season now ·/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /hours zone 7/ })).toBeNull();
+    await fireEvent.press(screen.getByText('PGC table ›'));
+    expect(await screen.findByText(/Shooting times · PGC hours zone \d \(default\), pick yours/)).toBeTruthy();
+  });
+
+  it('shows the picked PGC hours zone after picking, and keeps it on re-open', async () => {
+    await open('/guide/hours');
+    await fireEvent.press(await screen.findByRole('button', { name: 'PGC hours zone 7' }));
+    expect(await screen.findByText('Shooting times · PGC hours zone 7')).toBeTruthy();
+    expect(screen.getByTestId('guide-bag')).toBeTruthy();
+    await open('/guide');
+    expect(await screen.findByTestId('guide-zone')).toHaveTextContent('PGC hours zone 7 · today ·');
+    expect(screen.queryByTestId('guide-today-default-zone')).toBeNull();
+    expect(screen.queryByText('Pick your hours zone ›')).toBeNull();
+    expect(screen.getByText('In season now')).toBeTruthy();
+  });
+
+  it('designer feedback: no Open today card, no migratory line, no bag or Closed in list rows', async () => {
+    await open('/guide');
+    const today = await screen.findByTestId('guide-today');
+    expect(screen.queryByText('Open today?')).toBeNull();
+    expect(screen.queryByTestId('guide-today-migratory')).toBeNull();
+    expect(today).not.toHaveTextContent(/Doves, woodcock, waterfowl/);
+    expect(screen.getByTestId('guide-today-label')).toHaveTextContent(/\S/);
+    expect(screen.getByTestId('guide-season')).not.toHaveTextContent(/bag /i);
+    expect(screen.queryByText('Closed')).toBeNull();
+    for (const el of screen.queryAllByTestId(/^coming-up-/)) expect(el).toHaveTextContent(/Opens \w{3}, \w{3} \d{1,2}/);
+    expect(screen.queryAllByTestId(/^coming-up-/).length).toBeLessThanOrEqual(3);
+  });
+
+  it('species detail shows season dates and the limit next to a digest link', async () => {
+    await open('/guide/bird/pheasant');
+    expect(await screen.findByTestId('bird-seasons')).toHaveTextContent(/Oct 24/);
+    expect(screen.getByTestId('bird-limits')).toHaveTextContent(/Daily: 2/);
+    expect(screen.getByTestId('bird-limits-digest')).toBeTruthy();
+  });
+
+  it('shows "Buy on HuntFishPA" on the Licenses page', async () => {
+    await open('/guide');
+    await fireEvent.press(await screen.findByRole('button', { name: 'Licenses' }));
+    expect(await screen.findByTestId('reg-licenses')).toBeTruthy();
+    expect(screen.getByText('Buy on HuntFishPA ›')).toBeTruthy();
+    expect(screen.getByTestId('buy-huntfishpa')).toBeTruthy();
+  });
+
+  it('Gear checklist tile opens the per-species checklist', async () => {
+    await open('/guide');
+    await fireEvent.press(await screen.findByRole('button', { name: 'Gear checklist' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Mourning dove' }));
     expect(screen.getByText('Gear needed · Mourning dove')).toBeTruthy();
     expect(screen.getByText(/Plug the shotgun to 3 shells/)).toBeTruthy();
   });
 
-  it('bird tiles open the species detail with licensed photos and credit captions', async () => {
+  it('Regulations and Licenses tiles open the regulations with digest links', async () => {
     await open('/guide');
+    await fireEvent.press(await screen.findByRole('button', { name: 'Licenses' }));
+    expect(await screen.findByTestId('reg-licenses')).toBeTruthy();
+    expect(screen.getByTestId('guide-regs')).toBeTruthy();
+  });
+
+  it('bird tiles open the species detail with licensed photos and credit captions', async () => {
+    await open('/guide/birds');
     await fireEvent.press(await screen.findByLabelText('Ring-necked pheasant details'));
     expect(await screen.findByTestId('bird-pheasant')).toBeTruthy();
     expect(screen.getByLabelText('Rooster photo')).toBeTruthy();

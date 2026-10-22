@@ -8,6 +8,7 @@ import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ConsentGate } from '@/components/ConsentGate';
+import { FieldToasts } from '@/components/FieldSync';
 import { colors } from '@/theme/tokens';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -40,6 +41,7 @@ export default function RootLayout() {
             />
           </Stack>
           <UpgradeSheet />
+          <FieldToasts />
         </ConsentGate>
       </EntitlementsProvider>
     </SafeAreaProvider>

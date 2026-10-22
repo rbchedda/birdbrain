@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ui } from '@/components/ui';
 import type { JournalEntry } from '@/data/journal';
+import { copy } from '@/lib/fieldDraft';
 import { coverLabel, speciesLabel } from '@/data/types';
 import { formatDay } from '@/lib/time';
 import { colors, fonts, space } from '@/theme/tokens';
@@ -55,6 +56,11 @@ export function HuntLogList({ entries, signedOut, limit }: { entries: JournalEnt
               <Ionicons name={s.icon} size={14} color={s.color} />
               <Text style={[ui.muted, { color: s.color, fontSize: 12 }]}>{s.text}</Text>
             </View>
+            {e.sync.status !== 'synced' && !e.sync.conflict && (
+              <Text style={[ui.muted, { fontSize: 12 }]} testID={`offline-${e.clientId}`}>
+                {copy.waiting}
+              </Text>
+            )}
           </Pressable>
         );
       })}

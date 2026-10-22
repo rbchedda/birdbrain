@@ -1,12 +1,13 @@
+import { authRedirectUrl } from '@/lib/authRedirect';
 import type { Session as AuthSession, SupabaseClient } from '@supabase/supabase-js';
 
 import { parseGeometry, parsePoint, toEwkt } from '@/lib/geo';
 import { removeAllUnder, type StorageBucketApi } from '@/lib/storageCleanup';
 
 import { classifyAccess, type AccessType } from './access';
-import { NotSignedInError, postKind, type Backend, type Session } from './backend';
+import { crewError, NotSignedInError, postKind, type Backend, type LeaveCrewResult, type Session } from './backend';
 import placeDetailQuery from './placeDetailQuery.json';
-import type { Author, BirdCounts, Comment, Place, PlaceType, Post, Profile, Species, StockingEvent } from './types';
+import type { Author, BirdCounts, Crew, Comment, Place, PlaceType, Post, Profile, Species, StockingEvent } from './types';
 
 // posts -> profiles is ambiguous to PostgREST (likes, saves and comments join
 // them too), so embeds name the foreign key column.
@@ -27,11 +28,20 @@ const toAuthor = (r: Row | null | undefined, fallbackId: string): Author => ({
   displayName: r?.display_name ?? null,
 });
 
+/**
+ * Anonymous sign-ins are off (supabase/config.toml) and the app never creates
+ * them. A stray anonymous session is treated as signed out.
+ */
 const toSession = (s: AuthSession | null): Session | null =>
-  s ? { userId: s.user.id, email: s.user.email ?? null, anonymous: Boolean(s.user.is_anonymous) } : null;
+  s && !s.user.is_anonymous ? { userId: s.user.id, email: s.user.email ?? null } : null;
 
 function check<T>(res: { data: T; error: { message: string } | null }): T {
   if (res.error) throw new Error(res.error.message);
+  return res.data;
+}
+
+function checkCrew<T>(res: { data: T; error: { message: string } | null }): T {
+  if (res.error) throw new Error(crewError(res.error.message));
   return res.data;
 }
 
@@ -50,7 +60,7 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
 
   async function me() {
     const { data } = await sb.auth.getSession();
-    const id = data.session?.user.id;
+    const id = data.session && !data.session.user.is_anonymous ? data.session.user.id : null;
     if (!id) throw new NotSignedInError();
     return id;
   }
@@ -116,12 +126,16 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
       checkAuth(await sb.auth.signInWithPassword({ email, password }));
     },
     async signUp(email, password) {
-      const { data, error } = await sb.auth.signUp({ email, password });
+      // The confirm link lands on app/auth/callback (exp:// in Expo Go, birdbrain:// in builds).
+      const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: authRedirectUrl() } });
       checkAuth({ error });
       return { needsConfirmation: !data.session };
     },
-    async signInAsGuest() {
-      checkAuth(await sb.auth.signInAnonymously());
+    async completeAuthRedirect(p) {
+      if (p.code) checkAuth(await sb.auth.exchangeCodeForSession(p.code));
+      else if (p.accessToken && p.refreshToken)
+        checkAuth(await sb.auth.setSession({ access_token: p.accessToken, refresh_token: p.refreshToken }));
+      else throw new Error('This sign-in link is missing its code.');
     },
     async signOut() {
       checkAuth(await sb.auth.signOut());
@@ -247,8 +261,9 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
     async feed(cursor, limit) {
       const userId = await me();
       if (!cursor) await refreshBlocks(userId);
-      // RLS already hides posts before public_after and across blocks.
-      let q = sb.from('posts').select(POST_COLUMNS).order('created_at', { ascending: false }).limit(limit + 1);
+      // RLS already hides posts before public_after and across blocks. Crew posts
+      // never appear in the community feed, even for members.
+      let q = sb.from('posts').select(POST_COLUMNS).eq('crew_only', false).order('created_at', { ascending: false }).limit(limit + 1);
       if (cursor) q = q.lt('created_at', cursor);
       const rows = (check(await q) ?? []) as Row[];
       const page = rows.slice(0, limit);
@@ -270,7 +285,10 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
     async postsBy(authorId) {
       const userId = await me();
       const rows = check(
-        await sb.from('posts').select(POST_COLUMNS).eq('author_id', authorId).order('created_at', { ascending: false }).limit(50),
+        await (authorId === userId
+          ? sb.from('posts').select(POST_COLUMNS).eq('author_id', authorId)
+          : sb.from('posts').select(POST_COLUMNS).eq('author_id', authorId).eq('crew_only', false)
+        ).order('created_at', { ascending: false }).limit(50),
       );
       return decorate((rows ?? []) as Row[], userId);
     },
@@ -432,7 +450,7 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
     async groups() {
       const { data } = await sb.auth.getSession();
       const userId = data.session?.user.id;
-      const rows = (check(await sb.from('groups').select('id, slug, name, description, species').order('name')) ?? []) as Row[];
+      const rows = (check(await sb.from('groups').select('id, slug, name, description, species').eq('kind', 'species').order('name')) ?? []) as Row[];
       const mine = userId
         ? new Set(((check(await sb.from('group_members').select('group_id').eq('user_id', userId)) ?? []) as Row[]).map((r) => r.group_id))
         : new Set();
@@ -443,6 +461,58 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
       const userId = await me();
       if (member) check(await sb.from('group_members').upsert({ group_id: groupId, user_id: userId }, { ignoreDuplicates: true }));
       else check(await sb.from('group_members').delete().eq('group_id', groupId).eq('user_id', userId));
+    },
+
+    // Crews: RLS returns only crews the user belongs to, so no extra filtering is needed for privacy.
+    async myCrews() {
+      const { data } = await sb.auth.getSession();
+      const userId = data.session?.user.id;
+      if (!userId) return [];
+      const rows = (check(
+        await sb.from('groups').select('id, name, group_members(count)').eq('kind', 'crew').order('name'),
+      ) ?? []) as Row[];
+      if (!rows.length) return [];
+      const roles = new Map(
+        ((check(await sb.from('group_members').select('group_id, role').eq('user_id', userId)) ?? []) as Row[]).map((r) => [r.group_id, r.role]),
+      );
+      return rows
+        .filter((r) => roles.has(r.id))
+        .map((r): Crew => ({ id: r.id, name: r.name, role: roles.get(r.id) === 'admin' ? 'admin' : 'member', memberCount: r.group_members?.[0]?.count ?? 0 }));
+    },
+
+    async crew(id) {
+      const userId = await me();
+      const g = check(await sb.from('groups').select('id, name').eq('id', id).eq('kind', 'crew').maybeSingle()) as Row | null;
+      if (!g) return null;
+      const rows = (check(
+        await sb.from('group_members').select('user_id, role, joined_at, profile:profiles!user_id(id, username, display_name)').eq('group_id', id).order('joined_at'),
+      ) ?? []) as Row[];
+      const members = rows.map((r) => ({ author: toAuthor(r.profile, r.user_id), role: r.role === 'admin' ? ('admin' as const) : ('member' as const) }));
+      const mine = rows.find((r) => r.user_id === userId);
+      if (!mine) return null;
+      return { id: g.id, name: g.name, role: mine.role === 'admin' ? 'admin' : 'member', memberCount: members.length, members };
+    },
+
+    async createCrew(name) {
+      await me();
+      return checkCrew(await sb.rpc('create_crew', { crew_name: name.trim() })) as string;
+    },
+
+    async createCrewInvite(crewId) {
+      await me();
+      const rows = checkCrew(await sb.rpc('create_crew_invite', { gid: crewId })) as Row[] | Row;
+      const r = Array.isArray(rows) ? rows[0] : rows;
+      return { token: r.token, expiresAt: r.expires_at };
+    },
+
+    async joinCrew(token) {
+      await me();
+      return checkCrew(await sb.rpc('join_crew', { invite_token: token.trim() })) as string;
+    },
+
+    async leaveCrew(crewId) {
+      await me();
+      return checkCrew(await sb.rpc('leave_crew', { gid: crewId })) as LeaveCrewResult;
     },
 
     async upsertHuntLogEntry(e) {

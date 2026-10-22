@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
 
 import { AgeGate } from '@/components/AgeGate';
@@ -7,16 +7,34 @@ import { LegalLinks } from '@/components/LegalLinks';
 import { ScreenHeader } from '@/components/Screen';
 import { Button, Chip, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
+import { reportSignal } from '@/lib/connectivity';
+import { copy, isNetworkError, pendingHunts, setFlags, signInDidNotFinish } from '@/lib/fieldDraft';
+import { syncConsentOnSignIn } from '@/lib/termsConsent';
 import { colors, space } from '@/theme/tokens';
 
 export default function SignInScreen() {
   const [mode, setMode] = useState<'in' | 'up'>('in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [busy, setBusy] = useState<'email' | 'guest' | null>(null);
-  const [message, setMessage] = useState<{ tone: 'error' | 'success'; text: string }>();
+  const [busy, setBusy] = useState<'email' | null>(null);
+  const params = useLocalSearchParams<{ message?: string }>();
+  const [message, setMessage] = useState<{ tone: 'error' | 'success' | 'info'; text: string } | undefined>(
+    params.message ? { tone: 'info', text: params.message } : undefined,
+  );
 
-  const done = () => (router.canGoBack() ? router.back() : router.replace('/feed'));
+  // Leaving without finishing (Back) keeps the hunt and shows the 06 toast.
+  const finished = useRef(false);
+  useEffect(
+    () => () => {
+      if (!finished.current) void signInDidNotFinish();
+    },
+    [],
+  );
+  const done = () => {
+    finished.current = true;
+    void setFlags({ signInFailed: false, confirmPending: false }).catch(() => undefined);
+    return router.canGoBack() ? router.back() : router.replace('/feed');
+  };
 
   const submit = async () => {
     setBusy('email');
@@ -24,30 +42,35 @@ export default function SignInScreen() {
     try {
       if (mode === 'in') {
         await backend.signIn(email.trim(), password);
+        await syncConsentOnSignIn().catch(() => undefined);
         done();
       } else {
         const { needsConfirmation } = await backend.signUp(email.trim(), password);
-        if (needsConfirmation) setMessage({ tone: 'success', text: 'Check your email to confirm, then sign in.' });
-        else done();
+        if (needsConfirmation) {
+          // No deep link needed: the hunt stays on the phone and syncs whenever a session exists.
+          const pending = (await pendingHunts().catch(() => [])).length > 0;
+          if (pending) await setFlags({ confirmPending: true }).catch(() => undefined);
+          setMessage({ tone: 'success', text: pending ? copy.confirmPending : 'Check your email to confirm, then sign in.' });
+          if (pending) setMode('in');
+        }
+        else {
+          await syncConsentOnSignIn().catch(() => undefined);
+          done();
+        }
       }
     } catch (e) {
-      setMessage({ tone: 'error', text: (e as Error).message });
+      const pending = (await pendingHunts().catch(() => [])).length > 0;
+      if (isNetworkError(e)) {
+        // Spec 03: no error state; the hunt waits and the chip turns orange when signal returns.
+        reportSignal(false);
+        setMessage({ tone: 'info', text: pending ? copy.savedOffline : 'No signal. Try again when you have service.' });
+      } else setMessage({ tone: 'error', text: (e as Error).message });
+      if (pending) await setFlags({ signInFailed: true }).catch(() => undefined);
     } finally {
       setBusy(null);
     }
   };
 
-  const guest = async () => {
-    setBusy('guest');
-    try {
-      await backend.signInAsGuest();
-      done();
-    } catch (e) {
-      setMessage({ tone: 'error', text: `Guest sign-in failed: ${(e as Error).message}` });
-    } finally {
-      setBusy(null);
-    }
-  };
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -90,8 +113,7 @@ export default function SignInScreen() {
           label={mode === 'in' ? 'New here? Create an account' : 'Have an account? Sign in'}
           onPress={() => setMode(mode === 'in' ? 'up' : 'in')}
         />
-        <Button label="Continue as guest" icon="person-outline" busy={busy === 'guest'} onPress={guest} />
-        <Text style={ui.muted}>Guest accounts can post and comment from this device only.</Text>
+        <Text style={ui.muted}>No account needed to browse the map, stocking, hours, regs or the Guide.</Text>
         <Text style={ui.muted}>By continuing you agree to the Terms of Service and Privacy Policy.</Text>
         <LegalLinks />
       </ScrollView>

@@ -1,3 +1,4 @@
+import { PendingChip } from '@/components/FieldSync';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -17,12 +18,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomSheet } from '@/components/BottomSheet';
 import { PlaceMap } from '@/components/map/PlaceMap';
+import { StateParkSheet } from '@/components/StateParkSheet';
 import { StockingList, windowText } from '@/components/StockingList';
 import { pinColor, visibleBasemaps, type Basemap } from '@/components/map/types';
 import { Tag } from '@/components/Tag';
 import { Button, Chip, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { accessLabel } from '@/data/access';
+import { needsAccount } from '@/lib/gate';
 import { loadPlaces, useAsync, useDataSources, usePlaces, useSession } from '@/data/hooks';
 import {
   DOVE_LINE,
@@ -41,6 +44,7 @@ import { useEntitlements } from '@/entitlements';
 import { useOfflineMapSource, withOfflineOutline } from '@/offline';
 import { STOCKING_SOURCE, stockingCountyOf, windowsForCounty } from '@/data/places';
 import { PGC_DIGEST_URL } from '@/data/regs';
+import { STATE_PARKS } from '@/data/stateParks';
 import { describeStatus, placeToday, SEASON_YEAR, type PlaceToday } from '@/data/seasons';
 import { migratory, placeTypeLabel, speciesLabel, type Place, type PlaceType } from '@/data/types';
 import { formatDay, formatTime, todayET } from '@/lib/time';
@@ -69,6 +73,7 @@ export default function MapScreen() {
   const [query, setQuery] = useState('');
   const [basemap, setBasemap] = useState<Basemap>('topo');
   const [selectedId, setSelectedId] = useState<string>();
+  const [parkId, setParkId] = useState<string>();
   const [expanded, setExpanded] = useState(false);
   const [focus, setFocus] = useState<{ center: Place['center']; key: number }>();
   const [planner, setPlanner] = useState(false);
@@ -104,8 +109,16 @@ export default function MapScreen() {
 
   const onMapSelect = useCallback((id: string | null) => {
     setSelectedId(id ?? undefined);
+    setParkId(undefined);
     if (id) setExpanded(true);
   }, []);
+  const onSelectPark = useCallback((id: string) => {
+    setSelectedId(undefined);
+    setPlanner(false);
+    setParkId(id);
+    setExpanded(true);
+  }, []);
+  const park = STATE_PARKS.find((p) => p.id === parkId);
 
   const pick = (place: Place) => {
     setSelectedId(place.id);
@@ -131,6 +144,7 @@ export default function MapScreen() {
         focus={focus}
         onSelect={onMapSelect}
         offline={offline}
+        onSelectPark={onSelectPark}
       />
 
       <View
@@ -219,13 +233,17 @@ export default function MapScreen() {
         )}
       </View>
 
+      {/* Spec 04: above the sheet/action bar, never over the trespass banner or map controls. */}
+      {!expanded && <PendingChip bottom={(selected || planner ? PEEK : PEEK_EMPTY) + space.sm} />}
       <BottomSheet
         expanded={expanded}
         onExpandedChange={setExpanded}
-        peekHeight={selected || planner ? PEEK : PEEK_EMPTY}
+        peekHeight={selected || planner || park ? PEEK : PEEK_EMPTY}
         expandedHeight={sheetHeight(screenH, topH, height)}
       >
-        {selected ? (
+        {park && !selected ? (
+          <StateParkSheet park={park} onClose={() => setParkId(undefined)} />
+        ) : selected ? (
           <PlaceDetails place={selected} expanded={expanded} onClose={() => setSelectedId(undefined)} onSavedChange={refreshSaved} />
         ) : planner ? (
           <StockingList places={all} savedIds={savedIds} onPick={pick} />
@@ -355,7 +373,7 @@ function PlaceDetails({
   }, [place.id, session]);
 
   const toggleSave = async () => {
-    if (!session) return router.push('/sign-in');
+    if (needsAccount('saveSpot', session)) return router.push('/sign-in');
     try {
       await backend.setPlaceSaved(place.id, !saved);
       setSaved(!saved);

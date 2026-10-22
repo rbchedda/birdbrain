@@ -37,6 +37,8 @@ export interface PlaceMapProps {
    * Safety overlays never depend on this.
    */
   offline?: { basemaps: Basemap[]; getTile: (url: string) => Promise<string | null> };
+  /** Tap on a bundled state park outline (pins win when both are hit). */
+  onSelectPark?: (id: string) => void;
 }
 
 export const pinColor: Record<PlaceType, string> = {

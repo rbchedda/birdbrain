@@ -8,7 +8,7 @@ import type { DataSource, PlaceType } from './types';
 
 /** §1: map banner. Always visible, not dismissible; tap opens the full notice. */
 export const MAP_BANNER =
-  'Boundaries are approximate, not a survey. Shows public land and PGC access-program land only. Get permission before entering any other private land.';
+  'Boundaries are approximate, not a survey. Shows public land (including state parks, where hunting is allowed only in designated areas) and PGC access-program land. Get permission before entering any other private land.';
 
 /**
  * One-line map banner approved by @lawyer (Oct 22 2026), verbatim including "(i)".
