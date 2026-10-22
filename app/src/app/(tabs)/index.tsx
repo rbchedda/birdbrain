@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomSheet } from '@/components/BottomSheet';
+import { LocateButton } from '@/components/map/LocateButton';
 import { PlaceMap } from '@/components/map/PlaceMap';
 import { StockingList, windowText } from '@/components/StockingList';
 import { pinColor, visibleBasemaps, type Basemap } from '@/components/map/types';
@@ -23,7 +24,9 @@ import { Tag } from '@/components/Tag';
 import { Button, Chip, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { accessLabel } from '@/data/access';
+import { pointInGeometry } from '@/lib/geo';
 import { needsAccount } from '@/lib/gate';
+import { openLocationSettings, useMyLocation } from '@/lib/location';
 import { loadPlaces, useAsync, useDataSources, usePlaces, useSession } from '@/data/hooks';
 import {
   DOVE_LINE,
@@ -69,7 +72,7 @@ export default function MapScreen() {
   const [basemap, setBasemap] = useState<Basemap>('topo');
   const [selectedId, setSelectedId] = useState<string>();
   const [expanded, setExpanded] = useState(false);
-  const [focus, setFocus] = useState<{ center: Place['center']; key: number }>();
+  const [focus, setFocus] = useState<{ center: Place['center']; key: number; zoom?: number }>();
   const [planner, setPlanner] = useState(false);
   const [fullNotice, setFullNotice] = useState(false);
   const [layersOpen, setLayersOpen] = useState(false);
@@ -114,6 +117,21 @@ export default function MapScreen() {
 
   const detail = useAsync(() => (selectedId ? backend.placeDetail(selectedId) : Promise.resolve(null)), [selectedId]);
 
+  const { status: locStatus, location: me, start: startLocation } = useMyLocation();
+  const [locMessage, setLocMessage] = useState(false);
+  const centerOnMe = async () => {
+    if (me) setFocus({ center: { lng: me.lng, lat: me.lat }, key: Date.now(), zoom: 14 });
+    const fix = await startLocation();
+    if (fix) {
+      setLocMessage(false);
+      if (!me) setFocus({ center: { lng: fix.lng, lat: fix.lat }, key: Date.now(), zoom: 14 });
+    } else setLocMessage(true);
+  };
+  // Only the selected place's boundary is loaded, so that's the one we can test against.
+  const outline = detail.data?.outline;
+  const hereLabel =
+    me && selected && outline && pointInGeometry(me.lng, me.lat, outline) ? accessLabel[selected.access] : null;
+
   return (
     <View style={styles.root} onLayout={(e) => setScreenH(e.nativeEvent.layout.height)}>
       <PlaceMap
@@ -123,7 +141,23 @@ export default function MapScreen() {
         basemap={basemap}
         focus={focus}
         onSelect={onMapSelect}
+        me={me}
       />
+
+      {!expanded && (
+        <View style={[StyleSheet.absoluteFill, { bottom: (selected || planner ? PEEK : PEEK_EMPTY) + space.lg }]} pointerEvents="box-none">
+          <View style={{ flex: 1, justifyContent: 'flex-end' }} pointerEvents="box-none">
+            <LocateButton
+              status={locStatus}
+              onPress={centerOnMe}
+              onOpenSettings={openLocationSettings}
+              onDismiss={() => setLocMessage(false)}
+              showMessage={locMessage}
+              hereLabel={hereLabel}
+            />
+          </View>
+        </View>
+      )}
 
       <View
         style={[styles.top, { paddingTop: insets.top + space.sm }]}
