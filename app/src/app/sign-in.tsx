@@ -7,6 +7,7 @@ import { LegalLinks } from '@/components/LegalLinks';
 import { ScreenHeader } from '@/components/Screen';
 import { Button, Chip, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
+import { confirmPendingText, heldHunt, isNetworkError, markConfirmPending, noSignalText } from '@/lib/fieldDraft';
 import { syncConsentOnSignIn } from '@/lib/termsConsent';
 import { colors, space } from '@/theme/tokens';
 
@@ -29,14 +30,22 @@ export default function SignInScreen() {
         done();
       } else {
         const { needsConfirmation } = await backend.signUp(email.trim(), password);
-        if (needsConfirmation) setMessage({ tone: 'success', text: 'Check your email to confirm, then sign in.' });
+        if (needsConfirmation) {
+          // No deep link needed: the hunt stays on the phone and syncs whenever a session exists.
+          const held = await markConfirmPending().catch(() => null);
+          setMessage({ tone: 'success', text: held ? confirmPendingText : 'Check your email to confirm, then sign in.' });
+          if (held) setMode('in');
+        }
         else {
           await syncConsentOnSignIn().catch(() => undefined);
           done();
         }
       }
     } catch (e) {
-      setMessage({ tone: 'error', text: (e as Error).message });
+      if (isNetworkError(e)) {
+        const held = await heldHunt().catch(() => null);
+        setMessage({ tone: 'error', text: held ? noSignalText : 'No signal. Try again when you have service.' });
+      } else setMessage({ tone: 'error', text: (e as Error).message });
     } finally {
       setBusy(null);
     }

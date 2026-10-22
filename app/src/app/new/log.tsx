@@ -12,6 +12,7 @@ import { backend } from '@/data';
 import { useJournal, usePlaces, useSession } from '@/data/hooks';
 import { DiaryForm, diaryDraft } from '@/app/diary/new';
 import { addJournalEntry, type JournalEntry } from '@/data/journal';
+import { clearHeldHunt, confirmPendingText, heldHunt, holdHunt, offlineIndicatorText, type HeldHunt } from '@/lib/fieldDraft';
 import { emptyDiaryDetails, type DiaryDetails } from '@/data/types';
 import { allSpecies, placeTypeLabel, speciesLabel, type LocationVisibility, type Place, type PlaceCount, type Species } from '@/data/types';
 import { addDays, etParts, formatDay, formatTime, publicAfterET, todayET } from '@/lib/time';
@@ -278,8 +279,9 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
 /**
  * Redesign Log hunt sheet (mockups 02 + 02b). Always private, never a post.
  * Signed out (hybrid guest mode): Save holds the entry on the phone and shows
- * the first-save SignInSheet. It saves the moment sign-in completes; "Not now"
- * keeps it on this phone only (the journal never uploads while signed out).
+ * the entry to the journal first, then shows the first-save SignInSheet (no
+ * "Not now"). It backs up once a session exists (the journal never uploads
+ * while signed out); the held marker brings the sheet back after a relaunch.
  */
 export function LogHuntSheet() {
   const { placeId, ask } = useLocalSearchParams<{ placeId?: string; ask?: string }>();
@@ -287,21 +289,29 @@ export function LogHuntSheet() {
   const session = useSession();
   const { data: journal } = useJournal();
   const [saved, setSaved] = useState<{ id: string; label: string } | null>(null);
-  const [held, setHeld] = useState<{ draft: PostDraft; details: DiaryDetails; label: string } | null>(null);
+  const [held, setHeld] = useState<HeldHunt | null>(null);
   const [formKey, setFormKey] = useState(0);
   const place = places.find((p) => p.id === placeId);
   // session === null: known signed out (undefined = still loading).
   const signedOut = session === null && needsAccount('saveHuntLog', session);
   const firstSave = signedOut && !(journal?.length);
 
-  const saveHeld = useCallback(async (h: { draft: PostDraft; details: DiaryDetails; label: string }, userId: string) => {
-    setHeld(null);
-    const e = await addJournalEntry(h.draft, { id: userId, username: null, displayName: 'You' }, h.details);
-    setSaved({ id: e.id, label: h.label });
-  }, []);
+  // Restore a hunt that was waiting on sign-in (app killed, sign-up failed, no signal).
   useEffect(() => {
-    if (held && session) void saveHeld(held, session.userId);
-  }, [held, session, saveHeld]);
+    if (!signedOut) return;
+    let live = true;
+    heldHunt().then((h) => live && h && setHeld((cur) => cur ?? h), () => {});
+    return () => {
+      live = false;
+    };
+  }, [signedOut]);
+  // Signed in: the journal sync uploads the held entry (same client UUID, so no duplicate).
+  useEffect(() => {
+    if (!held || !session) return;
+    setHeld(null);
+    setSaved({ id: held.id, label: held.label });
+    void clearHeldHunt();
+  }, [held, session]);
 
   // First "+ Log hunt" tap while signed out (chooser passes ask=1): ask once per install.
   const [askNow, setAskNow] = useState(false);
@@ -320,7 +330,11 @@ export function LogHuntSheet() {
       <ScreenHeader title="Log hunt" subtitle="🔒 Private diary entry · not a post" back />
       {held ? (
         <ScrollView contentContainerStyle={styles.body}>
-          <SignInSheet held={held.label} onDismiss={() => void saveHeld(held, 'me')} />
+          <SignInSheet
+            held={held.label}
+            dismissible={false}
+            status={held.confirmPending ? { tone: 'success', text: confirmPendingText } : null}
+          />
         </ScrollView>
       ) : askNow ? (
         <ScrollView contentContainerStyle={styles.body}>
@@ -361,7 +375,13 @@ export function LogHuntSheet() {
             const { draft, details } = diaryDraft(v);
             if (place && draft.counts[0]?.placeName === place.name) draft.counts[0].placeId = place.id;
             const label = [draft.counts[0]?.placeName, draft.species ? speciesLabel[draft.species] : null].filter(Boolean).join(' · ') || 'this hunt';
-            if (signedOut) return setHeld({ draft, details, label });
+            if (signedOut) {
+              // Persist first so the hunt survives a failed sign-up, a kill or no signal.
+              const e = await addJournalEntry(draft, { id: 'me', username: null, displayName: 'You' }, details);
+              const h = { id: e.id, label };
+              await holdHunt(h);
+              return setHeld(h);
+            }
             const e = await addJournalEntry(draft, { id: session?.userId ?? 'me', username: null, displayName: 'You' }, details);
             setSaved({ id: e.id, label });
           }}
@@ -405,6 +425,9 @@ function PrivateLog() {
               <Ionicons name={s.icon} size={16} color={s.color} />
               <Text style={[ui.muted, { color: s.color }]}>{s.text}</Text>
             </View>
+            {e.sync.status !== 'synced' && !e.sync.conflict && (
+              <Text style={ui.muted} testID={`offline-${e.clientId}`}>{offlineIndicatorText}</Text>
+            )}
           </Pressable>
         );
       })}
