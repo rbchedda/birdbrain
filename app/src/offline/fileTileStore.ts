@@ -8,6 +8,7 @@ export const fileTileStore: TileStore = {
   size: async () => 0,
   readBase64: async () => null,
   remove: async () => {},
+  clear: async () => {},
   readManifests: async () => ({}),
   writeManifests: async () => {},
 };

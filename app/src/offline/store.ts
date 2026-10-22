@@ -10,7 +10,10 @@ export interface TileStore {
   size(path: string): Promise<number>;
   /** File contents as base64, or null if missing. */
   readBase64(path: string): Promise<string | null>;
+  /** Removes one pack folder. dir must be a valid pack id (never empty or the root). */
   remove(dir: string): Promise<void>;
+  /** Removes every pack and the stored manifest index (sign-out, account deletion). */
+  clear(): Promise<void>;
   readManifests(): Promise<Record<string, import('./packs').PackManifest>>;
   writeManifests(m: Record<string, import('./packs').PackManifest>): Promise<void>;
   /** False where packs cannot be stored (web). */

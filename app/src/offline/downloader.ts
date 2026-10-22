@@ -1,4 +1,4 @@
-import { planPack, type PackManifest, type PackSpec } from './packs';
+import { assertPackId, planPack, type PackManifest, type PackSpec } from './packs';
 import { assertCacheable, PACK_SOURCES, tileUrl } from './sources';
 import { tilePath, type TileStore } from './store';
 import { tilesFor } from './tiles';
@@ -24,10 +24,12 @@ type Listener = (m: Record<string, PackManifest>) => void;
  * - resume: download() again; tiles already on disk are skipped.
  * - delete: removes the files and the manifest.
  */
+type Job = { cancelled: boolean; cleared?: boolean; done?: Promise<unknown> };
+
 export class PackDownloader {
   private manifests: Record<string, PackManifest> = {};
   private loaded: Promise<void> | null = null;
-  private jobs = new Map<string, { cancelled: boolean }>();
+  private jobs = new Map<string, Job>();
   private listeners = new Set<Listener>();
 
   constructor(
@@ -71,6 +73,7 @@ export class PackDownloader {
   }
 
   download(spec: PackSpec, allowed: boolean): DownloadHandle {
+    assertPackId(spec.id);
     if (!allowed) throw new OfflineGateError();
     if (!this.store.supported) throw new Error('Offline maps are available in the iOS and Android app.');
     const existing = this.jobs.get(spec.id);
@@ -78,13 +81,14 @@ export class PackDownloader {
     // Refuse before any request if a source isn't cacheable (Esri, unknown hosts).
     for (const b of spec.basemaps) assertCacheable(PACK_SOURCES[b].url);
 
-    const job = { cancelled: false };
+    const job: Job = { cancelled: false };
     this.jobs.set(spec.id, job);
     const done = this.run(spec, job).finally(() => this.jobs.delete(spec.id));
+    job.done = done;
     return { cancel: () => void (job.cancelled = true), done };
   }
 
-  private async run(spec: PackSpec, job: { cancelled: boolean }): Promise<PackManifest> {
+  private async run(spec: PackSpec, job: Job): Promise<PackManifest> {
     await this.load();
     const now = this.opts.now ?? Date.now;
     const plan = planPack(spec);
@@ -122,6 +126,7 @@ export class PackDownloader {
         } catch {
           m = { ...m, failed: m.failed + 1, updatedAt: now() };
         }
+        if (job.cleared) return;
         this.manifests = { ...this.manifests, [spec.id]: m };
         this.emit();
         if (m.done - lastWrite >= 50) {
@@ -132,6 +137,7 @@ export class PackDownloader {
     };
     await Promise.all(Array.from({ length: Math.max(1, this.opts.concurrency ?? 4) }, worker));
 
+    if (job.cleared) return { ...m, status: 'paused' };
     if (job.cancelled) m = { ...m, status: 'paused' };
     else if (m.failed > 0) m = { ...m, status: 'error', error: `${m.failed} tiles failed. Resume to retry them.` };
     else m = { ...m, status: 'complete', error: undefined };
@@ -144,7 +150,9 @@ export class PackDownloader {
     if (job) job.cancelled = true;
   }
 
+  /** Not gated: a lapsed pass must still be able to free storage. */
   async delete(id: string) {
+    assertPackId(id);
     this.cancel(id);
     await this.load();
     await this.store.remove(id);
@@ -152,5 +160,17 @@ export class PackDownloader {
     this.manifests = rest;
     this.emit();
     await this.store.writeManifests(this.manifests);
+  }
+
+  /** Sign-out / account deletion: cancel every job, remove all packs and the stored index. */
+  async clear() {
+    const running = [...this.jobs.values()];
+    for (const job of running) Object.assign(job, { cancelled: true, cleared: true });
+    await this.load();
+    // Let in-flight tiles land first so nothing is written after the wipe.
+    await Promise.allSettled(running.map((j) => j.done));
+    this.manifests = {};
+    this.emit();
+    await this.store.clear();
   }
 }

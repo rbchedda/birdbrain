@@ -2,7 +2,7 @@ import { Directory, File, Paths } from 'expo-file-system';
 
 import { readJson, writeJson } from '@/lib/localStore';
 
-import type { PackManifest } from './packs';
+import { assertPackId, type PackManifest } from './packs';
 import type { TileStore } from './store';
 
 const MANIFESTS = 'birdbrain.offlinePacks.v1';
@@ -41,8 +41,14 @@ export const fileTileStore: TileStore = {
     return f.exists ? f.base64() : null;
   },
   async remove(dir) {
-    const d = new Directory(root(), ...dir.split('/'));
+    // Guard here too: an empty or crafted id must never resolve to the root or outside it.
+    const d = new Directory(root(), assertPackId(dir));
     if (d.exists) d.delete();
+  },
+  async clear() {
+    const r = root();
+    if (r.exists) r.delete();
+    await writeJson(MANIFESTS, {});
   },
   readManifests: () => readJson<Record<string, PackManifest>>(MANIFESTS, {}),
   writeManifests: (m) => writeJson(MANIFESTS, m),
