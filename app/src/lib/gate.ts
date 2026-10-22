@@ -23,7 +23,8 @@ export interface GateResult {
  * requires an account so it can be restored on a new phone.
  */
 export function gate(action: AccountAction, session: Session | null | undefined, opts: { canUse?: CanUse; feature?: string } = {}): GateResult {
-  if (!session) return { allowed: false, reason: 'signIn' };
+  // A guest (anonymous) session never counts as an account.
+  if (!session || session.anonymous) return { allowed: false, reason: 'signIn' };
   if (opts.canUse && opts.feature && !opts.canUse(opts.feature)) return { allowed: false, reason: 'paywall' };
   return { allowed: true, reason: null };
 }

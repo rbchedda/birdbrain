@@ -1,14 +1,22 @@
+import * as Linking from 'expo-linking';
 import { useCallback, useEffect, useState } from 'react';
 
 import { readJson, writeJson } from '@/lib/localStore';
 
+import { backend } from '@/data';
+import type { Crew } from '@/data/types';
+
 /**
- * Number of people in the user's crew.
- * TODO: crews don't exist in the backend yet, so this is always 0. Wire it to the
- * real crew membership when crews ship.
+ * Number of crews the user belongs to (0 when signed out, offline or unconfigured).
+ * Supabase: real membership via RLS. Sample/mock mode: device-local crews.
  */
 export async function crewSize(): Promise<number> {
-  return 0;
+  try {
+    if (!(await backend.getSession())) return 0;
+    return (await backend.myCrews()).length;
+  } catch {
+    return 0;
+  }
 }
 
 /** null while loading. */
@@ -44,4 +52,44 @@ export function useInviteCardDismissed(): [boolean, () => void] {
     void writeJson(INVITE_CARD_DISMISSED_KEY, true);
   }, []);
   return [dismissed, dismiss];
+}
+
+/** The user's crews; null while loading. Reloads on demand (e.g. on screen focus). */
+export function useMyCrews(): { crews: Crew[] | null; error: string | null; reload: () => void } {
+  const [crews, setCrews] = useState<Crew[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      try {
+        const list = (await backend.getSession()) ? await backend.myCrews() : [];
+        if (live) {
+          setCrews(list);
+          setError(null);
+        }
+      } catch (e) {
+        if (live) {
+          setCrews([]);
+          setError((e as Error).message);
+        }
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [n]);
+  return { crews, error, reload: useCallback(() => setN((x) => x + 1), []) };
+}
+
+/** The link a crew invite token opens (birdbrain://crew/invite?token=… on device, https on web). */
+export const inviteUrl = (token: string) => Linking.createURL('crew/invite', { queryParams: { token } });
+
+/** Accepts a pasted invite link or a bare token. */
+export function parseInviteToken(input: string): string | null {
+  const s = input.trim();
+  if (!s) return null;
+  const m = s.match(/[?&]token=([A-Za-z0-9]+)/);
+  if (m) return m[1];
+  return /^[A-Za-z0-9]{16,128}$/.test(s) ? s : null;
 }

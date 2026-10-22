@@ -99,6 +99,8 @@ The `SOURCES` mappings were checked against the live layers with `ingest:describ
 
 `.github/workflows/ingest.yml` runs the layer ingester (step 1 below) hourly October to February and daily the rest of the year. It does not run step 2; run that by hand after a successful `arcgis.mjs` run. Add a `DATABASE_URL` repository secret to enable it.
 
+**Storage cleanup.** The database never deletes storage files itself. Hosted Supabase refuses SQL deletes on `storage.objects`, and where one does run it only drops the row and leaves the file behind. Instead, triggers queue `(bucket, path)` rows in `public.storage_deletion_queue`: RLS is on, there are no client grants, and only `service_role` can touch it. Deleting a crew queues its post photos. `ingest/storage_cleanup.mjs` removes queued files in batches per bucket through the Storage API (`DELETE /storage/v1/object/<bucket>`) using the service-role key, and deletes a row only after the API succeeds. A failure bumps `attempts` and records `last_error`. The row is retried on a later run (at least a minute later) and is reported as stuck after 10 attempts, and the run exits non-zero. `docs/workflows/storage-cleanup.yml` is the workflow to run it every 15 minutes (UTC). Copy it to `.github/workflows/` to enable it; the bot token can't push workflow files. It needs the repository secrets `DATABASE_URL`, `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. Until the job runs, the files are unreadable to everyone but their author, because photo reads need a live post row.
+
 **Run order (required):**
 1. `node ingest/arcgis.mjs`: counties, then the place sources (game lands before dove fields).
 2. `node ingest/stocking_windows.mjs --load data/pgc/pheasant-allocation-<season>.json`.
