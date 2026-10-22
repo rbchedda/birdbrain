@@ -17,6 +17,13 @@ export function countsText(c: BirdCounts) {
   return `Flushed ${c.flushed} · Roosters ${c.roosters} · Bagged ${c.harvested}`;
 }
 
+/** Redesign: the feed's delay meaning lives on each card, e.g. "shared 14 h after hunt". */
+export function delayLabel(post: Pick<Post, 'mine' | 'createdAt' | 'publicAfter'>): string | null {
+  if (post.mine || !post.publicAfter) return null;
+  const h = Math.round((new Date(post.publicAfter).getTime() - new Date(post.createdAt).getTime()) / 3600_000);
+  return h > 0 ? `shared ${h} h after hunt` : null;
+}
+
 export function PostCard({
   post,
   detail,
@@ -99,6 +106,7 @@ export function PostCard({
           <Text style={styles.meta}>
             {post.location === 'blurred' ? areaLabel(post.area, places) : 'Location hidden'} · {ago(post.createdAt)}
             {post.group ? ` · ${post.group}` : ''}
+            {delayLabel(post) ? ` · ${delayLabel(post)}` : ''}
           </Text>
         </View>
         {post.species && <Tag label={speciesLabel[post.species]} tone={post.species === 'dove' ? 'dove' : 'neutral'} />}
