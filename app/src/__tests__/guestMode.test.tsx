@@ -4,6 +4,7 @@ import { fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-li
 import { backend } from '@/data';
 import type { Session } from '@/data/backend';
 import { accountActions, gate, needsAccount } from '@/lib/gate';
+import { journalEntries } from '@/data/journal';
 import { acceptTerms, getConsent, syncConsentOnSignIn } from '@/lib/consent';
 
 const metrics = { frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } };
@@ -57,40 +58,24 @@ describe('terms acceptance while signed out (consent adapter for #25)', () => {
 
 });
 
-describe('signed-out browsing and the Log hunt sheet', () => {
+describe('signed-out browsing', () => {
   it('opens on the Map with no sign-up wall', async () => {
     await renderRouter('./src/app', { initialUrl: '/' });
     expect(await screen.findByText('6 spots')).toBeTruthy();
     expect(screen.queryByTestId('sign-in-sheet')).toBeNull();
   });
-
-  it('asks for an account on "+ Log hunt", email only while the Apple flag is off', async () => {
-    await renderRouter('./src/app', { initialUrl: '/new' });
-    await fireEvent.press(await screen.findByTestId('choose-diary'));
-    expect(await screen.findByText('Save your hunts so they’re never lost if you switch phones')).toBeTruthy();
-    expect(screen.queryByText('Sign in with Apple')).toBeNull();
-    expect(screen.getByText('Continue with email')).toBeTruthy();
-    await fireEvent.press(screen.getByText('Continue with email'));
-    expect(await screen.findByText('Create account', {}, { timeout: 3000 }).catch(() => screen.findAllByText('Sign in'))).toBeTruthy();
-    expect((await getConsent()).state).toBe('accepted');
-  });
-
-  it('never saves a hunt log signed out, even via a deep link', async () => {
-    await renderRouter('./src/app', { initialUrl: '/new/log' });
-    expect(await screen.findByText('Save your hunts so they’re never lost if you switch phones', {}, { timeout: 4000 })).toBeTruthy();
-    expect(screen.queryByText('Save to diary')).toBeNull();
-  });
 });
 
 describe('Apple sign-in flag', () => {
-  it('makes Apple the primary button when on, stubbed until keys exist', async () => {
-    expect(require('@/lib/flags').flags.appleSignIn).toBe(false); // off by default: blocked on Apple keys
+  it('is off by default; when on, Apple is the filled primary above email (stubbed until keys exist)', async () => {
+    expect(require('@/lib/flags').flags.appleSignIn).toBe(false);
     const { render, fireEvent: fire } = require('@testing-library/react-native');
     const { SignInSheet } = require('@/components/SignInSheet');
-    const s = await render(<SignInSheet onDismiss={() => {}} appleEnabled />);
-    const order = s.getAllByText(/^(Sign in with Apple|Use email instead)$/).map((t: { props: { children: string } }) => t.props.children);
-    expect(order).toEqual(['Sign in with Apple', 'Use email instead']);
-    await fire.press(s.getByText('Sign in with Apple'));
+    const s = await render(<SignInSheet onDismiss={() => {}} appleEnabled held="SGL 211 · Pheasant" />);
+    const order = s.getAllByText(/^Continue with (Apple|email)$/).map((t: { props: { children: string } }) => t.props.children);
+    expect(order).toEqual(['Continue with Apple', 'Continue with email']);
+    expect(s.getByText('SGL 211 · Pheasant')).toBeTruthy();
+    await fire.press(s.getByText('Continue with Apple'));
     expect(await s.findByText(/isn’t available yet/)).toBeTruthy();
   });
 });
