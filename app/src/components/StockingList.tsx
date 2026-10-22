@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Tag } from '@/components/Tag';
+import { Gated, useEntitlements } from '@/entitlements';
 import { Chip, ui } from '@/components/ui';
 import {
   crowdingTips,
@@ -44,6 +45,8 @@ export function StockingList({
   onPick: (place: Place) => void;
 }) {
   const today = todayET(now);
+  const { canUse } = useEntitlements();
+  const fullCalendar = canUse('stockingCalendar');
   const [sort, setSort] = useState<PlannerSort>('window');
   const [savedOnly, setSavedOnly] = useState(false);
   const [originId, setOriginId] = useState<string | null>(null);
@@ -92,8 +95,9 @@ export function StockingList({
       <Text style={styles.section}>Stocking points</Text>
       {rows.length === 0 && <Text style={ui.muted}>{savedOnly ? 'No saved stocking points yet.' : 'No stocking points loaded.'}</Text>}
       {rows.map((r) => (
-        <StockingRow key={r.place.id} row={r} onPress={() => onPick(r.place)} />
+        <StockingRow key={r.place.id} row={r} locked={!fullCalendar && !r.current} onPress={() => onPick(r.place)} />
       ))}
+      {!fullCalendar && rows.some((r) => !r.current && r.next) && <Gated feature="stockingCalendar">{null}</Gated>}
 
       <Text style={styles.section}>Dove fields</Text>
       {doves.length === 0 && <Text style={ui.muted}>No dove fields loaded.</Text>}
@@ -123,7 +127,7 @@ export function StockingList({
   );
 }
 
-function StockingRow({ row, onPress }: { row: PlannerRow; onPress: () => void }) {
+function StockingRow({ row, locked, onPress }: { row: PlannerRow; locked: boolean; onPress: () => void }) {
   const { place, next, current, saved } = row;
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={place.name} onPress={onPress} style={styles.row} testID={`stocking-row-${place.id}`}>
@@ -139,7 +143,9 @@ function StockingRow({ row, onPress }: { row: PlannerRow; onPress: () => void })
         {km(row.km)}
       </Text>
       <Text style={ui.body}>
-        {next
+        {next && locked
+          ? 'Later release weeks: Season Pass. This week’s stocking is always free.'
+          : next
           ? `${windowText(next)} · ${next.cocks} roosters, ${next.hens} hens (county total)`
           : stockingCountyOf(place)
             ? 'No more PGC release weeks this season.'

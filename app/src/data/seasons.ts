@@ -41,7 +41,7 @@ export const seasons: Season[] = [
   {
     species: 'pheasant',
     label: 'Junior pheasant',
-    windows: [['2026-10-10', '2026-10-17']],
+    windows: [['2026-10-10', '2026-10-18']],
     hours: 'smallGame',
     youth: true,
     note: 'Junior license holders and mentored youth only.',
@@ -79,12 +79,11 @@ export const seasons: Season[] = [
   {
     species: 'turkey',
     label: 'Fall turkey',
-    windows: [
-      ['2026-10-31', '2026-11-14'],
-      ['2026-11-26', '2026-11-28'],
-    ],
+    // Digest p.35: dates vary by WMU (Oct 31-Nov 3 up to Oct 31-Nov 20, some
+    // WMUs add Nov 25-27; closed in 5C/5D), so no statewide window.
+    windows: null,
     hours: 'smallGame',
-    note: 'Limit 1 per season. No fall season in WMUs 5C and 5D; other WMUs vary. Check your WMU.',
+    note: 'Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.',
   },
   {
     species: 'turkey',

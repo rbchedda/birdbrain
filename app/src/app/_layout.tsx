@@ -1,3 +1,4 @@
+import { EntitlementsProvider, UpgradeSheet } from '@/entitlements';
 import { BarlowCondensed_600SemiBold, BarlowCondensed_700Bold } from '@expo-google-fonts/barlow-condensed';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, useFonts } from '@expo-google-fonts/inter';
 import { Stack } from 'expo-router';
@@ -28,15 +29,19 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" />
-      <ConsentGate>
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.ground } }}>
-          <Stack.Screen
-            name="new/index"
-            options={{ presentation: 'transparentModal', animation: 'fade', contentStyle: { backgroundColor: 'transparent' } }}
-          />
-        </Stack>
-      </ConsentGate>
+      <EntitlementsProvider>
+        <StatusBar style="light" />
+        {/* Consent first: nothing (including the upgrade sheet) shows until terms are accepted. */}
+        <ConsentGate>
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.ground } }}>
+            <Stack.Screen
+              name="new/index"
+              options={{ presentation: 'transparentModal', animation: 'fade', contentStyle: { backgroundColor: 'transparent' } }}
+            />
+          </Stack>
+          <UpgradeSheet />
+        </ConsentGate>
+      </EntitlementsProvider>
     </SafeAreaProvider>
   );
 }
