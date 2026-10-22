@@ -81,6 +81,8 @@ export interface Backend {
   signIn(email: string, password: string): Promise<void>;
   /** Resolves needsConfirmation when the project requires email confirmation first. */
   signUp(email: string, password: string): Promise<{ needsConfirmation: boolean }>;
+  /** Finish an email-link sign-in (PKCE code, or access/refresh tokens). Throws if the link is bad or expired. */
+  completeAuthRedirect(p: { code?: string; accessToken?: string; refreshToken?: string }): Promise<void>;
   signOut(): Promise<void>;
   /** Permanently delete the signed-in account and everything it owns, then sign out. */
   deleteAccount(): Promise<void>;
