@@ -2,7 +2,7 @@ import { PRODUCTS, type ProductConfig } from './config';
 import type { EntitlementState } from './state';
 
 export interface PurchaseProvider {
-  readonly name: 'mock' | 'revenuecat';
+  readonly name: 'mock' | 'revenuecat' | 'unavailable';
   getEntitlements(): Promise<EntitlementState>;
   purchase(productId: ProductConfig['id']): Promise<EntitlementState>;
   restore(): Promise<EntitlementState>;
@@ -31,6 +31,26 @@ export class MockPurchaseProvider implements PurchaseProvider {
   }
 }
 
+/**
+ * Release builds with no working store: premium stays locked, buy buttons are hidden.
+ * Never grants anything.
+ */
+export class UnavailablePurchaseProvider implements PurchaseProvider {
+  readonly name = 'unavailable' as const;
+  async getEntitlements() {
+    return { active: [] };
+  }
+  async purchase(): Promise<never> {
+    throw new Error('Passes are not available yet.');
+  }
+  async restore() {
+    return { active: [] };
+  }
+}
+
+declare const __DEV__: boolean | undefined;
+const isDevBuild = () => typeof __DEV__ !== 'undefined' && __DEV__ === true;
+
 export type ProviderFlag = 'mock' | 'revenuecat';
 export function providerFlag(raw: string | undefined = process.env.EXPO_PUBLIC_PURCHASES_PROVIDER): ProviderFlag {
   return raw?.trim().toLowerCase() === 'revenuecat' ? 'revenuecat' : 'mock';
@@ -38,13 +58,16 @@ export function providerFlag(raw: string | undefined = process.env.EXPO_PUBLIC_P
 
 /**
  * Picks the provider. RevenueCat is only loaded (lazy require) when the flag is
- * on AND the native module is available (EAS dev build). Anything else, including
- * Expo Go or a load failure, falls back to the mock.
+ * on AND the native module is available (EAS dev build). The mock store is
+ * allowed ONLY in dev builds (__DEV__); a release build without a working
+ * RevenueCat gets UnavailablePurchaseProvider (premium locked, no buy buttons).
  */
 export function createPurchaseProvider(
-  opts: { flag?: string; loadRevenueCat?: () => PurchaseProvider } = {},
+  opts: { flag?: string; loadRevenueCat?: () => PurchaseProvider; isDev?: boolean } = {},
 ): PurchaseProvider {
-  if (providerFlag(opts.flag ?? process.env.EXPO_PUBLIC_PURCHASES_PROVIDER) !== 'revenuecat') return new MockPurchaseProvider();
+  const dev = opts.isDev ?? isDevBuild();
+  const fallback = (): PurchaseProvider => (dev ? new MockPurchaseProvider() : new UnavailablePurchaseProvider());
+  if (providerFlag(opts.flag ?? process.env.EXPO_PUBLIC_PURCHASES_PROVIDER) !== 'revenuecat') return fallback();
   try {
     const load =
       opts.loadRevenueCat ??
@@ -52,7 +75,7 @@ export function createPurchaseProvider(
       (() => (require('./revenueCatProvider') as typeof import('./revenueCatProvider')).createRevenueCatProvider());
     return load();
   } catch (e) {
-    console.warn('[purchases] RevenueCat unavailable, using mock provider', e);
-    return new MockPurchaseProvider();
+    console.warn('[purchases] RevenueCat unavailable', e);
+    return fallback();
   }
 }
