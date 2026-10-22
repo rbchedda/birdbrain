@@ -70,7 +70,8 @@ export const mapHtml = `<!doctype html>
       ]
     }
   });
-  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
+  // No +/- control: bottom-right sits under the sheet and the header owns the top.
+  // Pinch (touch) and scroll/double-click (web) zoom; 'center on me' handles recentering.
 
   var loaded = false, queue = [], selected = null;
   function apply(m) {
