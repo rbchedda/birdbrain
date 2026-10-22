@@ -67,6 +67,7 @@ export default function MapScreen() {
   const [focus, setFocus] = useState<{ center: Place['center']; key: number }>();
   const [planner, setPlanner] = useState(false);
   const [fullNotice, setFullNotice] = useState(false);
+  const [layersOpen, setLayersOpen] = useState(false);
   const session = useSession();
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const refreshSaved = useCallback(() => {
@@ -118,32 +119,57 @@ export default function MapScreen() {
 
       <View style={[styles.top, { paddingTop: insets.top + space.sm }]} pointerEvents="box-none">
         <View style={styles.titleRow}>
-          <Text style={styles.brand}>BirdBrain</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={basemap === 'topo' ? 'Show satellite imagery' : 'Show topo map'}
-            onPress={() => setBasemap((b) => (b === 'topo' ? 'imagery' : 'topo'))}
-            style={styles.layerButton}
-          >
-            <Ionicons name={basemap === 'topo' ? 'earth-outline' : 'map-outline'} size={20} color={colors.text} />
-          </Pressable>
-        </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          <Chip
-            label="Stocking planner"
-            icon="calendar-outline"
-            active={planner}
-            onPress={() => {
-              setPlanner((v) => !v);
+          <TextInput
+            value={query}
+            onChangeText={(t) => {
+              setQuery(t);
               setSelectedId(undefined);
+              setPlanner(false);
               setExpanded(true);
             }}
+            placeholder="Search game lands, counties"
+            placeholderTextColor={colors.muted}
+            style={styles.search}
+            accessibilityLabel="Search places"
           />
-          <Chip label="Open today" icon="sunny-outline" active={openOnly} onPress={() => setOpenOnly((v) => !v)} />
-          {filters.map((f) => (
-            <Chip key={f.key} label={f.label} active={f.key === filter} onPress={() => setFilter(f.key)} />
-          ))}
-        </ScrollView>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Map layers"
+            accessibilityState={{ expanded: layersOpen }}
+            onPress={() => setLayersOpen((v) => !v)}
+            style={[styles.layerButton, layersOpen && styles.layerButtonOn]}
+            testID="layers-button"
+          >
+            <Ionicons name="layers-outline" size={20} color={colors.text} />
+          </Pressable>
+        </View>
+        {layersOpen && (
+          <View style={styles.layers} testID="layers-panel">
+            <Text style={styles.layersTitle}>Map</Text>
+            <View style={styles.chips}>
+              <Chip label="Topo" icon="map-outline" active={basemap === 'topo'} onPress={() => setBasemap('topo')} />
+              <Chip label="Satellite" icon="earth-outline" active={basemap === 'imagery'} onPress={() => setBasemap('imagery')} />
+            </View>
+            <Text style={styles.layersTitle}>Show</Text>
+            <View style={styles.chips}>
+              {filters.map((f) => (
+                <Chip key={f.key} label={f.label} active={f.key === filter} onPress={() => setFilter(f.key)} />
+              ))}
+              <Chip label="Open today" icon="sunny-outline" active={openOnly} onPress={() => setOpenOnly((v) => !v)} />
+            </View>
+            <Chip
+              label="Stocking planner"
+              icon="calendar-outline"
+              active={planner}
+              onPress={() => {
+                setPlanner((v) => !v);
+                setSelectedId(undefined);
+                setExpanded(true);
+                setLayersOpen(false);
+              }}
+            />
+          </View>
+        )}
         {/*
           Legal banner (lawyer-approved one-liner): always rendered, no close control,
           no "seen" state, scales with system text size. Tap shows the full notice.
@@ -199,15 +225,6 @@ export default function MapScreen() {
                 <Button label="Try again" icon="refresh" onPress={() => loadPlaces(true)} />
               </View>
             )}
-            <TextInput
-              value={query}
-              onChangeText={setQuery}
-              onFocus={() => setExpanded(true)}
-              placeholder="Search by name, number or county"
-              placeholderTextColor={colors.muted}
-              style={ui.input}
-              accessibilityLabel="Search places"
-            />
             <FlatList
               data={listed}
               keyExtractor={(p) => p.id}
@@ -426,30 +443,40 @@ function PlaceDetails({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
   top: { position: 'absolute', left: 0, right: 0, paddingHorizontal: space.lg, gap: space.sm },
-  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  brand: {
-    fontFamily: fonts.heading,
-    fontSize: 28,
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  search: {
+    flex: 1,
+    minHeight: touchTarget,
+    fontFamily: fonts.body,
+    fontSize: 15,
     color: colors.text,
-    letterSpacing: 0.5,
     backgroundColor: colors.surface,
-    borderRadius: radius.pill,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingHorizontal: space.lg,
-    overflow: 'hidden',
+    paddingHorizontal: space.md,
   },
+  layerButtonOn: { borderColor: colors.accent },
+  layers: {
+    gap: space.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: space.md,
+  },
+  layersTitle: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.muted },
   layerButton: {
     width: touchTarget,
     height: touchTarget,
-    borderRadius: touchTarget / 2,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  chips: { gap: space.sm, paddingVertical: space.xs },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   sheetTitle: { fontFamily: fonts.heading, fontSize: 26, color: colors.text },
   placeRow: {
     minHeight: touchTarget + 8,
