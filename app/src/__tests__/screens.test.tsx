@@ -270,6 +270,9 @@ describe('Guide tab', () => {
     for (const label of ['In season', 'Regs', 'Bag', 'Hours']) expect(screen.queryByRole('button', { name: label })).toBeNull();
     for (const label of ['Bird ID', 'Regulations', 'Gear checklist', 'Licenses']) expect(screen.getByRole('button', { name: label })).toBeTruthy();
     expect(screen.getByTestId('guide-digest-top')).toHaveTextContent(/Verify with the PGC digest ↗ · regs v2026-27\.3\+guide\.2/);
+    // The unofficial-summary disclaimer and digest link stay, verbatim.
+    expect(screen.getByTestId('guide-disclaimer')).toHaveTextContent('Unofficial summary, always verify with the PGC Hunting & Trapping Digest');
+    expect(screen.getByLabelText('Open the PGC Hunting & Trapping Digest')).toBeTruthy();
   });
 
   it('switches zone on the Guide and the PGC table', async () => {

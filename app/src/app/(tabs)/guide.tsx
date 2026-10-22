@@ -1,6 +1,6 @@
 import { router, useNavigation } from 'expo-router';
 import { useLayoutEffect } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { DigestLink } from '@/components/guide/DigestLink';
 import { ZonePicker } from '@/components/guide/GuideSections';
@@ -10,7 +10,7 @@ import { Tag } from '@/components/Tag';
 import { SectionTitle, ui } from '@/components/ui';
 import { birds } from '@/data/birds';
 import { inSeasonRows, shootingTimes, type Badge } from '@/data/guide';
-import { REGS } from '@/data/regs';
+import { PGC_DIGEST_URL, REGS } from '@/data/regs';
 import { todayET } from '@/lib/time';
 import { colors, fonts, radius, space } from '@/theme/tokens';
 
@@ -71,6 +71,7 @@ export default function GuideScreen() {
             Doves, woodcock, waterfowl:{' '}
             {today?.sunday ? 'closed Sundays' : today?.migratory ? `${today.migratory.start} – ${today.migratory.end}` : 'check the digest'}
           </Text>
+          <Text style={ui.muted}>PGC hours zone (east 1 → west 7). Pick yours:</Text>
           <ZonePicker zone={zone} onChange={pickZone} />
         </View>
 
@@ -82,12 +83,24 @@ export default function GuideScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.rowName}>{r.label}</Text>
                 <Text style={ui.muted}>
-                  {r.detail} · bag {REGS.species[r.species].daily}
+                  {r.detail}
+                  {r.badge === 'CHECK' ? '' : ` · bag ${REGS.species[r.species].daily}`}
                 </Text>
               </View>
               <Tag label={badgeText[r.badge]} tone={badgeTone[r.badge]} />
             </View>
           ))}
+          <Text style={styles.disclaimer} testID="guide-disclaimer">
+            Unofficial summary, always verify with the PGC Hunting & Trapping Digest
+          </Text>
+          <Text
+            accessibilityRole="link"
+            accessibilityLabel="Open the PGC Hunting & Trapping Digest"
+            style={styles.link}
+            onPress={() => Linking.openURL(PGC_DIGEST_URL)}
+          >
+            PGC Hunting & Trapping Digest ↗
+          </Text>
         </View>
 
         <View style={styles.section}>
@@ -129,5 +142,6 @@ const styles = StyleSheet.create({
   link: { color: colors.accent, fontFamily: fonts.bodySemi, paddingVertical: space.xs },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   tile: { width: '48%', flexGrow: 1, gap: 2, minHeight: 96, borderRadius: radius.md },
+  disclaimer: { color: colors.dove, fontFamily: fonts.bodySemi, fontSize: 14 },
   glyph: { fontSize: 20, color: colors.dove },
 });
