@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Notice } from '@/components/ui';
-import { acceptTerms } from '@/lib/consent';
 import { flags } from '@/lib/flags';
 import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
 
@@ -44,15 +43,11 @@ export function SignInSheet({
   appleEnabled?: boolean;
 }) {
   const [message, setMessage] = useState<string>();
-  // Continuing records terms acceptance on the device; it syncs to accepted_terms after sign-in.
-  const accept = () => acceptTerms().catch(() => undefined);
 
   const email = async () => {
-    await accept();
     router.push('/sign-in');
   };
   const apple = async () => {
-    await accept();
     // TODO(apple-sign-in): expo-apple-authentication + supabase signInWithIdToken once keys exist.
     setMessage('Sign in with Apple isn’t available yet. Use email for now.');
   };

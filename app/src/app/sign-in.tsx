@@ -7,7 +7,7 @@ import { LegalLinks } from '@/components/LegalLinks';
 import { ScreenHeader } from '@/components/Screen';
 import { Button, Chip, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
-import { syncConsentOnSignIn } from '@/lib/consent';
+import { syncConsentOnSignIn } from '@/lib/termsConsent';
 import { colors, space } from '@/theme/tokens';
 
 export default function SignInScreen() {

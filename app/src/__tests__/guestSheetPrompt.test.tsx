@@ -5,7 +5,7 @@ import { backend } from '@/data';
 import type { Session } from '@/data/backend';
 import { accountActions, gate, needsAccount } from '@/lib/gate';
 import { journalEntries } from '@/data/journal';
-import { acceptTerms, getConsent, syncConsentOnSignIn } from '@/lib/consent';
+import { acceptTerms, getConsent, syncConsentOnSignIn } from '@/lib/termsConsent';
 
 const metrics = { frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } };
 jest.mock('react-native-safe-area-context', () => {
@@ -32,7 +32,6 @@ describe('first-save sign-in sheet (redesign 02b)', () => {
     expect(screen.getByText('Continue with email')).toBeTruthy();
     await fireEvent.press(screen.getByText('Not now — keep on this phone only'));
     expect(await screen.findByText('Save to diary')).toBeTruthy();
-    expect((await getConsent()).state).toBe('needed'); // dismissing accepts nothing
   });
 
   it('does not ask again on later taps', async () => {

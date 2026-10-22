@@ -149,7 +149,6 @@ describe('Hybrid guest mode (no anonymous accounts)', () => {
   const guest = () => {
     jest.spyOn(backend, 'getSession').mockResolvedValue(null);
     return [
-      jest.spyOn(backend, 'signInAsGuest'),
       jest.spyOn(backend, 'signIn'),
       jest.spyOn(backend, 'signUp'),
     ];

@@ -95,7 +95,6 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
     signIn: async () => {},
     signUp: async () => ({ needsConfirmation: false }),
     signOut: async () => {},
-    async recordTermsAcceptance() {},
     async deleteAccount() {
       // Drop everything this device stored for the sample user and rebuild from seed data.
       state = null;

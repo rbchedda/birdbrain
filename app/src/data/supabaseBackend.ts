@@ -128,12 +128,6 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
       checkAuth(await sb.auth.signOut());
       blocked = new Set();
     },
-    async recordTermsAcceptance(a) {
-      await me();
-      const res = await sb.from('accepted_terms').insert({ accepted_at: a.acceptedAt, app_version: a.appVersion, terms_version: a.termsVersion });
-      // 23505: this version is already logged for this user; treat as sent.
-      if (res.error && res.error.code !== '23505') throw new Error(res.error.message);
-    },
     async deleteAccount() {
       const userId = await me();
       // Hosted Storage refuses SQL deletes, so remove every photo (nested paths
