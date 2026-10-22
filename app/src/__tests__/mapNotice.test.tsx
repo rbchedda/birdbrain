@@ -1,10 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
+import { within } from '@testing-library/react-native';
 
 import { backend } from '@/data';
 import { loadPlaces } from '@/data/hooks';
-import { ENROLLED_PRIVATE_LINE, MAP_BANNER, layerDateFor, publicLayers } from '@/data/mapNotice';
+import { ENROLLED_PRIVATE_LINE, MAP_BANNER, MAP_BANNER_SHORT, layerDateFor, publicLayers } from '@/data/mapNotice';
 import { createSupabaseBackend } from '@/data/supabaseBackend';
 
 const metrics = { frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } };
@@ -95,12 +96,61 @@ describe('map and sheet notices', () => {
     expect(screen.queryByTestId('enrolled-line')).toBeNull();
   });
 
-  it('shows the banner on the map, and tapping it opens the full notice', async () => {
+  it('shows the approved one-line banner verbatim, and tapping it shows the full notice verbatim', async () => {
+    expect(MAP_BANNER_SHORT).toBe('Approximate boundaries, not a survey. Get permission for private land. (i)');
+    expect(MAP_BANNER).toBe(
+      'Boundaries are approximate, not a survey. Shows public land and PGC access-program land only. Get permission before entering any other private land.',
+    );
     await open('/');
     expect(await screen.findByText('6 spots')).toBeTruthy();
-    expect(screen.getByText(MAP_BANNER)).toBeTruthy();
-    fireEvent.press(screen.getByTestId('map-banner'));
+    expect(screen.getByTestId('map-banner')).toHaveTextContent(MAP_BANNER_SHORT);
+    expect(screen.queryByTestId('map-full-notice')).toBeNull();
+    await fireEvent.press(screen.getByTestId('map-banner'));
+    expect(screen.getByTestId('map-full-notice')).toHaveTextContent(MAP_BANNER, { exact: false });
+    // The full notice still leads to Data sources.
+    await fireEvent.press(screen.getByText('Data sources'));
     expect(await screen.findByText('Map notice & data sources')).toBeTruthy();
-    expect(screen.getByTestId('data-sources-text')).toBeTruthy();
+  });
+
+  it('banner has no dismiss path: no close control, and it is still shown after collapsing, a remount and a second view', async () => {
+    await open('/');
+    await screen.findByText('6 spots');
+    const banner = screen.getByTestId('map-banner');
+    expect(banner).toHaveTextContent(MAP_BANNER_SHORT);
+    // No dismiss/close control anywhere in or next to the banner.
+    expect(screen.queryByLabelText(/dismiss|close (notice|banner)|hide banner/i)).toBeNull();
+    expect(within(banner).queryByRole('button')).toBeNull();
+
+    // Opening and closing the full notice never removes the one-liner.
+    await fireEvent.press(banner);
+    expect(screen.getByTestId('map-banner')).toHaveTextContent(MAP_BANNER_SHORT);
+    await fireEvent.press(screen.getByTestId('map-banner'));
+    expect(screen.queryByTestId('map-full-notice')).toBeNull();
+    expect(screen.getByTestId('map-banner')).toHaveTextContent(MAP_BANNER_SHORT);
+
+    // Selecting a place, opening layers and searching keep it visible.
+    await fireEvent.press(screen.getByLabelText('Map layers'));
+    await fireEvent.press(screen.getByLabelText('State Game Lands (sample A)'));
+    expect(screen.getByTestId('map-banner')).toHaveTextContent(MAP_BANNER_SHORT);
+
+    // Leave the map and come back (second view), then a fresh remount: still shown, nothing persisted to hide it.
+    await fireEvent.press(screen.getByRole('tab', { name: 'Guide' }));
+    await fireEvent.press(screen.getByRole('tab', { name: 'Map' }));
+    expect(screen.getByTestId('map-banner')).toHaveTextContent(MAP_BANNER_SHORT);
+    const keys = await AsyncStorage.getAllKeys();
+    expect(keys.filter((k) => /banner|notice/i.test(k))).toEqual([]);
+
+    await open('/');
+    await screen.findByText('6 spots');
+    expect(screen.getByTestId('map-banner')).toHaveTextContent(MAP_BANNER_SHORT);
+  });
+
+  it('place sheet keeps the full banner, heading and sheet text verbatim (no truncation)', async () => {
+    await open('/');
+    await fireEvent.press(await screen.findByLabelText('State Game Lands (sample A)'));
+    expect(await screen.findByTestId('place-map-banner')).toHaveTextContent(MAP_BANNER);
+    const notice = screen.getByTestId('place-notice');
+    expect(notice).toHaveTextContent(/Check before you hunt\. Boundaries and locations come from PA Game Commission data, last updated .+, and may be outdated or off by many yards\. They are not a legal survey\. Obey all posted signs, purple paint, fences and safety zones \(150 yd from occupied buildings\)\. A pin here does not mean the land is open or that you have permission\. Seasons and rules change: verify at pa\.gov\/pgc\./);
+    expect(screen.queryByText(/Read ›/)).toBeNull();
   });
 });

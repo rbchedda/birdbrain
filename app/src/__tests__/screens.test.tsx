@@ -70,6 +70,7 @@ describe('Map (Pheasant Planner)', () => {
   it('filters by place type and searches by county', async () => {
     await open('/');
     await screen.findByText('6 spots');
+    await fireEvent.press(screen.getByLabelText('Map layers'));
     await fireEvent.press(screen.getByText('Dove Fields'));
     expect(screen.getByText('1 spot')).toBeTruthy();
     expect(screen.queryByLabelText('State Game Lands (sample A)')).toBeNull();
@@ -85,6 +86,7 @@ describe('Stocking planner', () => {
   it('opens from the map with the disclaimer, PGC link, points, dove fields and tips', async () => {
     await open('/');
     await screen.findByText('6 spots');
+    await fireEvent.press(screen.getByLabelText('Map layers'));
     await fireEvent.press(screen.getByText('Stocking planner'));
     expect(await screen.findByTestId('stocking-disclaimer')).toHaveTextContent(/Always verify with PGC/);
     expect(screen.getByRole('link', { name: 'Open PGC pheasant allocation' })).toBeTruthy();
@@ -98,12 +100,13 @@ describe('Stocking planner', () => {
   it('saves a site, which persists and becomes a distance origin', async () => {
     await open('/');
     await fireEvent.press(await screen.findByLabelText('Pheasant stocking (sample E)'));
-    await fireEvent.press(await screen.findByText('Save privately'));
+    await fireEvent.press(await screen.findByLabelText('Save privately'));
     expect(await screen.findByText('Saved')).toBeTruthy();
     const stored = JSON.parse((await AsyncStorage.getItem('birdbrain.sample.v1'))!);
     expect(stored.saved).toContain('stock-sample-2');
 
     await fireEvent.press(screen.getByLabelText('Back to list'));
+    await fireEvent.press(screen.getByLabelText('Map layers'));
     await fireEvent.press(screen.getByText('Stocking planner'));
     await fireEvent.press(await screen.findByText('Saved only'));
     expect(screen.getByTestId('stocking-row-stock-sample-2')).toBeTruthy();
