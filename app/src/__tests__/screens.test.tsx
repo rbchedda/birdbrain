@@ -275,13 +275,44 @@ describe('Guide tab', () => {
     expect(screen.getByLabelText('Open the PGC Hunting & Trapping Digest')).toBeTruthy();
   });
 
-  it('switches zone on the Guide and the PGC table', async () => {
+  it('keeps the zone picker on the PGC table only; the Guide uses the picked zone', async () => {
     await open('/guide');
-    await fireEvent.press(await screen.findByRole('button', { name: 'Zone 7' }));
-    expect(await screen.findByText('In season now · Zone 7')).toBeTruthy();
+    expect(await screen.findByTestId('guide-today')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Zone 7' })).toBeNull();
     await fireEvent.press(screen.getByText('PGC table ›'));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Zone 7' }));
     expect(await screen.findByText('Shooting times · Zone 7')).toBeTruthy();
     expect(screen.getByTestId('guide-bag')).toBeTruthy();
+    await open('/guide');
+    expect(await screen.findByText('In season now · Zone 7')).toBeTruthy();
+  });
+
+  it('designer feedback: no Open today card, no migratory line, no bag or Closed in list rows', async () => {
+    await open('/guide');
+    const today = await screen.findByTestId('guide-today');
+    expect(screen.queryByText('Open today?')).toBeNull();
+    expect(screen.queryByTestId('guide-today-migratory')).toBeNull();
+    expect(today).not.toHaveTextContent(/Doves, woodcock, waterfowl/);
+    expect(screen.getByTestId('guide-today-label')).toHaveTextContent(/\S/);
+    expect(screen.getByTestId('guide-season')).not.toHaveTextContent(/bag /i);
+    expect(screen.queryByText('Closed')).toBeNull();
+    for (const el of screen.queryAllByTestId(/^coming-up-/)) expect(el).toHaveTextContent(/Opens \w{3}, \w{3} \d{1,2}/);
+    expect(screen.queryAllByTestId(/^coming-up-/).length).toBeLessThanOrEqual(3);
+  });
+
+  it('species detail shows season dates and the limit next to a digest link', async () => {
+    await open('/guide/bird/pheasant');
+    expect(await screen.findByTestId('bird-seasons')).toHaveTextContent(/Oct 24/);
+    expect(screen.getByTestId('bird-limits')).toHaveTextContent(/Daily: 2/);
+    expect(screen.getByTestId('bird-limits-digest')).toBeTruthy();
+  });
+
+  it('hides "Buy on HuntFishPA" while the URL is unverified (null)', async () => {
+    await open('/guide');
+    await fireEvent.press(await screen.findByRole('button', { name: 'Licenses' }));
+    expect(await screen.findByTestId('reg-licenses')).toBeTruthy();
+    expect(screen.queryByText('Buy on HuntFishPA ›')).toBeNull();
+    expect(screen.queryByTestId('buy-huntfishpa')).toBeNull();
   });
 
   it('Gear checklist tile opens the per-species checklist', async () => {
