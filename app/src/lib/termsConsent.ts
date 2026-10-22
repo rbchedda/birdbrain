@@ -10,7 +10,7 @@ import { readJson, writeJson } from './localStore';
 const ACCEPTED_KEY = 'birdbrain.termsAccepted.v1';
 const QUEUE_KEY = 'birdbrain.termsQueue.v1';
 
-export const appVersion = () => Constants.expoConfig?.version ?? 'unknown';
+export const appVersion = () => Constants.expoConfig?.version ?? Constants.nativeApplicationVersion ?? 'unknown';
 
 export type ConsentState = 'loading' | 'needed' | 'accepted';
 
