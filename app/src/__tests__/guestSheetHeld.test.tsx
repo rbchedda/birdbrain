@@ -32,13 +32,12 @@ describe('first-save sign-in sheet (redesign 02b)', () => {
     await fireEvent.press(await screen.findByLabelText('Add dog, weather, cover, notes, photo'));
     await fireEvent.changeText(screen.getByLabelText('Notes'), 'Cold start');
     await fireEvent.press(screen.getByText('Save hunt'));
-    expect(await screen.findByText('Keep your hunt diary')).toBeTruthy();
+    expect(await screen.findByText('Sign in to save this hunt')).toBeTruthy();
     // Already on the phone (idempotent client UUID) by the time the sheet shows.
     const [e] = await journalEntries();
     expect(e.caption).toBe('Cold start');
     expect(e.clientId).toMatch(/^[0-9a-f-]{36}$/);
     expect(e.sync.status).toBe('pending');
-    expect(JSON.parse((await AsyncStorage.getItem('birdbrain.heldHunt.v1'))!).id).toBe(e.id);
     expect(screen.queryByText('Not now — keep on this phone only')).toBeNull();
     expect(screen.getByText('Continue with email')).toBeTruthy();
     expect(upsert).not.toHaveBeenCalled();

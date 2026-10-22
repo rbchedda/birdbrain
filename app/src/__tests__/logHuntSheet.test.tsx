@@ -61,7 +61,7 @@ describe('Log hunt sheet (redesign 02)', () => {
     await open('/new/log?placeId=stock-sample-1');
     expect(await screen.findByText(/First save\? You’ll create a free account/)).toBeTruthy();
     await fireEvent.press(screen.getByText('Save hunt'));
-    expect(await screen.findByText('Keep your hunt diary')).toBeTruthy();
+    expect(await screen.findByText('Sign in to save this hunt')).toBeTruthy();
     expect(screen.getByText('Pheasant stocking (sample B) · Pheasant')).toBeTruthy();
     expect((await journalEntries()).length).toBe(1);
     expect(screen.queryByText('Not now — keep on this phone only')).toBeNull();
