@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { SignInSheet } from '@/components/SignInSheet';
@@ -11,7 +11,11 @@ import { backend } from '@/data';
 import { useJournal, usePlaces, useSession } from '@/data/hooks';
 import { DiaryForm, diaryDraft } from '@/app/diary/new';
 import { addJournalEntry, type JournalEntry } from '@/data/journal';
-import { emptyDiaryDetails } from '@/data/types';
+import { emptyDiaryDetails, type DiaryDetails } from '@/data/types';
+import { readJson, writeJson } from '@/lib/localStore';
+
+const SIGN_IN_PROMPT_KEY = 'birdbrain.signInPromptSeen.v1';
+type PostDraft = Parameters<typeof addJournalEntry>[0];
 import { allSpecies, placeTypeLabel, speciesLabel, type LocationVisibility, type Place, type PlaceCount, type Species } from '@/data/types';
 import { addDays, etParts, formatDay, formatTime, publicAfterET, todayET } from '@/lib/time';
 import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
@@ -44,7 +48,7 @@ export default function NewLogScreen() {
  * and never creates a post; /new/post renders it with mode="post" for delayed sharing.
  */
 export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
-  const { placeId } = useLocalSearchParams<{ placeId?: string }>();
+  const { placeId, ask } = useLocalSearchParams<{ placeId?: string; ask?: string }>();
   const mode = fixedMode ?? 'diary';
   // "Log hunt" (the default, mode=diary) always saves privately and never creates a post.
   // Only the chooser's "Post" (mode=post) offers delayed sharing.
@@ -81,8 +85,33 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
   const publicAt = publicAfterET(new Date());
   const today = todayET();
   const needsAccount = backend.mode === 'supabase' && !session;
-  // Hybrid guest mode: the first saved hunt log needs an account (session === null: known signed out).
-  const mustSignIn = session === null && gateNeedsAccount('saveHuntLog', session);
+  // Hybrid guest mode: saving a hunt log to the account needs sign-in. Signed out, Save holds
+  // the entry on the phone and shows the sign-in sheet (redesign 02b); it saves once signed in.
+  const signedOutNow = session === null && gateNeedsAccount('saveHuntLog', session);
+  const [held, setHeld] = useState<{ draft: PostDraft; details: DiaryDetails; label: string } | null>(null);
+  const saveHeld = useCallback(
+    async (h: NonNullable<typeof held>, userId: string) => {
+      setHeld(null);
+      const e = await addJournalEntry(h.draft, { id: userId, username: null, displayName: 'You' }, h.details);
+      setSavedId(e.id);
+      setFormKey((k) => k + 1);
+    },
+    [],
+  );
+  // First "+ Log hunt" tap while signed out (chooser passes ask=1): show the sheet once per install.
+  const [askNow, setAskNow] = useState(false);
+  useEffect(() => {
+    if (ask !== '1' || !signedOutNow) return;
+    readJson(SIGN_IN_PROMPT_KEY, false).then((seen) => {
+      if (!seen) {
+        setAskNow(true);
+        void writeJson(SIGN_IN_PROMPT_KEY, true);
+      }
+    }, () => {});
+  }, [ask, signedOutNow]);
+  useEffect(() => {
+    if (held && session) void saveHeld(held, session.userId);
+  }, [held, session, saveHeld]);
 
   const addPlace = (place: Place | null) => {
     setCounts((c) => [...c, emptyCount(place)]);
@@ -147,10 +176,12 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
               <Button label="Log another" onPress={() => setSavedId(null)} style={{ flex: 1 }} />
             </View>
           )}
-          {!savedId && mustSignIn && (
-            <SignInSheet onDismiss={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+          {!savedId && held && (
+            // "Not now": keep it on this phone only. Nothing goes to the server while signed out.
+            <SignInSheet held={held.label} onDismiss={() => void saveHeld(held, 'me')} />
           )}
-          {!savedId && !mustSignIn && (
+          {!savedId && !held && askNow && <SignInSheet onDismiss={() => setAskNow(false)} />}
+          {!savedId && !held && !askNow && (
             <DiaryForm
               key={`${formKey}-${place?.id ?? ""}`}
               initial={{
@@ -163,6 +194,11 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
               onSubmit={async (v) => {
                 const { draft, details } = diaryDraft(v);
                 if (place && draft.counts[0]?.placeName === place.name) draft.counts[0].placeId = place.id;
+                if (signedOutNow) {
+                  const where = draft.counts[0]?.placeName || 'this hunt';
+                  setHeld({ draft, details, label: draft.species ? `${where} · ${speciesLabel[draft.species]}` : where });
+                  return;
+                }
                 const e = await addJournalEntry(draft, { id: session?.userId ?? 'me', username: null, displayName: 'You' }, details);
                 setSavedId(e.id);
                 setFormKey((k) => k + 1);

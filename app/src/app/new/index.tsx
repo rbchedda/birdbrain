@@ -1,9 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { SignInSheet } from '@/components/SignInSheet';
 import { Button } from '@/components/ui';
 import { useSession } from '@/data/hooks';
 import { needsAccount } from '@/lib/gate';
@@ -37,24 +35,13 @@ const choices: Choice[] = [
 /** ＋ chooser: "Log hunt" (private diary, never a post) or "Post" (delayed social post). */
 export default function NewChooser() {
   const session = useSession();
-  const [askSignIn, setAskSignIn] = useState(false);
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
   const pick = (mode: Choice['mode']) => {
-    // Signed out: "+ Log hunt" asks for an account at the moment of value (no launch wall).
-    if (mode === 'diary' && session === null && needsAccount('saveHuntLog', session)) return setAskSignIn(true);
-    router.replace(mode === 'post' ? '/new/post' : '/new/log');
+    if (mode === 'post') return router.replace('/new/post');
+    // Signed out: "+ Log hunt" asks for an account once, at the moment of value (no launch wall).
+    const ask = session === null && needsAccount('saveHuntLog', session);
+    router.replace(ask ? { pathname: '/new/log', params: { ask: '1' } } : '/new/log');
   };
-
-  if (askSignIn) {
-    return (
-      <View style={styles.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} accessibilityLabel="Close" onPress={close} />
-        <View style={styles.sheet}>
-          <SignInSheet onDismiss={close} />
-        </View>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.backdrop}>
