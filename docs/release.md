@@ -10,7 +10,10 @@ Owner: RBChedda. Tick these off in order. Anything that creates an Expo or Apple
 - [ ] `eas credentials`: distribution certificate and provisioning profile (let EAS manage them).
 - [ ] `EXPO_TOKEN` goes only in CI secrets and local env. Never commit it.
 
-## Feature flags (set per profile in `eas.json` → `build.<profile>.env`)
+- [ ] **Android package.** `android.package` reuses the same placeholder (`com.rbchedda.birdbrain`, same override). Fine for now; confirm before the first Play Console listing, since it can't change after that either.
+- [ ] **Hosted Supabase Auth redirect URLs.** In the Supabase dashboard → Authentication → URL Configuration, add `birdbrain://**` and `exp://**` to Redirect URLs (they're empty on the hosted project; the dev token lacks `auth_config_write`, so this is a manual step). Needed for magic-link / OAuth returns in TestFlight builds.
+
+## Feature flags (set per profile in `eas.json` → `build.<profile>.env`; production leaves `EXPO_PUBLIC_PURCHASES_PROVIDER` unset → Unavailable until RevenueCat, and a test enforces it never says mock)
 - [ ] `EXPO_PUBLIC_PURCHASES_PROVIDER=revenuecat` for production once RevenueCat exists (BLOCKED: no account). Set `EXPO_PUBLIC_REVENUECAT_IOS_KEY` (public SDK key) as an EAS env var.
 - [ ] RevenueCat: products `weekend_pass` (non-renewing) and `season_pass_yearly` (auto-renew + intro offer) created in App Store Connect and attached to the `pro` entitlement. Paid Apps agreement, tax and banking done.
 - [ ] `EXPO_PUBLIC_FLAG_APPLE_SIGN_IN=1` only after the Apple sign-in capability is on for the bundle id **and** the Supabase Apple provider is configured. If any third-party sign-in ships, Guideline 4.8 requires Apple sign-in too.
@@ -40,6 +43,14 @@ Owner: RBChedda. Tick these off in order. Anything that creates an Expo or Apple
 - [ ] Account deletion is reachable in-app (Guideline 5.1.1(v)).
 - [ ] Subscription disclosure on the paywall (3.1.2): already covered by tests.
 - [ ] Submit for review by **Dec 21**. Apple's holiday slowdown is usually about Dec 22–27, so submit early.
+
+## To add later: permission strings
+
+No usage strings ship today because nothing in the app reads location, the camera or the photo library. Add each one in `app.config.ts` → `ios.infoPlist` (plus the expo plugin) in the same PR as the feature, worded plainly:
+
+- `NSLocationWhenInUseUsageDescription`: when the map shows your position (e.g. "Shows where you are on the map. Your location isn't saved or shared.").
+- `NSCameraUsageDescription` / `NSPhotoLibraryUsageDescription`: when hunt-log photos ship.
+- Don't add `NSLocationAlwaysAndWhenInUseUsageDescription` or `NSPhotoLibraryAddUsageDescription` unless a feature really needs background location or saving to the library.
 
 ## Not possible from the Linux dev box
 - iOS builds (`eas build --local` for iOS) need macOS + Xcode. Use EAS cloud builds (a human starts them) or a Mac.
