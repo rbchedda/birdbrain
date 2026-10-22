@@ -22,7 +22,7 @@ export const tosSectionTitle = "Maps, Data and Your Responsibility";
 export const tosSection: readonly { title: string; body: string }[] = [
   {
     "title": "Map data accuracy.",
-    "body": "Maps, boundaries, stocking locations, dove fields, zones, seasons and hours are provided for general planning only. They come from public sources and our own processing (including simplification and blurring). They may be incomplete, inaccurate or out of date, and they are not a legal survey. Phone GPS can be off by many yards."
+    "body": "Map data is approximate. Boundaries, stocking locations, dove fields, hunting zones and other map information come mainly from Pennsylvania Game Commission data. We show PGC shapes as published, but may rename fields, change display styling, and update data on a schedule, so what you see may be outdated, incomplete or wrong, and it is not a legal survey. Locations in posts by other users are delayed and generalized on purpose and are not exact. Always confirm boundaries, posted signs and current rules on the ground and with official sources before you hunt."
   },
   {
     "title": "No permission to enter land.",
