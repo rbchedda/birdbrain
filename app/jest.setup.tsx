@@ -16,3 +16,8 @@ jest.mock('react-native-webview', () => {
   const WebView = () => <View testID="webview" />;
   return { WebView, default: WebView };
 });
+
+// Most screen tests start past onboarding; consent.test.tsx unmocks this to test the gate.
+jest.mock('@/components/ConsentGate', () => ({
+  ConsentGate: ({ children }: { children: React.ReactNode }) => children,
+}));

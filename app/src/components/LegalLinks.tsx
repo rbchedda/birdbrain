@@ -13,7 +13,7 @@ export function LegalLinks({ credits = false }: { credits?: boolean }) {
         Privacy Policy
       </Text>
       <Text style={ui.muted}>·</Text>
-      <Text accessibilityRole="link" style={[ui.muted, styles.link]} onPress={() => Linking.openURL(legal.termsUrl)}>
+      <Text accessibilityRole="link" style={[ui.muted, styles.link]} onPress={() => router.push('/terms')}>
         Terms of Service
       </Text>
       {credits && (
