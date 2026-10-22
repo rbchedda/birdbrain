@@ -10,6 +10,14 @@ export const env = {
 export const hasSupabase = Boolean(env.supabaseUrl && env.supabaseKey);
 
 /**
+ * Sample data is opt-in: only with EXPO_PUBLIC_USE_SAMPLE_DATA=1 (a dev flag) or
+ * under jest. A build without Supabase config and without the flag gets an
+ * "unconfigured" backend that fails loudly instead of showing fake data.
+ */
+export const useSampleData =
+  process.env.EXPO_PUBLIC_USE_SAMPLE_DATA === '1' || process.env.NODE_ENV === 'test';
+
+/**
  * Legal links shown on sign-in and profile.
  * TODO(P0.6): replace these placeholders with the real hosted privacy policy
  * and terms of service before store submission.
