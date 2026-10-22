@@ -153,7 +153,10 @@ describe('app config', () => {
     expect(e.android.permissions).toEqual(expect.arrayContaining(['ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION']));
     const plugin = e.plugins.find((p: unknown) => Array.isArray(p) && p[0] === 'expo-location');
     expect(plugin[1].locationWhenInUsePermission).toBe(msg);
+    // false (not omitted) stops the plugin writing its default Always strings.
+    expect(plugin[1].locationAlwaysAndWhenInUsePermission).toBe(false);
+    expect(plugin[1].locationAlwaysPermission).toBe(false);
     const all = JSON.stringify(e);
-    expect(all).not.toMatch(/ACCESS_BACKGROUND_LOCATION|NSLocationAlways|locationAlwaysPermission/);
+    expect(all).not.toMatch(/ACCESS_BACKGROUND_LOCATION|NSLocationAlways/);
   });
 });
