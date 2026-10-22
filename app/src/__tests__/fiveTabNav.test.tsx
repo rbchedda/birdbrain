@@ -30,7 +30,7 @@ describe('Five-tab nav', () => {
   });
 
   it.each([
-    ['/feed', /Hunt with a crew/],
+    ['/feed', /Invite your crew/],
     ['/guide', /Open today\?/],
     ['/profile', /Log a hunt/],
     ['/log', /Saves to your private Hunt Log/],
