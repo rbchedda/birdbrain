@@ -1,6 +1,6 @@
 import { birds } from '@/data/birds';
 import { gear } from '@/data/gear';
-import { badgeFor, GUIDE_SECTIONS, hoursZones, inSeasonRows, shootingTimes } from '@/data/guide';
+import { badgeFor, comingUp, GUIDE_SECTIONS, hoursZones, inSeasonNow, inSeasonRows, shootingTimes, todayHoursSummary } from '@/data/guide';
 import { regTopics } from '@/data/guideRegs';
 import { REGS } from '@/data/regs';
 import { speciesStatus } from '@/data/seasons';
@@ -112,5 +112,42 @@ describe('grouse field marks', () => {
     expect(drum[0]).toMatch(/spring courtship and territory display/);
     expect(drum[0]).toMatch(/not the flush/);
     expect(marks.some((m) => /drumming flush/i.test(m))).toBe(false);
+  });
+});
+
+describe('Guide feedback: In season, Coming up and Today hours', () => {
+  const at = (ymd: string) => new Date(`${ymd}T16:00:00Z`);
+
+  it('In season now hides closed and not-yet-open species', () => {
+    const rows = inSeasonNow(inSeasonRows('2026-10-20', 3, at('2026-10-20')));
+    expect(rows.every((r) => r.badge === 'OPEN' || r.badge === 'CHECK')).toBe(true);
+    expect(rows.find((r) => r.species === 'pheasant')).toBeUndefined();
+  });
+
+  it('Coming up lists at most 3 closed species, soonest first, as "Opens Sat, Oct 24"', () => {
+    const up = comingUp('2026-10-20', 3, at('2026-10-20'));
+    expect(up.length).toBeGreaterThan(0);
+    expect(up.length).toBeLessThanOrEqual(3);
+    expect(up.map((r) => r.date)).toEqual([...up.map((r) => r.date)].sort());
+    expect(up.find((r) => r.species === 'pheasant')?.status).toBe('Opens Sat, Oct 24');
+    // Nothing in Coming up is also in In season now.
+    const open = inSeasonNow(inSeasonRows('2026-10-20', 3, at('2026-10-20'))).map((r) => r.species);
+    for (const r of up) expect(open).not.toContain(r.species);
+  });
+
+  it('Today hours label names open small-game species, else the neutral label', () => {
+    const rows = inSeasonRows('2026-10-24', 3, at('2026-10-24'));
+    const hours = shootingTimes('2026-10-24', 3, 1)[0];
+    expect(todayHoursSummary(rows, hours).label).toMatch(/Pheasant/);
+    expect(todayHoursSummary([], hours)).toEqual({ label: 'Legal hours today', migratoryDiffers: false });
+  });
+
+  it('shows "Dove hours differ" only when a migratory species is open and its hours differ', () => {
+    const open = (species: 'dove' | 'pheasant') =>
+      ({ species, label: species, badge: 'OPEN', detail: '', status: { kind: 'open' } }) as unknown as ReturnType<typeof inSeasonRows>[number];
+    const h = (mEnd: string) => ({ ymd: '2026-10-24', sunday: false, smallGame: { start: '6:50 AM', end: '5:30 PM' }, migratory: { start: '6:50 AM', end: mEnd } });
+    expect(todayHoursSummary([open('pheasant'), open('dove')], h('6:10 PM')).migratoryDiffers).toBe(true);
+    expect(todayHoursSummary([open('pheasant'), open('dove')], h('5:30 PM')).migratoryDiffers).toBe(false);
+    expect(todayHoursSummary([open('pheasant')], h('6:10 PM')).migratoryDiffers).toBe(false);
   });
 });
