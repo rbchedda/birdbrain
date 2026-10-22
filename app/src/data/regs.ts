@@ -12,9 +12,8 @@ export const PGC_DIGEST_URL =
 /**
  * HuntFishPA license store link for the Licenses page. Null hides the
  * "Buy on HuntFishPA ›" link.
- * TODO(engineer): verify the official HuntFishPA URL, then set it here.
  */
-export const HUNTFISHPA_URL: string | null = null;
+export const HUNTFISHPA_URL: string | null = 'https://huntfish.pa.gov/';
 
 export const PGC_SEASONS_URL = 'https://www.pa.gov/agencies/pgc/huntingandtrapping/regulations/seasons-and-bag-limits';
 

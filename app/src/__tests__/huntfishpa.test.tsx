@@ -4,14 +4,14 @@ import { RegsSection } from '@/components/guide/GuideSections';
 import { HUNTFISHPA_URL } from '@/data/regs';
 
 describe('Licenses: Buy on HuntFishPA link', () => {
-  it('is null (hidden) until the URL is verified', async () => {
-    expect(HUNTFISHPA_URL).toBeNull();
+  it('points at the official HuntFishPA site and shows by default', async () => {
+    expect(HUNTFISHPA_URL).toBe('https://huntfish.pa.gov/');
     await render(<RegsSection />);
-    expect(screen.queryByText('Buy on HuntFishPA ›')).toBeNull();
+    expect(screen.getByText('Buy on HuntFishPA ›')).toBeTruthy();
   });
 
-  it('shows on the Licenses card once a URL is set', async () => {
-    await render(<RegsSection buyUrl="https://example.test/buy" />);
-    expect(screen.getByText('Buy on HuntFishPA ›')).toBeTruthy();
+  it('stays hidden when the URL is null', async () => {
+    await render(<RegsSection buyUrl={null} />);
+    expect(screen.queryByText('Buy on HuntFishPA ›')).toBeNull();
   });
 });
