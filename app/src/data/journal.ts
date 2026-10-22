@@ -310,6 +310,8 @@ export interface SyncTriggers {
   onForeground(cb: () => void): () => void;
   /** Subscribe to "network came back". */
   onReconnect(cb: () => void): () => void;
+  /** Subscribe to "a session now exists" (sign-in, or confirmed email signed in). */
+  onSignIn?(cb: () => void): () => void;
 }
 
 /**
@@ -339,6 +341,7 @@ export function startJournalSync(backend: Backend, triggers: SyncTriggers): () =
   const subs = [
     triggers.onForeground(() => run()),
     triggers.onReconnect(() => run(true)),
+    triggers.onSignIn?.(() => run(true)) ?? (() => {}),
     // A new or edited entry uploads right away.
     (queuedListeners.add(run), () => queuedListeners.delete(run)),
   ];

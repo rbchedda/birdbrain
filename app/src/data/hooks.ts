@@ -105,6 +105,17 @@ function startJournalSyncOnce() {
       w.addEventListener('online', cb);
       return () => w.removeEventListener?.('online', cb);
     },
+    onSignIn: (cb) => {
+      startSession();
+      let had = !!session;
+      const l = () => {
+        const has = !!session;
+        if (has && !had) cb();
+        had = has;
+      };
+      sessionListeners.add(l);
+      return () => sessionListeners.delete(l);
+    },
   });
 }
 
