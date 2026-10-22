@@ -7,6 +7,18 @@ import { TERMS_VERSION } from '@/data/terms';
 
 import { readJson, writeJson } from './localStore';
 
+/*
+ * Consent API (hybrid guest mode). Guests browse signed out with no user_id and
+ * no anonymous account: acceptance lives on the device and is synced to
+ * accepted_terms only when a real account signs in. Nothing here signs anyone
+ * in. Public surface for other features (e.g. feat/guest-mode-hybrid):
+ *
+ *   getConsent(): Promise<ConsentSnapshot>      read local consent, no network
+ *   acceptTerms(now?): Promise<TermsAcceptance> record acceptance locally (+ sync if signed in)
+ *   syncConsentOnSignIn(): Promise<ConsentSyncResult>  call after a successful sign-in
+ *   useTermsConsent(): ConsentState             React hook for the gate
+ */
+
 const ACCEPTED_KEY = 'birdbrain.termsAccepted.v1';
 const QUEUE_KEY = 'birdbrain.termsQueue.v1';
 
@@ -29,10 +41,60 @@ export const needsConsent = (accepted: TermsAcceptance | null, current = TERMS_V
   !accepted || accepted.termsVersion !== current;
 
 export const readQueue = () => readJson<TermsAcceptance[]>(QUEUE_KEY, []);
+const readAccepted = () => readJson<TermsAcceptance | null>(ACCEPTED_KEY, null);
+
+export interface ConsentSnapshot {
+  /** 'needed' when nothing is accepted on this device or the accepted terms version is out of date. */
+  state: Exclude<ConsentState, 'loading'>;
+  /** Last acceptance stored on this device (timestamp, app_version, terms_version), or null. */
+  acceptance: TermsAcceptance | null;
+  /** Acceptances saved locally but not yet written to accepted_terms. */
+  pendingSync: number;
+}
+
+/**
+ * Current consent on this device. Works signed out (guests have no user_id);
+ * reads local storage only and never calls auth or the network.
+ */
+export async function getConsent(): Promise<ConsentSnapshot> {
+  const acceptance = await readAccepted();
+  return {
+    state: needsConsent(acceptance) ? 'needed' : 'accepted',
+    acceptance,
+    pendingSync: (await readQueue()).length,
+  };
+}
+
+export interface ConsentSyncResult {
+  /** Rows written (or already present) in accepted_terms for the signed-in user. */
+  sent: number;
+  /** Rows still queued (not signed in with a real account, or the request failed). */
+  pending: number;
+}
+
+/**
+ * Sync this device's consent to accepted_terms for the user who just signed in.
+ * Call it after any successful sign-in; it is also run automatically on session
+ * changes and at launch. The current acceptance is (re)queued so a different
+ * account signing in on the same device gets its own row; the server ignores a
+ * duplicate (user, terms_version). Guests, anonymous sessions and failures leave
+ * the queue intact. Never signs in, never creates an account.
+ */
+export async function syncConsentOnSignIn(): Promise<ConsentSyncResult> {
+  const acceptance = await readAccepted();
+  if (acceptance && !needsConsent(acceptance)) {
+    const queue = await readQueue();
+    if (!queue.some((q) => q.termsVersion === acceptance.termsVersion)) {
+      await writeJson(QUEUE_KEY, [...queue, acceptance]);
+    }
+  }
+  const sent = await flushTermsQueue();
+  return { sent, pending: (await readQueue()).length };
+}
 
 let flushing: Promise<number> | null = null;
 /**
- * Send queued acceptances to accepted_terms when signed in. Rows that fail stay
+ * Internal: send queued acceptances to accepted_terms when signed in with a real account. Rows that fail stay
  * queued for the next sign-in or launch. Returns how many were sent.
  */
 export function flushTermsQueue(): Promise<number> {
@@ -41,7 +103,8 @@ export function flushTermsQueue(): Promise<number> {
       const queue = await readQueue();
       if (!queue.length) return 0;
       const session = await backend.getSession().catch(() => null);
-      if (!session) return 0;
+      // Guests (no user_id) and anonymous sessions keep the acceptance on the device.
+      if (!session || session.anonymous) return 0;
       const left: TermsAcceptance[] = [];
       let sent = 0;
       for (const a of queue) {
@@ -63,10 +126,10 @@ export function flushTermsQueue(): Promise<number> {
 
 function start() {
   started ??= (async () => {
-    const accepted = await readJson<TermsAcceptance | null>(ACCEPTED_KEY, null);
+    const accepted = await readAccepted();
     set(needsConsent(accepted) ? 'needed' : 'accepted');
     unsubscribe = backend.onSessionChange((s) => {
-      if (s) void flushTermsQueue();
+      if (s && !s.anonymous) void syncConsentOnSignIn();
     });
     void flushTermsQueue();
   })();
@@ -74,8 +137,9 @@ function start() {
 }
 
 /**
- * Record acceptance of the current terms: saved on the device first, queued,
- * then sent if signed in (signed-out users' acceptances flush on sign-in).
+ * Record acceptance of the current terms (the gate's Continue). Saved on the
+ * device first and queued; sent now if a real account is signed in, otherwise
+ * by syncConsentOnSignIn(). Works for guests with no user_id.
  */
 export async function acceptTerms(now = new Date()) {
   const a: TermsAcceptance = { acceptedAt: now.toISOString(), appVersion: appVersion(), termsVersion: TERMS_VERSION };
@@ -97,6 +161,7 @@ export function resetTermsConsentCache() {
   state = 'loading';
 }
 
+/** React hook for the gate: 'loading' until local storage is read, then 'needed' or 'accepted'. */
 export function useTermsConsent() {
   void start();
   return useSyncExternalStore(
