@@ -94,9 +94,9 @@ describe('season and Sunday rules on fixed dates', () => {
     expect(speciesStatus('pheasant', '2026-12-25', harrisburg).kind).toBe('closed');
     expect(speciesStatus('grouse', '2026-12-25', harrisburg).kind).toBe('closed');
   });
-  it('keeps pheasant and fall turkey open on Sundays but closes doves (Sun Nov 1 2026)', () => {
+  it('keeps pheasant open on Sundays, fall turkey defers to the WMU (dates vary), closes doves (Sun Nov 1 2026)', () => {
     expect(speciesStatus('pheasant', '2026-11-01', harrisburg).kind).toBe('open');
-    expect(speciesStatus('turkey', '2026-11-01', harrisburg).kind).toBe('open');
+    expect(speciesStatus('turkey', '2026-11-01', harrisburg).kind).toBe('check');
     expect(speciesStatus('dove', '2026-11-01', harrisburg).kind).toBe('sunday');
   });
   it('turkey Sundays are open, except SE state parks/preserves outside Nov 15, 22, 29', () => {

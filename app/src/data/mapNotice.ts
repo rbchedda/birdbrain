@@ -10,6 +10,13 @@ import type { DataSource, PlaceType } from './types';
 export const MAP_BANNER =
   'Boundaries are approximate, not a survey. Shows public land and PGC access-program land only. Get permission before entering any other private land.';
 
+/**
+ * One-line map banner approved by @lawyer (Oct 22 2026), verbatim including "(i)".
+ * Always visible on the map, never dismissible, never hidden after first view.
+ * Tapping it shows MAP_BANNER (the full notice) verbatim.
+ */
+export const MAP_BANNER_SHORT = 'Approximate boundaries, not a survey. Get permission for private land. (i)';
+
 /** §3: shown above the general sheet text on enrolled private land. */
 export const ENROLLED_PRIVATE_LINE =
   "Private land enrolled in a PGC public-access program. The owner allows hunting only under the program's terms. Follow all posted rules, closed areas, and safety zones, and respect any restrictions on vehicles, seasons, or species. Enrollment can change or end; verify at pa.gov/pgc.";

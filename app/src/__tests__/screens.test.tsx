@@ -3,6 +3,12 @@ import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testi
 
 import { backend } from '@/data';
 import { loadPlaces } from '@/data/hooks';
+
+/** The collapsed sheet shows only "N spots nearby"; pull it up to reach the list. */
+async function expandSheet() {
+  const handle = await screen.findByLabelText(/^(Expand|Collapse) details$/);
+  if (handle.props.accessibilityLabel === 'Expand details') await fireEvent.press(handle);
+}
 import { samplePosts } from '@/data/posts';
 
 const appDir = './src/app';
@@ -23,9 +29,10 @@ it('falls back to sample data when Supabase env vars are unset', () => {
 describe('Map (Pheasant Planner)', () => {
   it('lists places and shows land info and today’s status for a selection', async () => {
     await open('/');
-    expect(await screen.findByText('6 spots')).toBeTruthy();
+    expect(await screen.findByText('6 spots nearby')).toBeTruthy();
     expect(screen.getByTestId('place-map')).toBeTruthy();
 
+    await expandSheet();
     await fireEvent.press(screen.getByLabelText('Managed dove field (sample C)'));
     expect(await screen.findByText(/Managed Dove Field · York County · 35 acres/)).toBeTruthy();
     expect(screen.getByText(/No Sunday hunting for migratory game birds/)).toBeTruthy();
@@ -34,6 +41,7 @@ describe('Map (Pheasant Planner)', () => {
 
   it('explains legal hours from the official PGC table and links the digest', async () => {
     await open('/');
+    await expandSheet();
     await fireEvent.press(await screen.findByLabelText('Pheasant stocking (sample B)'));
     expect(await screen.findByTestId('place-hours-note')).toHaveTextContent(/official PGC hunting-hours table/);
     expect(screen.queryByText(/computed for this spot/)).toBeNull();
@@ -42,6 +50,7 @@ describe('Map (Pheasant Planner)', () => {
 
   it('shows stocking windows for stocking points', async () => {
     await open('/');
+    await expandSheet();
     await fireEvent.press(await screen.findByLabelText('Pheasant stocking (sample B)'));
     // Lancaster County, 1st in-season release, from the PGC allocation seed.
     expect(await screen.findByText(/1st in-season · Tue, Oct 27 – Fri, Oct 30 · 880 roosters · 330 hens/)).toBeTruthy();
@@ -58,7 +67,8 @@ describe('Map (Pheasant Planner)', () => {
     try {
       await loadPlaces(true); // places are cached across screens; reload with the mock
       await open('/');
-      await fireEvent.press(await screen.findByLabelText('State Game Lands 999'));
+      await expandSheet();
+    await fireEvent.press(await screen.findByLabelText('State Game Lands 999'));
       expect(await screen.findByText(/Clinton County release weeks \(county totals, not this spot\)/)).toBeTruthy();
       expect(screen.queryByText(/Centre County release weeks/)).toBeNull();
     } finally {
@@ -69,9 +79,10 @@ describe('Map (Pheasant Planner)', () => {
 
   it('filters by place type and searches by county', async () => {
     await open('/');
-    await screen.findByText('6 spots');
+    await screen.findByText('6 spots nearby');
+    await fireEvent.press(screen.getByLabelText('Map layers'));
     await fireEvent.press(screen.getByText('Dove Fields'));
-    expect(screen.getByText('1 spot')).toBeTruthy();
+    expect(screen.getByText('1 spot nearby')).toBeTruthy();
     expect(screen.queryByLabelText('State Game Lands (sample A)')).toBeNull();
 
     await fireEvent.press(screen.getByText('All'));
@@ -84,7 +95,8 @@ describe('Map (Pheasant Planner)', () => {
 describe('Stocking planner', () => {
   it('opens from the map with the disclaimer, PGC link, points, dove fields and tips', async () => {
     await open('/');
-    await screen.findByText('6 spots');
+    await screen.findByText('6 spots nearby');
+    await fireEvent.press(screen.getByLabelText('Map layers'));
     await fireEvent.press(screen.getByText('Stocking planner'));
     expect(await screen.findByTestId('stocking-disclaimer')).toHaveTextContent(/Always verify with PGC/);
     expect(screen.getByRole('link', { name: 'Open PGC pheasant allocation' })).toBeTruthy();
@@ -97,13 +109,15 @@ describe('Stocking planner', () => {
 
   it('saves a site, which persists and becomes a distance origin', async () => {
     await open('/');
+    await expandSheet();
     await fireEvent.press(await screen.findByLabelText('Pheasant stocking (sample E)'));
-    await fireEvent.press(await screen.findByText('Save privately'));
+    await fireEvent.press(await screen.findByLabelText('Save privately'));
     expect(await screen.findByText('Saved')).toBeTruthy();
     const stored = JSON.parse((await AsyncStorage.getItem('birdbrain.sample.v1'))!);
     expect(stored.saved).toContain('stock-sample-2');
 
     await fireEvent.press(screen.getByLabelText('Back to list'));
+    await fireEvent.press(screen.getByLabelText('Map layers'));
     await fireEvent.press(screen.getByText('Stocking planner'));
     await fireEvent.press(await screen.findByText('Saved only'));
     expect(screen.getByTestId('stocking-row-stock-sample-2')).toBeTruthy();
@@ -117,7 +131,7 @@ describe('Stocking planner', () => {
 describe('Community rules', () => {
   it('gates the feed until the rules are accepted, once', async () => {
     expect(await backend.rulesAccepted()).toBe(false);
-    await open('/feed');
+    await open('/feed?tab=community');
     expect(await screen.findByText(/please read and accept the community rules/)).toBeTruthy();
     expect(screen.queryByText(samplePosts()[0].caption)).toBeNull();
     await fireEvent.press(screen.getByText('Read community rules'));
@@ -129,7 +143,7 @@ describe('Community rules', () => {
 
   it('fails closed with a retry when the rules check errors', async () => {
     const spy = jest.spyOn(backend, 'rulesAccepted').mockRejectedValueOnce(new Error('network down'));
-    await open('/feed');
+    await open('/feed?tab=community');
     expect(await screen.findByText(/Couldn’t check the community rules: network down/)).toBeTruthy();
     expect(screen.queryByText(samplePosts()[0].caption)).toBeNull();
     expect(screen.queryByLabelText('Loading feed')).toBeNull();
@@ -139,7 +153,7 @@ describe('Community rules', () => {
   });
 
   it('is linked from the feed and shows it was accepted', async () => {
-    await open('/feed');
+    await open('/feed?tab=community');
     await fireEvent.press(await screen.findByText('Community rules'));
     expect(await screen.findByText('You’ve accepted the community rules.')).toBeTruthy();
     expect(screen.queryByText('I agree to the community rules')).toBeNull();
@@ -148,7 +162,7 @@ describe('Community rules', () => {
 
 describe('Feed', () => {
   it('renders visible posts with blurred areas and toggles like', async () => {
-    await open('/feed');
+    await open('/feed?tab=community');
     const first = samplePosts()[0];
     expect(await screen.findByText(first.caption)).toBeTruthy();
     expect(screen.getByText(/Near Lancaster County/)).toBeTruthy();
@@ -159,7 +173,7 @@ describe('Feed', () => {
   });
 
   it('reports a post', async () => {
-    await open('/feed');
+    await open('/feed?tab=community');
     await screen.findByText(samplePosts()[1].caption);
     await fireEvent.press(screen.getAllByLabelText('Post options')[1]);
     await fireEvent.press(screen.getByText('Report post'));
@@ -169,7 +183,7 @@ describe('Feed', () => {
   });
 
   it('blocks an author and hides their posts', async () => {
-    await open('/feed');
+    await open('/feed?tab=community');
     const sam = samplePosts()[3];
     await screen.findByText(sam.caption);
     await fireEvent.press(screen.getAllByLabelText('Post options')[3]);
@@ -190,7 +204,7 @@ describe('Feed', () => {
 
 describe('Report and block on posts, comments and profiles', () => {
   it('offers the hate reason and refuses a duplicate report', async () => {
-    await open('/feed');
+    await open('/feed?tab=community');
     await screen.findByText(samplePosts()[2].caption);
     await fireEvent.press(screen.getAllByLabelText('Post options')[2]);
     await fireEvent.press(screen.getByText('Report post'));
@@ -345,20 +359,21 @@ describe('After-the-hunt log', () => {
     });
     expect(new Date(mine.publicAfter!).getTime()).toBeGreaterThan(Date.now());
 
-    await open('/feed');
+    await open('/feed?tab=community');
     expect(await screen.findByText('Two flushes on the creek edge')).toBeTruthy();
     expect(screen.getByText(/Delayed · others see it/)).toBeTruthy();
   });
 
   it('logs a hunt to the private diary by default and shows it on the profile', async () => {
     await open('/new/log?placeId=stock-sample-1');
-    expect(await screen.findByText(/Saves to your private Hunt Log/)).toBeTruthy();
+    expect(await screen.findByText(/Private diary entry · not a post/)).toBeTruthy();
     expect(screen.getByDisplayValue('Pheasant stocking (sample B)')).toBeTruthy();
     await fireEvent.press(screen.getByLabelText('More flushes'));
+    await fireEvent.press(screen.getByLabelText('Add dog, weather, cover, notes, photo'));
     await fireEvent.changeText(screen.getByLabelText('Notes'), 'Scouting only');
-    await fireEvent.press(screen.getByText('Save to diary'));
+    await fireEvent.press(screen.getByText('Save hunt'));
+    expect(screen.getByText('Share this hunt later →')).toBeTruthy();
     expect(await screen.findByText(/Saved to your private log on this device/)).toBeTruthy();
-    expect(await screen.findByText('Backed up')).toBeTruthy();
 
     const page = await backend.feed(null, 20);
     expect(page.posts.some((p) => p.caption === 'Scouting only')).toBe(false);

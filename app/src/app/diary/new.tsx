@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { ScreenHeader } from '@/components/Screen';
 import { Button, Chip, Notice, SectionTitle, Stepper, ui } from '@/components/ui';
@@ -22,7 +23,7 @@ import {
   type Species,
 } from '@/data/types';
 import { addDays, formatDay, todayET } from '@/lib/time';
-import { colors, fonts, space } from '@/theme/tokens';
+import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
 
 export interface DiaryFormValue {
   huntedOn: string;
@@ -73,11 +74,19 @@ export function DiaryForm({
   initial,
   submitLabel,
   onSubmit,
+  variant = 'full',
+  footerNote,
 }: {
   initial: DiaryFormValue;
   submitLabel: string;
   onSubmit: (v: DiaryFormValue) => Promise<void>;
+  /** 'sheet' = redesign Log hunt sheet: essentials above the fold, the rest behind one row, sticky Save. */
+  variant?: 'full' | 'sheet';
+  footerNote?: string;
 }) {
+  const sheet = variant === 'sheet';
+  const [showDetails, setShowDetails] = useState(!sheet);
+  const [moreSpecies, setMoreSpecies] = useState(false);
   const [v, setV] = useState(initial);
   const [roster, setRoster] = useState<Dog[]>([]);
   const [newDog, setNewDog] = useState('');
@@ -144,8 +153,56 @@ export function DiaryForm({
     }
   };
 
-  return (
-    <View style={{ gap: space.sm }}>
+  const topSpecies = (() => {
+    const order = [...d.species, ...allSpecies.filter((s) => !d.species.includes(s))];
+    return sheet && !moreSpecies ? order.slice(0, Math.max(3, d.species.length)) : allSpecies;
+  })();
+  const primary = d.birds[0];
+  const harvested = birdsTotal(d.birds);
+  const setHarvested = (n: number) => {
+    if (!primary) return;
+    if (primary.species === 'pheasant') setBirds('pheasant', { roosters: Math.max(0, n - (primary.hens ?? 0)) });
+    else setBirds(primary.species, { count: Math.max(0, n - (harvested - primary.count)) });
+  };
+
+  const essentials = sheet ? (
+    <>
+      <View style={ui.card} testID="where-when">
+        <SectionTitle>Where & when</SectionTitle>
+      <TextInput value={v.place} onChangeText={(place) => setV({ ...v, place })} placeholder="SGL, stocking site or private spot" placeholderTextColor={colors.muted} style={ui.input} accessibilityLabel="Place" />
+
+      <View style={ui.row}>
+        <Chip label="Today" active={v.huntedOn === today} onPress={() => setV({ ...v, huntedOn: today })} />
+        <Chip label="Yesterday" active={v.huntedOn === addDays(today, -1)} onPress={() => setV({ ...v, huntedOn: addDays(today, -1) })} />
+        <Chip label={formatDay(addDays(today, -2))} active={v.huntedOn === addDays(today, -2)} onPress={() => setV({ ...v, huntedOn: addDays(today, -2) })} />
+      </View>
+
+      </View>
+      <SectionTitle>Species</SectionTitle>
+      <View style={ui.row}>
+        {topSpecies.map((s) => (
+          <Chip key={s} label={speciesLabel[s]} active={d.species.includes(s)} onPress={() => toggleSpecies(s)} />
+        ))}
+        {!moreSpecies && topSpecies.length < allSpecies.length && <Chip label="More…" onPress={() => setMoreSpecies(true)} />}
+      </View>
+      <SectionTitle>Birds</SectionTitle>
+      <View style={styles.row}>
+        <Stepper label="Flushes" value={d.flushes} onChange={(n) => setD({ flushes: n })} />
+        {primary ? (
+          <Stepper label="Harvested" value={harvested} onChange={setHarvested} />
+        ) : (
+          <Text style={ui.muted}>Pick a species to count harvested birds.</Text>
+        )}
+      </View>
+      {!showDetails && (
+        <Pressable accessibilityRole="button" accessibilityLabel="Add dog, weather, cover, notes, photo" onPress={() => setShowDetails(true)} style={styles.more}>
+          <Text style={styles.label}>＋ Dog, weather, cover, notes, photo</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+        </Pressable>
+      )}
+    </>
+  ) : (
+    <>
       <SectionTitle>When</SectionTitle>
       <View style={ui.row}>
         <Chip label="Today" active={v.huntedOn === today} onPress={() => setV({ ...v, huntedOn: today })} />
@@ -164,6 +221,17 @@ export function DiaryForm({
         ))}
       </View>
 
+    </>
+  );
+
+  const details = showDetails && (
+    <>
+      {sheet && (
+        <>
+          <SectionTitle>Start time</SectionTitle>
+  <TextInput value={d.startTime ?? ''} onChangeText={(t) => setD({ startTime: t })} placeholder="Start time, e.g. 07:30" placeholderTextColor={colors.muted} style={ui.input} accessibilityLabel="Start time" />
+        </>
+      )}
       <SectionTitle>Dogs</SectionTitle>
       <View style={ui.row}>
         {roster.map((dog) => (
@@ -198,7 +266,7 @@ export function DiaryForm({
         <TextInput value={miles} onChangeText={setMiles} keyboardType="decimal-pad" placeholder="Miles" placeholderTextColor={colors.muted} style={[ui.input, { flex: 1 }]} accessibilityLabel="Miles walked" />
       </View>
       <View style={styles.row}>
-        <Stepper label="Flushes" value={d.flushes} onChange={(n) => setD({ flushes: n })} />
+        {!sheet && <Stepper label="Flushes" value={d.flushes} onChange={(n) => setD({ flushes: n })} />}
         <Stepper label="Shots" value={d.shots} onChange={(n) => setD({ shots: n })} />
       </View>
 
@@ -234,8 +302,35 @@ export function DiaryForm({
         {d.photos.length ? `${d.photos.length} private photo${d.photos.length > 1 ? 's' : ''}. ` : ''}Photos stay private to you and back up to your account only.
       </Text>
 
+    </>
+  );
+
+  const footer = (
+    <>
       {error && <Notice tone="error">{error}</Notice>}
-      <Button label={submitLabel} icon="lock-closed" variant="primary" busy={busy} onPress={submit} />
+      <Button label={submitLabel} icon={sheet ? undefined : 'lock-closed'} variant="primary" busy={busy} onPress={submit} />
+      {footerNote ? <Text style={[ui.muted, { textAlign: 'center' }]}>{footerNote}</Text> : null}
+    </>
+  );
+
+  if (sheet) {
+    return (
+      <View style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={styles.sheetBody} keyboardShouldPersistTaps="handled">
+          {essentials}
+          {details}
+        </ScrollView>
+        <View style={styles.sticky} testID="sticky-save">
+          {footer}
+        </View>
+      </View>
+    );
+  }
+  return (
+    <View style={{ gap: space.sm }}>
+      {essentials}
+      {details}
+      {footer}
     </View>
   );
 }
@@ -266,4 +361,7 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: space.lg, paddingBottom: space.xxl * 2, gap: space.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flexWrap: 'wrap' },
   label: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text },
+  sheetBody: { paddingHorizontal: space.lg, paddingBottom: space.xl, gap: space.sm },
+  sticky: { paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: space.lg, gap: space.xs, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, backgroundColor: colors.ground },
+  more: { minHeight: touchTarget, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border },
 });

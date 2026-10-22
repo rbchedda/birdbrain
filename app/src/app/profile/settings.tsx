@@ -1,7 +1,9 @@
+import { router } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { ScreenHeader } from '@/components/Screen';
 import { AccountSettings, ProfileSettings, SectionRow } from '@/components/profile';
+import { Button, SectionTitle } from '@/components/ui';
 import { colors, space } from '@/theme/tokens';
 
 export default function SettingsScreen() {
@@ -12,6 +14,8 @@ export default function SettingsScreen() {
         <SectionRow title="Season stats" summary="flushes, shots, points by month" href="/profile/stats" />
         <ProfileSettings />
         <AccountSettings />
+        <SectionTitle>Legal</SectionTitle>
+        <Button label="Terms of Service: Maps, Data and Your Responsibility" icon="document-text-outline" onPress={() => router.push('/terms')} />
       </ScrollView>
     </View>
   );

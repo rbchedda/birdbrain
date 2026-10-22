@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { usePromptSignIn } from '@/auth/usePromptSignIn';
 import { ScreenHeader } from '@/components/Screen';
 import { Button, Chip, Notice, SectionTitle, Stepper, ui } from '@/components/ui';
 import { backend } from '@/data';
@@ -62,8 +63,6 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [done, setDone] = useState<'shared' | 'private' | null>(null);
-  const [savedId, setSavedId] = useState<string | null>(null);
-  const [formKey, setFormKey] = useState(0);
 
   // Arriving from a place on the map pre-fills that place.
   useEffect(() => {
@@ -127,46 +126,8 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
 
   const empty = !caption.trim() && counts.length === 0;
 
-  // Log hunt: the rich private diary form (spec §3.2). Post keeps the delayed-share form below.
-  if (!isPost) {
-    const place = places.find((p) => p.id === placeId);
-    return (
-      <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScreenHeader title="Log hunt" subtitle="Saves to your private Hunt Log. Not a post." />
-        <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-          {savedId && (
-            <Notice tone="success">Saved to your private log on this device. It backs up to your account when you’re online.</Notice>
-          )}
-          {savedId && (
-            <View style={styles.row}>
-              <Button label="Open entry" onPress={() => router.push({ pathname: '/diary/[id]', params: { id: savedId } })} style={{ flex: 1 }} />
-              <Button label="Log another" onPress={() => setSavedId(null)} style={{ flex: 1 }} />
-            </View>
-          )}
-          {!savedId && (
-            <DiaryForm
-              key={`${formKey}-${place?.id ?? ""}`}
-              initial={{
-                huntedOn: todayET(),
-                place: place?.name ?? '',
-                notes: '',
-                details: { ...emptyDiaryDetails(), species: place && speciesForPlace(place) ? [speciesForPlace(place)!] : [] },
-              }}
-              submitLabel="Save to diary"
-              onSubmit={async (v) => {
-                const { draft, details } = diaryDraft(v);
-                if (place && draft.counts[0]?.placeName === place.name) draft.counts[0].placeId = place.id;
-                const e = await addJournalEntry(draft, { id: session?.userId ?? 'me', username: null, displayName: 'You' }, details);
-                setSavedId(e.id);
-                setFormKey((k) => k + 1);
-              }}
-            />
-          )}
-          <PrivateLog />
-        </ScrollView>
-      </KeyboardAvoidingView>
-    );
-  }
+  // Log hunt (redesign mockups 02/02b): essentials above the fold, sticky Save hunt.
+  if (!isPost) return <LogHuntSheet />;
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -309,6 +270,71 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
   );
 }
 
+/**
+ * Redesign Log hunt sheet (mockups 02 + 02b). Always private, never a post.
+ * Signed out (hosted backend): the entry saves on the phone first, then
+ * usePromptSignIn() asks to sign in (sheet owned by feat/guest-mode-hybrid).
+ */
+export function LogHuntSheet() {
+  const { placeId } = useLocalSearchParams<{ placeId?: string }>();
+  const { places } = usePlaces();
+  const session = useSession();
+  const { data: journal } = useJournal();
+  const [saved, setSaved] = useState<{ id: string; label: string } | null>(null);
+  const promptSignIn = usePromptSignIn();
+  const [formKey, setFormKey] = useState(0);
+  const place = places.find((p) => p.id === placeId);
+  const signedOut = backend.mode === 'supabase' && !session;
+  const firstSave = signedOut && !(journal?.length);
+
+  return (
+    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScreenHeader title="Log hunt" subtitle="🔒 Private diary entry · not a post" back />
+      {saved ? (
+        <ScrollView contentContainerStyle={styles.body}>
+          <Notice tone="success">
+            {signedOut
+              ? 'Saved to your private log on this phone. Sign in to back it up.'
+              : 'Saved to your private log on this device. It backs up to your account when you’re online.'}
+          </Notice>
+          <View style={styles.row}>
+            <Button label="Open entry" onPress={() => router.push({ pathname: '/diary/[id]', params: { id: saved.id } })} style={{ flex: 1 }} />
+            <Button label="Log another" onPress={() => { setSaved(null); setFormKey((k) => k + 1); }} style={{ flex: 1 }} />
+          </View>
+          <Pressable accessibilityRole="link" onPress={() => router.push('/new/post')} style={styles.pick}>
+            <Text style={styles.link}>Share this hunt later →</Text>
+          </Pressable>
+          <Text style={ui.muted}>Nothing is shared unless you make a separate post.</Text>
+        </ScrollView>
+      ) : (
+        <DiaryForm
+          key={`${formKey}-${place?.id ?? ''}`}
+          variant="sheet"
+          initial={{
+            huntedOn: todayET(),
+            place: place?.name ?? '',
+            notes: '',
+            details: (() => {
+              const sp = place && speciesForPlace(place);
+              return { ...emptyDiaryDetails(), species: sp ? [sp] : [], birds: sp ? [{ species: sp, count: 0, ...(sp === 'pheasant' ? { roosters: 0, hens: 0 } : {}) }] : [] };
+            })(),
+          }}
+          submitLabel="Save hunt"
+          footerNote={firstSave ? 'First save? You’ll create a free account to keep your diary.' : undefined}
+          onSubmit={async (v) => {
+            const { draft, details } = diaryDraft(v);
+            if (place && draft.counts[0]?.placeName === place.name) draft.counts[0].placeId = place.id;
+            const e = await addJournalEntry(draft, { id: session?.userId ?? 'me', username: null, displayName: 'You' }, details);
+            const label = [draft.counts[0]?.placeName, draft.species ? speciesLabel[draft.species] : null].filter(Boolean).join(' · ') || 'this hunt';
+            setSaved({ id: e.id, label });
+            if (firstSave) promptSignIn({ reason: 'first-hunt-save', entryLabel: label });
+          }}
+        />
+      )}
+    </KeyboardAvoidingView>
+  );
+}
+
 const syncLabel = (e: JournalEntry, signedOut: boolean) => {
   if (e.sync.status === 'synced') return { text: 'Backed up', icon: 'cloud-done-outline' as const, color: colors.success };
   if (e.sync.conflict) return { text: 'Conflict: changed elsewhere', icon: 'git-compare-outline' as const, color: colors.danger };
@@ -400,6 +426,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   placeName: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text },
   remove: { width: touchTarget, height: touchTarget, alignItems: 'center', justifyContent: 'center', marginRight: -space.sm },
+  link: { color: colors.accent, fontFamily: fonts.bodySemi, fontSize: 15 },
   pick: { minHeight: touchTarget, justifyContent: 'center', paddingVertical: space.xs },
   photo: {
     flexDirection: 'row',

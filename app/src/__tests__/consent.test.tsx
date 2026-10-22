@@ -1,0 +1,271 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
+
+import { backend } from '@/data';
+import type { Session } from '@/data/backend';
+import { consentBullets, consentCheckboxLabel, TERMS_VERSION, tosSection } from '@/data/terms';
+import { acceptTerms, appVersion, flushTermsQueue, getConsent, needsConsent, readQueue, resetTermsConsentCache, syncConsentOnSignIn } from '@/lib/termsConsent';
+
+jest.unmock('@/components/ConsentGate');
+
+const appDir = './src/app';
+const metrics = { frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } };
+const open = (url: string) => renderRouter(appDir, { initialUrl: url });
+
+jest.mock('react-native-safe-area-context', () => {
+  const real = jest.requireActual('react-native-safe-area-context');
+  return { ...real, SafeAreaProvider: (p: object) => <real.SafeAreaProvider initialMetrics={metrics} {...p} /> };
+});
+
+const ACCEPTED_KEY = 'birdbrain.termsAccepted.v1';
+const signedIn: Session = { userId: 'me', email: null, anonymous: false };
+
+beforeEach(async () => {
+  await AsyncStorage.clear();
+  resetTermsConsentCache();
+  jest.restoreAllMocks();
+});
+afterAll(() => AsyncStorage.clear());
+
+const continueButton = () => screen.getByRole('button', { name: 'Continue' });
+
+describe('Onboarding consent', () => {
+  it('shows before the first map view with the four memo bullets', async () => {
+    await open('/');
+    expect(await screen.findByText('Before you use BirdBrain maps:')).toBeTruthy();
+    for (const b of consentBullets) expect(screen.getByText(b)).toBeTruthy();
+    expect(screen.queryByText('6 spots nearby')).toBeNull();
+    expect(screen.queryByTestId('place-map')).toBeNull();
+  });
+
+  it('keeps Continue disabled until the checkbox is checked', async () => {
+    await open('/');
+    await screen.findByText('Before you use BirdBrain maps:');
+    expect(continueButton()).toBeDisabled();
+    await fireEvent.press(continueButton());
+    expect(screen.getByText('Before you use BirdBrain maps:')).toBeTruthy();
+
+    const box = screen.getByRole('checkbox', { name: consentCheckboxLabel });
+    await fireEvent.press(box);
+    expect(box).toBeChecked();
+    expect(continueButton()).toBeEnabled();
+    await fireEvent.press(box);
+    expect(continueButton()).toBeDisabled();
+  });
+
+  it('logs acceptance with time, app version and terms version, then shows the map', async () => {
+    const record = jest.spyOn(backend, 'recordTermsAcceptance');
+    await open('/');
+    await fireEvent.press(await screen.findByRole('checkbox', { name: consentCheckboxLabel }));
+    await fireEvent.press(continueButton());
+    expect(await screen.findByText('6 spots nearby')).toBeTruthy();
+
+    expect(record).toHaveBeenCalledTimes(1);
+    const a = record.mock.calls[0][0];
+    expect(a.termsVersion).toBe(TERMS_VERSION);
+    expect(a.appVersion).toBe(appVersion());
+    expect(a.appVersion.length).toBeGreaterThan(0);
+    expect(Number.isNaN(Date.parse(a.acceptedAt))).toBe(false);
+    expect(await readQueue()).toEqual([]);
+  });
+
+  it('links the Terms of Service with memo section 4D from onboarding', async () => {
+    await open('/');
+    await fireEvent.press(await screen.findByText('Read the Terms of Service'));
+    expect(screen.getByText('Maps, Data and Your Responsibility')).toBeTruthy();
+    for (const item of tosSection) expect(screen.getByTestId('tos-maps-data')).toHaveTextContent(item.body, { exact: false });
+  });
+
+  it('does not show again for the same terms version', async () => {
+    await AsyncStorage.setItem(ACCEPTED_KEY, JSON.stringify({ acceptedAt: new Date().toISOString(), appVersion: '1.0.0', termsVersion: TERMS_VERSION }));
+    await open('/');
+    expect(await screen.findByText('6 spots nearby')).toBeTruthy();
+    expect(screen.queryByText('Before you use BirdBrain maps:')).toBeNull();
+  });
+
+  it('shows again when the terms version changes', async () => {
+    await AsyncStorage.setItem(ACCEPTED_KEY, JSON.stringify({ acceptedAt: '2026-01-01T00:00:00Z', appVersion: '0.9.0', termsVersion: '2025-01-01' }));
+    await open('/');
+    expect(await screen.findByText('Before you use BirdBrain maps:')).toBeTruthy();
+    expect(needsConsent({ acceptedAt: 'x', appVersion: '1', termsVersion: TERMS_VERSION }, '2099-01-01')).toBe(true);
+    expect(needsConsent({ acceptedAt: 'x', appVersion: '1', termsVersion: TERMS_VERSION })).toBe(false);
+    expect(needsConsent(null)).toBe(true);
+  });
+});
+
+describe('Offline acceptance queue', () => {
+  it('queues acceptance for a signed-out user and flushes it on sign-in', async () => {
+    let session: Session | null = null;
+    let onChange: ((s: Session | null) => void) | undefined;
+    jest.spyOn(backend, 'getSession').mockImplementation(async () => session);
+    jest.spyOn(backend, 'onSessionChange').mockImplementation((cb) => {
+      onChange = cb;
+      return () => {};
+    });
+    const record = jest.spyOn(backend, 'recordTermsAcceptance');
+
+    await open('/');
+    await fireEvent.press(await screen.findByRole('checkbox', { name: consentCheckboxLabel }));
+    await fireEvent.press(continueButton());
+    expect(await screen.findByText('6 spots nearby')).toBeTruthy();
+
+    expect(record).not.toHaveBeenCalled();
+    const queued = await readQueue();
+    expect(queued).toHaveLength(1);
+    expect(queued[0].termsVersion).toBe(TERMS_VERSION);
+
+    session = signedIn;
+    onChange!(signedIn);
+    await waitFor(() => expect(record).toHaveBeenCalledTimes(1));
+    expect(record.mock.calls[0][0]).toEqual(queued[0]);
+    await waitFor(async () => expect(await readQueue()).toEqual([]));
+  });
+
+  it('keeps the acceptance queued when sending fails, and sends it on the next try', async () => {
+    const record = jest.spyOn(backend, 'recordTermsAcceptance').mockRejectedValueOnce(new Error('offline'));
+    await open('/');
+    await fireEvent.press(await screen.findByRole('checkbox', { name: consentCheckboxLabel }));
+    await fireEvent.press(continueButton());
+    expect(await screen.findByText('6 spots nearby')).toBeTruthy();
+    expect(await readQueue()).toHaveLength(1);
+
+    expect(await flushTermsQueue()).toBe(1);
+    expect(record).toHaveBeenCalledTimes(2);
+    expect(await readQueue()).toEqual([]);
+  });
+});
+
+describe('Terms page', () => {
+  it('is reachable from Settings', async () => {
+    await AsyncStorage.setItem(ACCEPTED_KEY, JSON.stringify({ acceptedAt: new Date().toISOString(), appVersion: '1.0.0', termsVersion: TERMS_VERSION }));
+    await open('/profile/settings');
+    await fireEvent.press(await screen.findByText('Terms of Service: Maps, Data and Your Responsibility'));
+    expect(await screen.findByTestId('tos-maps-data')).toBeTruthy();
+    expect(screen.getByTestId('tos-maps-data')).toHaveTextContent(tosSection[1].body, { exact: false });
+  });
+});
+
+describe('Hybrid guest mode (no anonymous accounts)', () => {
+  const guest = () => {
+    jest.spyOn(backend, 'getSession').mockResolvedValue(null);
+    return [
+      jest.spyOn(backend, 'signInAsGuest'),
+      jest.spyOn(backend, 'signIn'),
+      jest.spyOn(backend, 'signUp'),
+    ];
+  };
+
+  it('lets a guest with no user_id pass the gate without any auth call', async () => {
+    const auth = guest();
+    const record = jest.spyOn(backend, 'recordTermsAcceptance');
+    await open('/');
+    await fireEvent.press(await screen.findByRole('checkbox', { name: consentCheckboxLabel }));
+    await fireEvent.press(continueButton());
+    expect(await screen.findByText('6 spots nearby')).toBeTruthy();
+
+    for (const fn of auth) expect(fn).not.toHaveBeenCalled();
+    expect(record).not.toHaveBeenCalled();
+    const c = await getConsent();
+    expect(c.state).toBe('accepted');
+    expect(c.acceptance).toMatchObject({ termsVersion: TERMS_VERSION, appVersion: appVersion() });
+    expect(c.pendingSync).toBe(1);
+  });
+
+  it('getConsent reports needed before acceptance and reads storage only', async () => {
+    const auth = guest();
+    const getSession = backend.getSession as jest.Mock;
+    getSession.mockClear();
+    expect(await getConsent()).toEqual({ state: 'needed', acceptance: null, pendingSync: 0 });
+    expect(getSession).not.toHaveBeenCalled();
+    for (const fn of auth) expect(fn).not.toHaveBeenCalled();
+  });
+
+  it('syncConsentOnSignIn sends the stored acceptance once a real account signs in', async () => {
+    let session: Session | null = null;
+    jest.spyOn(backend, 'getSession').mockImplementation(async () => session);
+    const record = jest.spyOn(backend, 'recordTermsAcceptance');
+    const a = await acceptTerms(new Date('2026-10-22T14:00:00Z'));
+    expect(await syncConsentOnSignIn()).toEqual({ sent: 0, pending: 1 });
+
+    session = signedIn;
+    expect(await syncConsentOnSignIn()).toEqual({ sent: 1, pending: 0 });
+    expect(record).toHaveBeenCalledWith(a);
+
+    // A second account signing in on the same device gets its own row (server ignores duplicates).
+    session = { userId: 'other', email: null, anonymous: false };
+    expect(await syncConsentOnSignIn()).toEqual({ sent: 1, pending: 0 });
+    expect(record).toHaveBeenCalledTimes(2);
+  });
+
+  it('records the current acceptance for every real account that signs in on the device', async () => {
+    let session: Session | null = null;
+    jest.spyOn(backend, 'getSession').mockImplementation(async () => session);
+    const rows: string[] = [];
+    jest.spyOn(backend, 'recordTermsAcceptance').mockImplementation(async (a) => {
+      // Like the server: one row per (user, terms_version), duplicates ignored.
+      const key = `${session!.userId}|${a.termsVersion}`;
+      if (!rows.includes(key)) rows.push(key);
+    });
+    await acceptTerms(new Date('2026-10-22T14:00:00Z'));
+    for (const userId of ['alice', 'bob', 'alice', 'bob']) {
+      session = { userId, email: null, anonymous: false };
+      expect(await syncConsentOnSignIn()).toEqual({ sent: 1, pending: 0 });
+    }
+    expect(rows).toEqual([`alice|${TERMS_VERSION}`, `bob|${TERMS_VERSION}`]);
+  });
+
+  it('does not lose the second account\'s row when a flush is already in flight', async () => {
+    let session: Session | null = { userId: 'alice', email: null, anonymous: false };
+    jest.spyOn(backend, 'getSession').mockImplementation(async () => session);
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    let started!: () => void;
+    const inFlight = new Promise<void>((r) => (started = r));
+    const users: string[] = [];
+    let calls = 0;
+    jest.spyOn(backend, 'recordTermsAcceptance').mockImplementation(async () => {
+      const who = session!.userId;
+      if (calls++ === 0) {
+        started();
+        await gate;
+      }
+      users.push(who);
+    });
+    await AsyncStorage.setItem(ACCEPTED_KEY, JSON.stringify({ acceptedAt: '2026-10-22T14:00:00Z', appVersion: '1', termsVersion: TERMS_VERSION }));
+    const first = syncConsentOnSignIn();
+    await inFlight; // alice's send is in progress
+    session = { userId: 'bob', email: null, anonymous: false };
+    const second = syncConsentOnSignIn();
+    release();
+    await first;
+    await second;
+    expect(users).toEqual(['alice', 'bob']);
+    expect(await readQueue()).toEqual([]);
+  });
+
+  it('treats anonymous sessions as signed out on session change and in the queue flush', async () => {
+    const anon: Session = { userId: 'anon', email: null, anonymous: true };
+    jest.spyOn(backend, 'getSession').mockResolvedValue(anon);
+    let emit: ((s: Session | null) => void) | undefined;
+    jest.spyOn(backend, 'onSessionChange').mockImplementation((cb) => {
+      emit = cb;
+      return () => {};
+    });
+    const record = jest.spyOn(backend, 'recordTermsAcceptance');
+    await open('/');
+    await fireEvent.press(await screen.findByRole('checkbox', { name: consentCheckboxLabel }));
+    await fireEvent.press(continueButton());
+    emit?.(anon);
+    expect(await flushTermsQueue()).toBe(0);
+    expect(record).not.toHaveBeenCalled();
+    expect((await getConsent()).pendingSync).toBe(1);
+  });
+
+  it('never syncs for an anonymous session', async () => {
+    jest.spyOn(backend, 'getSession').mockResolvedValue({ userId: 'anon', email: null, anonymous: true });
+    const record = jest.spyOn(backend, 'recordTermsAcceptance');
+    await acceptTerms();
+    expect(await syncConsentOnSignIn()).toEqual({ sent: 0, pending: 1 });
+    expect(record).not.toHaveBeenCalled();
+  });
+});
