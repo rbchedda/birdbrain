@@ -249,6 +249,9 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
       await persist(s);
     },
 
+    // Sample mode has no server: acceptances stay in the device-side consent record.
+    async recordTermsAcceptance() {},
+
     async groups() {
       const s = await load();
       return sampleGroups.map((g) => ({ ...g, member: s.members.includes(g.id) }));

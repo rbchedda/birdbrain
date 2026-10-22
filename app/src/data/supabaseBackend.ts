@@ -425,6 +425,17 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
       check(await sb.rpc('accept_community_rules'));
     },
 
+    async recordTermsAcceptance(a) {
+      // Only real accounts get a consent row; anonymous sessions are not signed in.
+      const { data } = await sb.auth.getSession();
+      if (!data.session?.user.id || data.session.user.is_anonymous) throw new NotSignedInError();
+      const r = await sb
+        .from('accepted_terms')
+        .insert({ accepted_at: a.acceptedAt, app_version: a.appVersion, terms_version: a.termsVersion });
+      // 23505: this version is already logged for the user (a queued retry); that's success.
+      if (r.error && r.error.code !== '23505') check(r);
+    },
+
     async groups() {
       const { data } = await sb.auth.getSession();
       const userId = data.session?.user.id;

@@ -44,6 +44,13 @@ export interface HuntLogUpload {
   details?: DiaryDetails | null;
 }
 
+/** One onboarding acceptance (liability memo §4C), as logged to accepted_terms. */
+export interface TermsAcceptance {
+  acceptedAt: string;
+  appVersion: string;
+  termsVersion: string;
+}
+
 export interface HuntLogUpsertResult {
   version: number;
   /** The server copy changed since baseVersion; nothing was written. */
@@ -90,6 +97,8 @@ export interface Backend {
   /** Whether the signed-in user has accepted the community rules (once, ever). */
   rulesAccepted(): Promise<boolean>;
   acceptRules(): Promise<void>;
+  /** Log a ToS/onboarding acceptance to accepted_terms (owner-only). Re-sending the same terms version is a no-op. */
+  recordTermsAcceptance(a: TermsAcceptance): Promise<void>;
 
   groups(): Promise<Group[]>;
   setMember(groupId: string, member: boolean): Promise<void>;
