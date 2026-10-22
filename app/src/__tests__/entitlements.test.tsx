@@ -22,8 +22,11 @@ import {
   UpgradeSheet,
   useEntitlements,
   type PurchaseProvider,
+  UnavailablePurchaseProvider,
 } from '@/entitlements';
-import { Text } from 'react-native';
+import { Linking, Text } from 'react-native';
+
+import { legal } from '@/lib/env';
 
 import { StockingList } from '@/components/StockingList';
 import { samplePlaces } from '@/data/places';
@@ -123,6 +126,66 @@ describe('provider selection', () => {
   });
 });
 
+describe('release builds never use the mock store', () => {
+  it('dev build: mock when unflagged or RevenueCat fails', () => {
+    expect(createPurchaseProvider({ flag: undefined, isDev: true }).name).toBe('mock');
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(createPurchaseProvider({ flag: 'revenuecat', isDev: true, loadRevenueCat: () => { throw new Error('x'); } }).name).toBe('mock');
+    warn.mockRestore();
+  });
+  it('release build: unavailable (never mock) when unflagged or RevenueCat fails', async () => {
+    expect(createPurchaseProvider({ flag: undefined, isDev: false }).name).toBe('unavailable');
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const p = createPurchaseProvider({ flag: 'revenuecat', isDev: false, loadRevenueCat: () => { throw new Error('x'); } });
+    warn.mockRestore();
+    expect(p.name).toBe('unavailable');
+    await expect(p.purchase('season_pass_yearly')).rejects.toThrow();
+    expect(hasPremium(await p.getEntitlements(), NOW)).toBe(false);
+  });
+  it('release build with working RevenueCat uses it', () => {
+    const rc = { name: 'revenuecat' } as PurchaseProvider;
+    expect(createPurchaseProvider({ flag: 'revenuecat', isDev: false, loadRevenueCat: () => rc })).toBe(rc);
+  });
+  it('release sheet: premium locked, buy buttons hidden, "Passes coming soon"', async () => {
+    await render(
+      <EntitlementsProvider provider={new UnavailablePurchaseProvider()}>
+        <Gated feature="offlineMaps"><Text>maps-content</Text></Gated>
+        <UpgradeSheet />
+      </EntitlementsProvider>,
+    );
+    await fireEvent.press(screen.getByText('See passes'));
+    expect(await screen.findByTestId('passes-coming-soon')).toBeTruthy();
+    expect(screen.queryByText(/^Get /)).toBeNull();
+    expect(screen.queryByText('Restore purchases')).toBeNull();
+    expect(screen.queryByText('maps-content')).toBeNull();
+  });
+});
+
+describe('subscription disclosure (Apple 3.1.2)', () => {
+  it('shows auto-renew terms, weekend non-renewing, Terms and Privacy links', async () => {
+    await render(
+      <EntitlementsProvider provider={new MockPurchaseProvider()}>
+        <Gated feature="export"><Text>x</Text></Gated>
+        <UpgradeSheet />
+      </EntitlementsProvider>,
+    );
+    await fireEvent.press(screen.getByText('See passes'));
+    const season = (await screen.findByTestId('disclosure-season')).props.children.join('');
+    expect(season).toContain(PRODUCTS.season_pass_yearly.price.display);
+    expect(season).toMatch(/auto-renewing yearly subscription/);
+    expect(season).toMatch(/unless cancelled at least 24 hours before the end of the current period/);
+    expect(season).toMatch(/Manage or cancel in your App Store or Google Play account settings/);
+    expect(season).toContain(PRODUCTS.season_pass_yearly.introOffer!.price.display);
+    expect(screen.getByTestId('disclosure-weekend').props.children).toMatch(/does not renew and is not a subscription/);
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    await fireEvent.press(screen.getByText('Terms of Service'));
+    await fireEvent.press(screen.getByText('Privacy Policy'));
+    expect(open).toHaveBeenCalledWith(legal.termsUrl);
+    expect(open).toHaveBeenCalledWith(legal.privacyPolicyUrl);
+    open.mockRestore();
+  });
+});
+
 describe('Gated UI', () => {
   it('locks premium, never locks safety, opens upgrade sheet with placeholder note', async () => {
     await render(
@@ -134,10 +197,10 @@ describe('Gated UI', () => {
     );
     expect(screen.getByText('regs-content')).toBeTruthy();
     expect(screen.queryByText('maps-content')).toBeNull();
-    fireEvent.press(screen.getByText('See passes'));
+    await fireEvent.press(screen.getByText('See passes'));
     expect(await screen.findByTestId('price-placeholder')).toBeTruthy();
     expect(screen.getByText(/Placeholder prices, not final/)).toBeTruthy();
-    fireEvent.press(screen.getByText('Get Season Pass'));
+    await fireEvent.press(screen.getByText('Get Season Pass'));
     expect(await screen.findByText('maps-content')).toBeTruthy();
   });
   it('useEntitlements without provider is free tier', async () => {
