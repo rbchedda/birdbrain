@@ -15,6 +15,7 @@ import {
   sheetText,
   STOCKING_LINE,
 } from '@/data/mapNotice';
+import { DCNR_LAYER_DATE, DCNR_SOURCES_TEXT } from '@/data/stateParks';
 import { colors, fonts, space } from '@/theme/tokens';
 
 /**
@@ -50,6 +51,9 @@ export default function DataSourcesScreen() {
             </View>
           ))}
         </View>
+        <Text style={ui.body} testID="data-sources-dcnr">
+          {DCNR_SOURCES_TEXT(DCNR_LAYER_DATE)}
+        </Text>
       </ScrollView>
     </View>
   );
