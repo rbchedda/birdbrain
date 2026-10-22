@@ -1,14 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, Share, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { PostCard } from '@/components/PostCard';
 import { ScreenHeader } from '@/components/Screen';
 import { SignInPrompt } from '@/components/SignInPrompt';
 import { Button, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
-import { useCrewSize, useInviteCardDismissed } from '@/data/crew';
+import { useCrewSize, useInviteCardDismissed, useMyCrews } from '@/data/crew';
 import { useSession } from '@/data/hooks';
 import type { Post } from '@/data/types';
 import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
@@ -36,12 +36,8 @@ function Segments({ value, onChange }: { value: Segment; onChange: (s: Segment) 
   );
 }
 
-/**
- * Zero-crew empty state. Crews don't exist in the backend yet, so every user has
- * zero crew for now; the Invite share sheet sends a plain-text invite. Shown only on the Crew tab.
- */
+/** Zero-crew empty state, shown only on the Crew tab. */
 export function CrewEmpty({ onCommunity }: { onCommunity: () => void }) {
-  const [qr, setQr] = useState(false);
   return (
     <View style={styles.empty} testID="crew-empty">
       <View style={styles.illustration} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
@@ -49,19 +45,9 @@ export function CrewEmpty({ onCommunity }: { onCommunity: () => void }) {
       </View>
       <Text style={styles.emptyTitle} accessibilityRole="header">Hunt with a crew</Text>
       <Text style={[ui.body, { textAlign: 'center' }]}>
-        Invite the people you hunt with. Crew posts show up here 12+ hours after the hunt, with no live locations.
+        Start a private crew and invite the people you hunt with by link or QR code. Crew posts show up here 12+ hours after the hunt, with no live locations.
       </Text>
-      <Button
-        label="Invite your crew"
-        icon="person-add-outline"
-        variant="primary"
-        style={{ alignSelf: 'stretch' }}
-        onPress={inviteCrew}
-      />
-      <Pressable accessibilityRole="link" onPress={() => setQr(true)}>
-        <Text style={styles.link}>Show a QR code instead</Text>
-      </Pressable>
-      {qr && <Notice>QR invites are coming soon.</Notice>}
+      <Button label="Start or join a crew" icon="person-add-outline" variant="primary" style={{ alignSelf: 'stretch' }} onPress={openCrews} />
       <Pressable accessibilityRole="button" accessibilityLabel="Browse Community" onPress={onCommunity} style={styles.communityCard}>
         <Ionicons name="earth-outline" size={22} color={colors.accent} />
         <View style={{ flex: 1 }}>
@@ -74,15 +60,45 @@ export function CrewEmpty({ onCommunity }: { onCommunity: () => void }) {
   );
 }
 
-const inviteCrew = () =>
-  Share.share({ message: 'Join my hunting crew on BirdBrain. Hunt logs are private, and shared posts are delayed 12+ hours with no live locations.' }).catch(() => {});
+const openCrews = () => router.push('/crew/invite');
+
+/** The user's crews, each opening crew/[id]. Falls back to the empty state if the list comes back empty. */
+export function CrewList({ onCommunity }: { onCommunity: () => void }) {
+  const { crews, error, reload } = useMyCrews();
+  useFocusEffect(useCallback(() => reload(), [reload]));
+  if (crews === null) return <ActivityIndicator color={colors.accent} style={{ marginTop: space.xl }} />;
+  if (!crews.length && !error) return <CrewEmpty onCommunity={onCommunity} />;
+  return (
+    <View style={styles.crewList} testID="crew-list">
+      {error && <Notice tone="error">{error}</Notice>}
+      {crews.map((c) => (
+        <Pressable
+          key={c.id}
+          accessibilityRole="button"
+          accessibilityLabel={`Open crew ${c.name}`}
+          onPress={() => router.push({ pathname: '/crew/[id]', params: { id: c.id } })}
+          style={styles.communityCard}
+        >
+          <Ionicons name="people-outline" size={22} color={colors.accent} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.cardTitle}>{c.name}</Text>
+            <Text style={ui.muted}>{c.memberCount} {c.memberCount === 1 ? 'member' : 'members'}{c.role === 'admin' ? ' · admin' : ''}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+        </Pressable>
+      ))}
+      <Text style={ui.muted}>Crew posts and pins are coming soon.</Text>
+      <Button label="Start or join another crew" icon="add-outline" onPress={openCrews} />
+    </View>
+  );
+}
 
 /** Slim, dismissible invite card shown atop Community for users with no crew. */
 export function InviteCard({ onDismiss }: { onDismiss: () => void }) {
   return (
     <View style={styles.inviteCard} testID="invite-card">
       <Text style={[ui.body, { flex: 1 }]} numberOfLines={1}>Hunt with friends? Invite your crew.</Text>
-      <Button label="Invite" icon="person-add-outline" onPress={inviteCrew} />
+      <Button label="Invite" icon="person-add-outline" onPress={openCrews} />
       <Pressable accessibilityRole="button" accessibilityLabel="Dismiss invite" onPress={onDismiss} style={styles.dismiss}>
         <Ionicons name="close" size={20} color={colors.muted} />
       </Pressable>
@@ -178,7 +194,7 @@ export default function FeedScreen() {
       <View style={styles.root}>
         <ScreenHeader title="Feed" />
         <Segments value={segment} onChange={setSegment} />
-        <CrewEmpty onCommunity={() => setSegment('community')} />
+        {crew && crew > 0 ? <CrewList onCommunity={() => setSegment('community')} /> : <CrewEmpty onCommunity={() => setSegment('community')} />}
       </View>
     );
   }
@@ -252,6 +268,7 @@ export default function FeedScreen() {
 }
 
 const styles = StyleSheet.create({
+  crewList: { paddingHorizontal: space.lg, paddingTop: space.md, gap: space.md },
   root: { flex: 1, backgroundColor: colors.ground },
   gate: { padding: space.lg, gap: space.md },
   rulesLink: { color: colors.accent, textDecorationLine: 'underline' },
