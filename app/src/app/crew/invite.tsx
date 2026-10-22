@@ -4,12 +4,13 @@ import { ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-nati
 
 import { QrCode } from '@/components/QrCode';
 import { ScreenHeader } from '@/components/Screen';
-import { SignInPrompt } from '@/components/SignInPrompt';
+import { CrewSignInSheet } from '@/components/CrewSignInSheet';
 import { Button, Notice, SectionTitle, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { inviteUrl, parseInviteToken } from '@/data/crew';
 import { useSession } from '@/data/hooks';
 import type { CrewInvite } from '@/data/types';
+import { needsAccount } from '@/lib/gate';
 import { colors, space } from '@/theme/tokens';
 
 const PRIVACY = 'Crews are private: no public directory, joined only by invite link or QR. Crew posts show 12+ hours after the hunt, with no live locations.';
@@ -27,10 +28,8 @@ export default function CrewInviteScreen() {
   return (
     <View style={styles.root}>
       <ScreenHeader title={title} back />
-      {session === null ? (
-        <SignInPrompt why="Sign in to start or join a private crew." />
-      ) : session === undefined ? null : session.anonymous ? (
-        <SignInPrompt why="Crews need an account. Guests can browse, but creating or joining a crew takes a free account." />
+      {session === undefined ? null : needsAccount('crews', session) ? (
+        <CrewSignInSheet />
       ) : (
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           {id ? <ShareInvite crewId={id} /> : <StartOrJoin initialToken={token} />}

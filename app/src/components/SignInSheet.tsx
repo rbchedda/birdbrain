@@ -36,7 +36,12 @@ export function SignInSheet({
   onDismiss,
   held,
   appleEnabled = flags.appleSignIn,
+  title = signInSheetTitle,
+  body = signInSheetBody,
 }: {
+  /** Per-action copy; defaults to the hunt-diary copy from 02b. */
+  title?: string;
+  body?: string;
   onDismiss: () => void;
   /** e.g. "SGL 211 · Pheasant": an entry is waiting on the phone for sign-in. */
   held?: string | null;
@@ -56,9 +61,9 @@ export function SignInSheet({
     <View style={styles.sheet} testID="sign-in-sheet" accessibilityViewIsModal>
       <View style={styles.grab} />
       <Text style={styles.title} accessibilityRole="header">
-        {signInSheetTitle}
+        {title}
       </Text>
-      <Text style={styles.body}>{signInSheetBody}</Text>
+      <Text style={styles.body}>{body}</Text>
       {appleEnabled && <SheetButton label="Continue with Apple" icon="logo-apple" filled onPress={apple} />}
       <SheetButton label="Continue with email" icon="mail-outline" filled={!appleEnabled} onPress={email} />
       {message && <Notice tone="error">{message}</Notice>}

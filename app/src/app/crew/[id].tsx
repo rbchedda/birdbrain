@@ -2,13 +2,14 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { CrewSignInSheet } from '@/components/CrewSignInSheet';
 import { ScreenHeader } from '@/components/Screen';
-import { SignInPrompt } from '@/components/SignInPrompt';
 import { Tag } from '@/components/Tag';
 import { Button, Notice, SectionTitle, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { useAsync, useSession } from '@/data/hooks';
 import type { CrewMember } from '@/data/types';
+import { needsAccount } from '@/lib/gate';
 import { colors, fonts, space } from '@/theme/tokens';
 
 const memberName = (m: CrewMember) => m.author.displayName ?? (m.author.username ? `@${m.author.username}` : 'Hunter');
@@ -17,7 +18,7 @@ const memberName = (m: CrewMember) => m.author.displayName ?? (m.author.username
 export default function CrewScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const session = useSession();
-  const crew = useAsync(() => (session && id ? backend.crew(id) : Promise.resolve(null)), [session, id]);
+  const crew = useAsync(() => (session && !needsAccount('crews', session) && id ? backend.crew(id) : Promise.resolve(null)), [session, id]);
   const [error, setError] = useState<string>();
   const [leaving, setLeaving] = useState(false);
 
@@ -41,11 +42,11 @@ export default function CrewScreen() {
     ]);
   };
 
-  if (session === null)
+  if (session !== undefined && needsAccount('crews', session))
     return (
       <View style={styles.root}>
         <ScreenHeader title="Crew" back />
-        <SignInPrompt why="Sign in to see your crews." />
+        <CrewSignInSheet />
       </View>
     );
 
