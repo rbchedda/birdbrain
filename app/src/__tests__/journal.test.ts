@@ -128,8 +128,8 @@ describe('offline-safe hunt log', () => {
     await syncJournal(server.backend, { now });
     [e] = await journalEntries();
     expect(e.sync).toMatchObject({ status: 'synced', attempts: 0, version: 1, error: null });
-    expect(backoffMs(2)).toBe(2 * backoffMs(1));
-    expect(backoffMs(100)).toBe(5 * 60_000);
+    // Spec: 30 s, 2 min, 10 min, then every 30 min.
+    expect([1, 2, 3, 4, 100].map(backoffMs)).toEqual([30_000, 120_000, 600_000, 1_800_000, 1_800_000]);
   });
 
   it('retries automatically on foreground and reconnect', async () => {

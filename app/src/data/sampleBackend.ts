@@ -125,6 +125,7 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
     onSessionChange: () => () => {},
     signIn: async () => {},
     signUp: async () => ({ needsConfirmation: false }),
+    completeAuthRedirect: async () => {},
     signOut: async () => {},
     async deleteAccount() {
       // Drop everything this device stored for the sample user and rebuild from seed data.

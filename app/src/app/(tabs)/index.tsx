@@ -1,3 +1,4 @@
+import { PendingChip } from '@/components/FieldSync';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -222,6 +223,8 @@ export default function MapScreen() {
         )}
       </View>
 
+      {/* Spec 04: above the sheet/action bar, never over the trespass banner or map controls. */}
+      {!expanded && <PendingChip bottom={(selected || planner ? PEEK : PEEK_EMPTY) + space.sm} />}
       <BottomSheet
         expanded={expanded}
         onExpandedChange={setExpanded}

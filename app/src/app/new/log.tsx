@@ -11,7 +11,14 @@ import { Button, Chip, Notice, SectionTitle, Stepper, ui } from '@/components/ui
 import { backend } from '@/data';
 import { useJournal, usePlaces, useSession } from '@/data/hooks';
 import { DiaryForm, diaryDraft } from '@/app/diary/new';
-import { addJournalEntry, type JournalEntry } from '@/data/journal';
+import { addJournalEntry, GUEST_AUTHOR, journalEntries, type JournalEntry } from '@/data/journal';
+import { getSignal } from '@/lib/connectivity';
+import { copy, pendingHunts, readFlags, signInDidNotFinish, skipWelcomeBack } from '@/lib/fieldDraft';
+
+type HeldHunt = { id: string; label: string; summary: string };
+const entryLabel = (e: JournalEntry) =>
+  [e.placeCounts?.[0]?.placeName, e.species ? speciesLabel[e.species] : null].filter(Boolean).join(' · ') || 'this hunt';
+const entryLine = (e: JournalEntry) => ['Hunt', e.huntedOn ? formatDay(e.huntedOn) : null, copy.waiting].filter(Boolean).join(' · ');
 import { emptyDiaryDetails, type DiaryDetails } from '@/data/types';
 import { loggableSpecies, placeTypeLabel, speciesLabel, type LocationVisibility, type Place, type LoggableSpecies, type PlaceCount, type Species } from '@/data/types';
 import { addDays, etParts, formatDay, formatTime, publicAfterET, todayET } from '@/lib/time';
@@ -278,30 +285,53 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
 /**
  * Redesign Log hunt sheet (mockups 02 + 02b). Always private, never a post.
  * Signed out (hybrid guest mode): Save holds the entry on the phone and shows
- * the first-save SignInSheet. It saves the moment sign-in completes; "Not now"
- * keeps it on this phone only (the journal never uploads while signed out).
+ * the entry to the journal first, then shows the first-save SignInSheet (no
+ * "Not now"). It backs up once a session exists (the journal never uploads
+ * while signed out). No signal: a "Saved on this phone" sheet instead (spec 03);
+ * the map's pending chip carries it from there (spec 04-08).
  */
 export function LogHuntSheet() {
-  const { placeId, ask } = useLocalSearchParams<{ placeId?: string; ask?: string }>();
+  const { placeId, ask, signin } = useLocalSearchParams<{ placeId?: string; ask?: string; signin?: string }>();
   const { places } = usePlaces();
   const session = useSession();
   const { data: journal } = useJournal();
   const [saved, setSaved] = useState<{ id: string; label: string } | null>(null);
-  const [held, setHeld] = useState<{ draft: PostDraft; details: DiaryDetails; label: string } | null>(null);
+  const [held, setHeld] = useState<HeldHunt | null>(null);
+  const [offlineSaved, setOfflineSaved] = useState<HeldHunt | null>(null);
+  const [storageFull, setStorageFull] = useState(false);
+  const [confirmPending, setConfirmPending] = useState(false);
   const [formKey, setFormKey] = useState(0);
   const place = places.find((p) => p.id === placeId);
   // session === null: known signed out (undefined = still loading).
   const signedOut = session === null && needsAccount('saveHuntLog', session);
   const firstSave = signedOut && !(journal?.length);
 
-  const saveHeld = useCallback(async (h: { draft: PostDraft; details: DiaryDetails; label: string }, userId: string) => {
-    setHeld(null);
-    const e = await addJournalEntry(h.draft, { id: userId, username: null, displayName: 'You' }, h.details);
-    setSaved({ id: e.id, label: h.label });
-  }, []);
+  // From the pending chip/list (signin=1): open the 01 sheet for the newest waiting hunt.
   useEffect(() => {
-    if (held && session) void saveHeld(held, session.userId);
-  }, [held, session, saveHeld]);
+    if (signin !== '1' || !signedOut) return;
+    let live = true;
+    pendingHunts().then((list) => {
+      const e = list[0];
+      if (live && e) setHeld((cur) => cur ?? { id: e.id, label: entryLabel(e), summary: entryLine(e) });
+    }, () => {});
+    readFlags().then((f) => live && setConfirmPending(!!f.confirmPending), () => {});
+    return () => {
+      live = false;
+    };
+  }, [signin, signedOut]);
+  // Signed in: the journal sync uploads the held entry (same client UUID, so no duplicate).
+  useEffect(() => {
+    if (!held || !session) return;
+    setHeld(null);
+    setSaved({ id: held.id, label: held.label });
+  }, [held, session]);
+  // Back or swipe-down closes the sheet: the hunt stays pending (spec 01 → 06).
+  const closeHeld = () => {
+    setHeld(null);
+    void signInDidNotFinish();
+    if (router.canGoBack()) router.back();
+    else router.replace('/');
+  };
 
   // First "+ Log hunt" tap while signed out (chooser passes ask=1): ask once per install.
   const [askNow, setAskNow] = useState(false);
@@ -320,7 +350,24 @@ export function LogHuntSheet() {
       <ScreenHeader title="Log hunt" subtitle="🔒 Private diary entry · not a post" back />
       {held ? (
         <ScrollView contentContainerStyle={styles.body}>
-          <SignInSheet held={held.label} onDismiss={() => void saveHeld(held, 'me')} />
+          <SignInSheet
+            title={copy.sheetTitle}
+            body={copy.sheetBody}
+            held={held.label}
+            summary={held.summary}
+            dismissible={false}
+            onClose={closeHeld}
+            status={confirmPending ? { tone: 'success', text: copy.confirmPending } : null}
+          />
+        </ScrollView>
+      ) : offlineSaved ? (
+        <ScrollView contentContainerStyle={styles.body}>
+          <View style={styles.offlineSheet} testID="saved-offline-sheet">
+            <Text style={styles.offlineTitle} accessibilityRole="header">{copy.savedOfflineTitle}</Text>
+            <Text style={styles.offlineBody}>{copy.savedOffline} {copy.savedOfflineMore}</Text>
+            <Text style={ui.muted}>{offlineSaved.summary}</Text>
+            <Button label={copy.backToMap} variant="primary" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+          </View>
         </ScrollView>
       ) : askNow ? (
         <ScrollView contentContainerStyle={styles.body}>
@@ -361,7 +408,19 @@ export function LogHuntSheet() {
             const { draft, details } = diaryDraft(v);
             if (place && draft.counts[0]?.placeName === place.name) draft.counts[0].placeId = place.id;
             const label = [draft.counts[0]?.placeName, draft.species ? speciesLabel[draft.species] : null].filter(Boolean).join(' · ') || 'this hunt';
-            if (signedOut) return setHeld({ draft, details, label });
+            if (signedOut) {
+              // Local-first: on disk before any sign-in UI, so it survives a failed sign-up, a kill or no signal.
+              const e = await addJournalEntry(draft, { id: GUEST_AUTHOR, username: null, displayName: 'You' }, details).catch(() => null);
+              if (!e || !(await journalEntries().catch(() => [])).some((x) => x.id === e.id)) {
+                // The write didn't land: the only blocking error. The form keeps the draft in memory.
+                setStorageFull(true);
+                throw new Error(copy.storageFull);
+              }
+              setStorageFull(false);
+              const h = { id: e.id, label, summary: entryLine(e) };
+              skipWelcomeBack();
+              return getSignal().online ? setHeld(h) : setOfflineSaved(h);
+            }
             const e = await addJournalEntry(draft, { id: session?.userId ?? 'me', username: null, displayName: 'You' }, details);
             setSaved({ id: e.id, label });
           }}
@@ -405,6 +464,9 @@ function PrivateLog() {
               <Ionicons name={s.icon} size={16} color={s.color} />
               <Text style={[ui.muted, { color: s.color }]}>{s.text}</Text>
             </View>
+            {e.sync.status !== 'synced' && !e.sync.conflict && (
+              <Text style={ui.muted} testID={`offline-${e.clientId}`}>{copy.waiting}</Text>
+            )}
           </Pressable>
         );
       })}
@@ -463,6 +525,9 @@ const styles = StyleSheet.create({
   placeName: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text },
   remove: { width: touchTarget, height: touchTarget, alignItems: 'center', justifyContent: 'center', marginRight: -space.sm },
   link: { color: colors.accent, fontFamily: fonts.bodySemi, fontSize: 15 },
+  offlineSheet: { backgroundColor: colors.surface, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: space.lg, gap: space.md },
+  offlineTitle: { fontFamily: fonts.heading, fontSize: 22, color: colors.text },
+  offlineBody: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.muted },
   pick: { minHeight: touchTarget, justifyContent: 'center', paddingVertical: space.xs },
   photo: {
     flexDirection: 'row',

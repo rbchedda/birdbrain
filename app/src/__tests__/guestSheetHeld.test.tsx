@@ -26,18 +26,20 @@ afterAll(async () => {
 });
 
 describe('first-save sign-in sheet (redesign 02b)', () => {
-  it('holds the entry on Save; "Not now" keeps it on the phone and sends nothing', async () => {
+  it('persists the hunt before the sheet opens; the first-save sheet has no "Not now"', async () => {
     const upsert = jest.spyOn(backend, 'upsertHuntLogEntry');
     await renderRouter('./src/app', { initialUrl: '/new/log' });
     await fireEvent.press(await screen.findByLabelText('Add dog, weather, cover, notes, photo'));
     await fireEvent.changeText(screen.getByLabelText('Notes'), 'Cold start');
     await fireEvent.press(screen.getByText('Save hunt'));
-    expect(await screen.findByText('Keep your hunt diary')).toBeTruthy();
-    expect(screen.getByText(/is held on this phone and saves the moment you sign in/)).toBeTruthy();
-    expect(await journalEntries()).toHaveLength(0);
-    await fireEvent.press(screen.getByText('Not now — keep on this phone only'));
-    expect(await screen.findByText(/Saved to your private log on this phone/)).toBeTruthy();
-    expect(await journalEntries()).toHaveLength(1);
+    expect(await screen.findByText('Sign in to save this hunt')).toBeTruthy();
+    // Already on the phone (idempotent client UUID) by the time the sheet shows.
+    const [e] = await journalEntries();
+    expect(e.caption).toBe('Cold start');
+    expect(e.clientId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(e.sync.status).toBe('pending');
+    expect(screen.queryByText('Not now — keep on this phone only')).toBeNull();
+    expect(screen.getByText('Continue with email')).toBeTruthy();
     expect(upsert).not.toHaveBeenCalled();
     upsert.mockRestore();
   });
