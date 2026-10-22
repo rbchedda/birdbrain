@@ -41,7 +41,8 @@ import { STOCKING_SOURCE, stockingCountyOf, windowsForCounty } from '@/data/plac
 import { PGC_DIGEST_URL } from '@/data/regs';
 import { describeStatus, placeToday, SEASON_YEAR } from '@/data/seasons';
 import { migratory, placeTypeLabel, speciesLabel, type Place, type PlaceType } from '@/data/types';
-import { formatDay, todayET } from '@/lib/time';
+import { officialDay } from '@/lib/sun';
+import { formatDay, formatTime, todayET } from '@/lib/time';
 import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
 
 const filters: { key: PlaceType | 'all'; label: string }[] = [
@@ -313,26 +314,85 @@ function PlaceDetails({
     Linking.openURL(url).catch(() => {});
   };
 
+  const nextRelease = stocking.find((w) => w.windowEnd >= today.date);
+  const hours = officialDay(today.date, place.center.lng);
+
   return (
     <ScrollView contentContainerStyle={{ gap: space.md, paddingBottom: space.xl }}>
-      <View style={ui.row}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back to list" onPress={onClose} style={styles.backToList}>
-          <Ionicons name="chevron-back" size={18} color={colors.text} />
+      {/* Peek: identity, access, two stats, actions and the full legal notice. */}
+      <View style={styles.headerRow}>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={styles.sheetTitle}>{place.name}</Text>
+          <Text style={ui.muted}>
+            {placeTypeLabel[place.type]}
+            {place.county ? ` · ${place.county} County` : ''}
+            {place.acres ? ` · ${Math.round(place.acres).toLocaleString('en-US')} acres` : ''}
+          </Text>
+        </View>
+        <Pressable accessibilityRole="button" accessibilityLabel="Back to list" onPress={onClose} style={styles.close}>
+          <Ionicons name="close" size={22} color={colors.muted} />
         </Pressable>
-        <View style={[styles.dot, { backgroundColor: pinColor[place.type] }]} />
-        <Text style={ui.muted}>
-          {placeTypeLabel[place.type]}
-          {place.county ? ` · ${place.county} County` : ''}
-          {place.acres ? ` · ${Math.round(place.acres).toLocaleString('en-US')} acres` : ''}
+      </View>
+      <View style={styles.tags}>
+        <View style={[styles.accessTag, place.access === 'enrolled_private' && styles.accessTagOutlined]}>
+          <Text style={styles.accessTagText} testID="place-access">
+            {accessLabel[place.access]}
+            {place.type === 'stocking' ? ` · ${STOCKING_PIN_NOTE}` : ''}
+          </Text>
+        </View>
+        {today.open && <Tag label="Season open today" tone="accent" />}
+      </View>
+
+      <View style={styles.stats}>
+        <View style={styles.stat}>
+          <Text style={styles.statValue}>{hours ? `${formatTime(hours.huntStart)}–${formatTime(hours.huntEnd)}` : 'Check digest'}</Text>
+          <Text style={styles.fine}>Small-game legal hours today</Text>
+        </View>
+        {place.type === 'stocking' && (
+          <View style={[styles.stat, styles.statDivider]}>
+            <Text style={[styles.statValue, { color: colors.dove }]}>{nextRelease ? formatDay(nextRelease.windowStart) : 'None listed'}</Text>
+            <Text style={styles.fine}>Next county release wk</Text>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.actions}>
+        <Button
+          label="Log hunt here"
+          icon="create-outline"
+          variant="primary"
+          onPress={() => router.push({ pathname: '/new/log', params: { placeId: place.id } })}
+          style={{ flex: 2 }}
+        />
+        <Button
+          label={saved ? 'Saved' : 'Save'}
+          a11y={saved ? 'Saved' : 'Save privately'}
+          icon={saved ? 'bookmark' : 'bookmark-outline'}
+          onPress={toggleSave}
+          style={{ flex: 1 }}
+        />
+      </View>
+      {saveError && <Notice tone="error">{saveError}</Notice>}
+
+      {/* Legal text stays in full (no truncation) right under the actions. */}
+      <View style={styles.notice} testID="place-notice">
+        {place.access === 'enrolled_private' && (
+          <Text style={ui.body} testID="enrolled-line">
+            {ENROLLED_PRIVATE_LINE}
+          </Text>
+        )}
+        <Text style={styles.noticeText} testID="place-map-banner">
+          {MAP_BANNER}
+        </Text>
+        <Text style={styles.noticeText}>
+          <Text style={{ fontFamily: fonts.bodySemi }}>{SHEET_HEADING}</Text> {sheetText(layerDate)}
+          {place.type === 'stocking' ? ` ${STOCKING_LINE}` : ''}
+          {place.type === 'dove_field' ? ` ${DOVE_LINE}` : ''}
         </Text>
       </View>
-      <Text style={styles.sheetTitle}>{place.name}</Text>
-      <Text style={ui.muted} testID="place-access">
-        {accessLabel[place.access]}
-        {place.type === 'stocking' ? ` · ${STOCKING_PIN_NOTE}` : ''}
-      </Text>
-      {place.note && <Text style={ui.body}>{place.note}</Text>}
 
+      {/* Expanded: the data behind the stats, plus secondary actions. */}
+      {place.note && <Text style={ui.body}>{place.note}</Text>}
       <View style={styles.callout}>
         <Text style={styles.calloutTitle}>
           {today.open ? 'Season open today' : 'No season open today'} · {formatDay(today.date)}
@@ -400,42 +460,17 @@ function PlaceDetails({
         </View>
       )}
 
-      <View style={styles.notice} testID="place-notice">
-        {place.access === 'enrolled_private' && (
-          <Text style={ui.body} testID="enrolled-line">
-            {ENROLLED_PRIVATE_LINE}
-          </Text>
-        )}
-        <Text style={styles.noticeText}>
-          <Text style={{ fontFamily: fonts.bodySemi }}>{SHEET_HEADING}</Text> {sheetText(layerDate)}
-          {place.type === 'stocking' ? ` ${STOCKING_LINE}` : ''}
-          {place.type === 'dove_field' ? ` ${DOVE_LINE}` : ''}
+      <View style={styles.secondary}>
+        <Button label="Directions" icon="navigate" onPress={directions} style={{ flex: 1 }} />
+      </View>
+      <View style={[ui.row, { gap: space.lg, flexWrap: 'wrap' }]}>
+        <Text accessibilityRole="link" style={styles.link} onPress={reportError}>
+          Report a map error
         </Text>
-        <View style={[ui.row, { gap: space.lg, flexWrap: 'wrap' }]}>
-          <Text accessibilityRole="link" style={styles.link} onPress={reportError}>
-            Report a map error
-          </Text>
-          <Text accessibilityRole="link" style={styles.link} onPress={() => router.push('/data-sources')}>
-            Data sources
-          </Text>
-        </View>
+        <Text accessibilityRole="link" style={styles.link} onPress={() => router.push('/data-sources')}>
+          Data sources
+        </Text>
       </View>
-
-      <View style={styles.actions}>
-        <Button label="Directions" icon="navigate" variant="primary" onPress={directions} style={{ flex: 1 }} />
-        <Button
-          label={saved ? 'Saved' : 'Save privately'}
-          icon={saved ? 'bookmark' : 'bookmark-outline'}
-          onPress={toggleSave}
-          style={{ flex: 1 }}
-        />
-      </View>
-      <Button
-        label="Log a hunt here"
-        icon="create-outline"
-        onPress={() => router.push({ pathname: '/new/log', params: { placeId: place.id } })}
-      />
-      {saveError && <Notice tone="error">{saveError}</Notice>}
     </ScrollView>
   );
 }
@@ -489,7 +524,17 @@ const styles = StyleSheet.create({
   },
   placeName: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text },
   dot: { width: 10, height: 10, borderRadius: 5 },
-  backToList: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginLeft: -6 },
+  headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
+  close: { width: touchTarget, height: touchTarget, alignItems: 'center', justifyContent: 'center', marginRight: -space.sm },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  accessTag: { borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: colors.surfaceRaised, borderWidth: 1, borderColor: colors.dove },
+  accessTagOutlined: { backgroundColor: 'transparent', borderColor: colors.text, borderStyle: 'dashed' },
+  accessTagText: { fontFamily: fonts.bodySemi, fontSize: 12, color: colors.text },
+  stats: { flexDirection: 'row', gap: space.md, padding: space.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border },
+  stat: { flex: 1, gap: 2 },
+  statDivider: { borderLeftWidth: 1, borderLeftColor: colors.border, paddingLeft: space.md },
+  statValue: { fontFamily: fonts.heading, fontSize: 24, color: colors.text },
+  secondary: { flexDirection: 'row', gap: space.sm },
   callout: {
     gap: space.sm,
     padding: space.md,
