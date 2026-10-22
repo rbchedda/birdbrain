@@ -38,7 +38,11 @@ off email confirmation if testers should sign up without checking email.
 | Learn | Season dates, legal hours and the privacy model |
 
 The map is MapLibre GL JS with USGS National Map tiles, inside a WebView on
-iOS/Android and an iframe on web, so it works in Expo Go. A MapLibre Native
+iOS/Android and an iframe on web, so it works in Expo Go. MapLibre GL JS is
+bundled into the page (`app/src/components/map/vendor/`, regenerate with
+`node app/scripts/vendor-maplibre.mjs`), never loaded from a CDN. Basemaps:
+Standard (USGSTopo) and Satellite (USGSImageryOnly); Terrain is behind
+`EXPO_PUBLIC_FLAG_TERRAIN_BASEMAP=1` until its tiles exist. A MapLibre Native
 development build can replace it as `app/src/components/map/PlaceMap.native.tsx`
 with the same props (`app/src/components/map/types.ts`).
 
