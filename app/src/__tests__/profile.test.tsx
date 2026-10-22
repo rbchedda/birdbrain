@@ -49,20 +49,46 @@ beforeEach(async () => {
 });
 
 describe('Profile hub', () => {
-  it('leads with days afield and links every section', async () => {
+  it('leads with three stats, the hunt diary, then Trophies, Life list and Dogs', async () => {
     await seed();
     await open('/profile');
     expect(await screen.findByLabelText('1 days afield')).toBeTruthy();
     expect(screen.getByLabelText('11 flushes')).toBeTruthy();
     expect(screen.getByLabelText('1 game lands')).toBeTruthy();
-    for (const t of ['TROPHIES & BADGES', 'HUNT LOG (DIARY)', 'SEASON STATS', 'LIFE LIST', 'DOGS', 'SETTINGS']) expect(screen.getByText(t)).toBeTruthy();
-    expect(screen.getByText(/1 private entry · season view/)).toBeTruthy();
+    expect(screen.queryByLabelText(/life list$/)).toBeNull();
+    expect(screen.getByText('Hunt diary')).toBeTruthy();
+    expect(screen.getByText('See all 1 ›')).toBeTruthy();
+    expect(screen.getByText(/SGL 211/)).toBeTruthy();
+    expect(screen.getAllByText('🔒 Private').length).toBe(1);
+    for (const t of ['🏅 TROPHIES & BADGES', '❦ LIFE LIST', '🐕 DOGS']) expect(screen.getByText(t)).toBeTruthy();
     expect(screen.getByText('Ruby ›')).toBeTruthy();
-    // dev-1's account flow and legal links stay.
-    expect(screen.getByText('Delete account')).toBeTruthy();
+    // Deferred to Settings (⚙).
+    for (const gone of ['SEASON STATS', 'SETTINGS', 'Delete account', 'Privacy Policy', 'Log a hunt']) expect(screen.queryByText(gone)).toBeNull();
+    expect(screen.queryByText(/only on this device/)).toBeNull();
+  });
+
+  it('⚙ opens Settings with season stats, account, delete and legal (delete two taps away)', async () => {
+    await seed();
+    await open('/profile');
+    await fireEvent.press(await screen.findByLabelText('Settings'));
+    expect(await screen.findByText('SEASON STATS')).toBeTruthy();
+    expect(screen.getAllByText('Delete account').length).toBeGreaterThan(0);
     expect(screen.getByText('Privacy Policy')).toBeTruthy();
     expect(screen.getByText('Community rules')).toBeTruthy();
-    expect(screen.queryByText(/only on this device/)).toBeNull();
+  });
+
+  it('stats card opens season stats', async () => {
+    await seed();
+    await open('/profile');
+    await fireEvent.press(await screen.findByLabelText('1 days afield'));
+    expect(await screen.findByTestId('season-stats')).toBeTruthy();
+  });
+
+  it('See all opens the full diary', async () => {
+    await seed();
+    await open('/profile');
+    await fireEvent.press(await screen.findByText('See all 1 ›'));
+    expect(await screen.findByTestId('hunt-log-list')).toBeTruthy();
   });
 
   it('shows the hunt log with sync status, season stats and tiles', async () => {

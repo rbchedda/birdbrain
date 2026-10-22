@@ -32,7 +32,7 @@ describe('Five-tab nav', () => {
   it.each([
     ['/feed', /Invite your crew/],
     ['/guide', /Open today\?/],
-    ['/profile', /Log a hunt/],
+    ['/profile', /Hunt diary/],
     ['/log', /Private diary entry · not a post/],
     ['/new/log', /Private diary entry · not a post/],
     ['/new/post', /Share with hunters\. Delayed/],
@@ -121,9 +121,9 @@ describe('Log hunt never creates a post', () => {
     createPost.mockRestore();
   });
 
-  it('Profile links to Log hunt', async () => {
+  it('Profile shows private diary entries, never posts', async () => {
     await open('/profile');
-    await fireEvent.press(await screen.findByText('Log a hunt'));
-    expect(await screen.findByText(/Private diary entry · not a post/)).toBeTruthy();
+    expect(await screen.findByText('Hunt diary')).toBeTruthy();
+    expect(screen.getAllByText('🔒 Private').length).toBeGreaterThan(0);
   });
 });

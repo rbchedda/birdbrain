@@ -51,7 +51,7 @@ export function HuntLogList({ entries, signedOut, limit }: { entries: JournalEnt
               {entrySummary(e)}
             </Text>
             <View style={styles.row} accessibilityLabel={`Sync status: ${s.text}`}>
-              <Text style={styles.private}>Private</Text>
+              <Text style={styles.private}>🔒 Private</Text>
               <Ionicons name={s.icon} size={14} color={s.color} />
               <Text style={[ui.muted, { color: s.color, fontSize: 12 }]}>{s.text}</Text>
             </View>
@@ -76,7 +76,7 @@ export function HeatStrip({ heat }: { heat: number[] }) {
 const styles = StyleSheet.create({
   title: { fontFamily: fonts.heading, fontSize: 17, color: colors.text },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  private: { fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.dove, marginRight: space.xs },
+  private: { fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.dove, marginRight: space.xs, borderWidth: 1, borderColor: colors.dove, borderRadius: 999, paddingHorizontal: 6, overflow: 'hidden' },
   heat: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
   cell: { width: 22, height: 10, borderRadius: 3 },
 });

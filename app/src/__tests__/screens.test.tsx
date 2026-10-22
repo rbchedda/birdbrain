@@ -318,8 +318,9 @@ describe('Guide tab', () => {
     if (credits.length === 0) expect(screen.getByTestId('credits-empty')).toBeTruthy();
   });
 
-  it('Profile › Legal links to the photo credits', async () => {
+  it('Profile › Settings › Legal links to the photo credits', async () => {
     await open('/profile');
+    await fireEvent.press(await screen.findByLabelText('Settings'));
     await fireEvent.press(await screen.findByText('Photo credits'));
     expect(await screen.findByTestId('credit-mourning-dove.webp')).toBeTruthy();
   });
