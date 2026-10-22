@@ -418,6 +418,15 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
       check(await sb.rpc('accept_community_rules'));
     },
 
+    async recordTermsAcceptance(a) {
+      await me();
+      const r = await sb
+        .from('accepted_terms')
+        .insert({ accepted_at: a.acceptedAt, app_version: a.appVersion, terms_version: a.termsVersion });
+      // 23505: this version is already logged for the user (a queued retry); that's success.
+      if (r.error && r.error.code !== '23505') check(r);
+    },
+
     async groups() {
       const { data } = await sb.auth.getSession();
       const userId = data.session?.user.id;
