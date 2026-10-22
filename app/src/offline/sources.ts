@@ -1,4 +1,4 @@
-import { USGS } from '@/components/map/mapHtml';
+import { offlineLayers, USGS } from '@/components/map/mapHtml';
 import type { Basemap } from '@/components/map/types';
 
 /**
@@ -77,7 +77,7 @@ export const PACK_SOURCES: Record<PackBasemap, OfflineSource> = {
     basemap: 'topo',
     url: `${USGS}/USGSTopo/MapServer/tile/{z}/{y}/{x}`,
     minzoom: 10,
-    maxzoom: 16,
+    maxzoom: offlineLayers.topo.maxzoom,
     estBytesPerTile: 33_000,
     attribution: 'USGS The National Map',
   },
@@ -86,7 +86,7 @@ export const PACK_SOURCES: Record<PackBasemap, OfflineSource> = {
     basemap: 'satellite',
     url: `${USGS}/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}`,
     minzoom: 10,
-    maxzoom: 15,
+    maxzoom: offlineLayers.satellite.maxzoom,
     estBytesPerTile: 27_000,
     attribution: 'USGS The National Map: Orthoimagery',
   },
