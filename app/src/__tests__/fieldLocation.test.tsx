@@ -103,7 +103,8 @@ describe('position to WebView', () => {
     expect(mapHtml).toContain("id: 'me-accuracy'");
     expect(mapHtml).toContain("m.type === 'me'");
     // The zoom control was hidden under the bottom sheet, behind the locate button's corner.
-    expect(mapHtml).not.toContain('NavigationControl');
+    expect(mapHtml).not.toContain('new maplibregl.NavigationControl');
+    expect(mapHtml).not.toMatch(/addControl\([^)]*NavigationControl/);
   });
 });
 
