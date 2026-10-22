@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { type ReactNode, useState } from 'react';
 import { Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -41,14 +42,17 @@ export function UpgradeSheet() {
   const { upgradeFor, showUpgrade, purchase, restore, provider } = useEntitlements();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [needsSignIn, setNeedsSignIn] = useState(false);
   const run = (fn: () => Promise<void>) => async () => {
     setBusy(true);
     setError(null);
+    setNeedsSignIn(false);
     try {
       await fn();
       showUpgrade(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Purchase failed');
+      setNeedsSignIn(e instanceof Error && e.name === 'AccountRequiredError');
     } finally {
       setBusy(false);
     }
@@ -98,6 +102,9 @@ export function UpgradeSheet() {
             </Pressable>
           </View>
           {error && <Text style={{ color: colors.danger }}>{error}</Text>}
+          {needsSignIn && (
+            <Button label="Sign in or create an account" variant="primary" onPress={() => { showUpgrade(null); router.push('/sign-in'); }} />
+          )}
           <Button label="Not now" onPress={() => showUpgrade(null)} />
         </ScrollView>
       </View>
