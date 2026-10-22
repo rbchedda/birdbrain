@@ -10,7 +10,7 @@ import { useSession } from '@/data/hooks';
 import { addJournalEntry, type JournalEntry } from '@/data/journal';
 import {
   allCoverTypes,
-  allSpecies,
+  loggableSpecies,
   coverLabel,
   emptyDiaryDetails,
   speciesLabel,
@@ -154,8 +154,8 @@ export function DiaryForm({
   };
 
   const topSpecies = (() => {
-    const order = [...d.species, ...allSpecies.filter((s) => !d.species.includes(s))];
-    return sheet && !moreSpecies ? order.slice(0, Math.max(3, d.species.length)) : allSpecies;
+    const order = [...d.species, ...loggableSpecies.filter((s) => !d.species.includes(s))];
+    return sheet && !moreSpecies ? order.slice(0, Math.max(3, d.species.length)) : loggableSpecies;
   })();
   const primary = d.birds[0];
   const harvested = birdsTotal(d.birds);
@@ -183,7 +183,7 @@ export function DiaryForm({
         {topSpecies.map((s) => (
           <Chip key={s} label={speciesLabel[s]} active={d.species.includes(s)} onPress={() => toggleSpecies(s)} />
         ))}
-        {!moreSpecies && topSpecies.length < allSpecies.length && <Chip label="More…" onPress={() => setMoreSpecies(true)} />}
+        {!moreSpecies && topSpecies.length < loggableSpecies.length && <Chip label="More…" onPress={() => setMoreSpecies(true)} />}
       </View>
       <SectionTitle>Birds</SectionTitle>
       <View style={styles.row}>
@@ -216,7 +216,7 @@ export function DiaryForm({
 
       <SectionTitle>Species</SectionTitle>
       <View style={ui.row}>
-        {allSpecies.map((s) => (
+        {loggableSpecies.map((s) => (
           <Chip key={s} label={speciesLabel[s]} active={d.species.includes(s)} onPress={() => toggleSpecies(s)} />
         ))}
       </View>

@@ -34,12 +34,13 @@ describe('first-save sign-in sheet (redesign 02b)', () => {
     await fireEvent.changeText(screen.getByLabelText('Notes'), 'Held');
     await fireEvent.press(screen.getByText('Save hunt'));
     await fireEvent.press(await screen.findByText('Continue with email'));
-    expect(await journalEntries()).toHaveLength(0);
+    expect(await journalEntries()).toHaveLength(1);
     // The hooks store subscribed at first use; emit a sign-in through every listener we can reach.
     const { act } = require('@testing-library/react-native');
     await act(async () => emit(me));
     // Poll the store directly (an async waitFor callback leaves Jest spinning after the file).
     for (let i = 0; i < 100 && !(await journalEntries()).length; i++) await act(() => new Promise((r) => setTimeout(r, 30)));
+    // Same entry, not a second copy.
     expect((await journalEntries()).map((e) => e.caption)).toEqual(['Held']);
   });
 });

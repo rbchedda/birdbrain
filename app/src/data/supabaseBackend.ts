@@ -1,3 +1,4 @@
+import { authRedirectUrl } from '@/lib/authRedirect';
 import type { Session as AuthSession, SupabaseClient } from '@supabase/supabase-js';
 
 import { parseGeometry, parsePoint, toEwkt } from '@/lib/geo';
@@ -125,9 +126,16 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
       checkAuth(await sb.auth.signInWithPassword({ email, password }));
     },
     async signUp(email, password) {
-      const { data, error } = await sb.auth.signUp({ email, password });
+      // The confirm link lands on app/auth/callback (exp:// in Expo Go, birdbrain:// in builds).
+      const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: authRedirectUrl() } });
       checkAuth({ error });
       return { needsConfirmation: !data.session };
+    },
+    async completeAuthRedirect(p) {
+      if (p.code) checkAuth(await sb.auth.exchangeCodeForSession(p.code));
+      else if (p.accessToken && p.refreshToken)
+        checkAuth(await sb.auth.setSession({ access_token: p.accessToken, refresh_token: p.refreshToken }));
+      else throw new Error('This sign-in link is missing its code.');
     },
     async signOut() {
       checkAuth(await sb.auth.signOut());

@@ -1,6 +1,6 @@
 import type { AccessType } from './access';
 
-export type Species = 'pheasant' | 'dove' | 'turkey' | 'grouse' | 'waterfowl';
+export type Species = 'pheasant' | 'dove' | 'turkey' | 'grouse' | 'waterfowl' | 'woodcock';
 
 export type PlaceType = 'game_land' | 'stocking' | 'dove_field';
 
@@ -206,11 +206,19 @@ export const speciesLabel: Record<Species, string> = {
   turkey: 'Turkey',
   grouse: 'Grouse',
   waterfowl: 'Waterfowl',
+  woodcock: 'Woodcock',
 };
 
 export const allSpecies = Object.keys(speciesLabel) as Species[];
 
-export const migratory: Species[] = ['dove', 'waterfowl'];
+export const migratory: Species[] = ['dove', 'waterfowl', 'woodcock'];
+
+/**
+ * Species the hunt log and diary can save. Woodcock is guide/seasons only for now: the
+ * database `public.species` enum has no 'woodcock' yet (needs a migration), so saving it would fail.
+ */
+export type LoggableSpecies = Exclude<Species, 'woodcock'>;
+export const loggableSpecies = allSpecies.filter((s): s is LoggableSpecies => s !== 'woodcock');
 
 export const placeTypeLabel: Record<PlaceType, string> = {
   game_land: 'State Game Lands',

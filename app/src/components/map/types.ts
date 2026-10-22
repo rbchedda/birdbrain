@@ -33,6 +33,8 @@ export interface PlaceMapProps {
   onSelect: (id: string | null) => void;
   /** The user's position (blue dot + accuracy circle); null hides it. */
   me?: { lng: number; lat: number; accuracy: number | null } | null;
+  /** Tap on a bundled state park outline (pins win when both are hit). */
+  onSelectPark?: (id: string) => void;
 }
 
 export const pinColor: Record<PlaceType, string> = {

@@ -76,6 +76,7 @@ export const mapHtml = `<!doctype html>
   var loaded = false, queue = [], selected = null;
   function apply(m) {
     if (m.type === 'places') map.getSource('places').setData(m.data);
+    if (m.type === 'parks') map.getSource('parks').setData(m.data);
     if (m.type === 'outline') map.getSource('outline').setData(m.geometry ? { type: 'Feature', properties: {}, geometry: m.geometry } : empty);
     if (m.type === 'basemap') {
       // Unknown or not-yet-built basemaps (terrain before PR 2) fall back to topo.
@@ -115,6 +116,12 @@ export const mapHtml = `<!doctype html>
   map.on('load', function () {
     map.addSource('places', { type: 'geojson', data: empty });
     map.addSource('outline', { type: 'geojson', data: empty });
+    // State parks (DCNR): own source and style. Blue dashed outline with a near-clear fill
+    // (fill exists only as a tap target), so a park never reads as hunt-open land. No labels.
+    map.addSource('parks', { type: 'geojson', data: empty });
+    map.addLayer({ id: 'parks-fill', type: 'fill', source: 'parks', paint: { 'fill-color': '${colors.park}', 'fill-opacity': 0.04 } });
+    map.addLayer({ id: 'parks-line', type: 'line', source: 'parks',
+      paint: { 'line-color': '${colors.park}', 'line-width': 2, 'line-dasharray': [3, 2] } });
     map.addLayer({ id: 'outline-fill', type: 'fill', source: 'outline', paint: { 'fill-color': '${colors.accent}', 'fill-opacity': 0.15 } });
     map.addLayer({ id: 'outline-line', type: 'line', source: 'outline', paint: { 'line-color': '${colors.accent}', 'line-width': 2 } });
     map.addLayer({ id: 'places-selected', type: 'circle', source: 'places', filter: ['==', ['get', 'id'], ''],
@@ -134,7 +141,10 @@ export const mapHtml = `<!doctype html>
     map.on('click', function (e) {
       var p = e.point;
       var hits = map.queryRenderedFeatures([[p.x - 16, p.y - 16], [p.x + 16, p.y + 16]], { layers: ['places-circle'] });
-      send({ type: 'select', id: hits.length ? hits[0].properties.id : null });
+      if (hits.length) return send({ type: 'select', id: hits[0].properties.id });
+      var parks = map.queryRenderedFeatures(p, { layers: ['parks-fill'] });
+      if (parks.length) return send({ type: 'selectPark', id: parks[0].properties.id });
+      send({ type: 'select', id: null });
     });
     map.on('mousemove', function (e) {
       var hits = map.queryRenderedFeatures(e.point, { layers: ['places-circle'] });
