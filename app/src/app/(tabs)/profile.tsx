@@ -8,7 +8,7 @@ import { HuntLogList, SectionRow, StatTiles, badgesSummary, dogsSummary, lifeSum
 import { backend } from '@/data';
 import { useAsync, useSession } from '@/data/hooks';
 import { seasonLabel } from '@/data/stats';
-import { displayName, initials } from '@/data/types';
+import { displayName, initials, type Profile } from '@/data/types';
 import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -17,6 +17,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
  * diary as main content, then Trophies, Life list and Dogs. Season stats,
  * account, sign out, delete account and legal live in Settings (⚙).
  */
+/** "Lancaster County" only when the user set it explicitly; otherwise null (row hidden). No zone, no location inference. */
+export function homeCountyLabel(p: Pick<Profile, 'homeCounty'> | null | undefined): string | null {
+  const c = p?.homeCounty?.trim();
+  if (!c) return null;
+  return /county$/i.test(c) ? c : `${c} County`;
+}
+
 export default function ProfileScreen() {
   const session = useSession();
   const insets = useSafeAreaInsets();
@@ -25,6 +32,7 @@ export default function ProfileScreen() {
   const p = useProfileData();
   const signedOut = backend.mode === 'supabase' && !session;
   const name = profile.data ? displayName(profile.data) : 'Profile';
+  const county = homeCountyLabel(profile.data);
 
   return (
     <View style={styles.root}>
@@ -36,6 +44,11 @@ export default function ProfileScreen() {
           <Text style={styles.name} accessibilityRole="header" numberOfLines={1}>
             {name}
           </Text>
+          {county && (
+            <Text style={styles.sub} testID="home-county">
+              {county}
+            </Text>
+          )}
           <Text style={styles.sub}>
             {seasonLabel(p.season)} season{backend.mode === 'sample' ? ' · sample mode' : ''}
           </Text>
