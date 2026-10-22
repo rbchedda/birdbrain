@@ -61,6 +61,8 @@ export interface Backend {
   signOut(): Promise<void>;
   /** Permanently delete the signed-in account and everything it owns, then sign out. */
   deleteAccount(): Promise<void>;
+  /** Log a terms acceptance to accepted_terms (owner-only; table from feat/onboarding-consent). */
+  recordTermsAcceptance(a: { acceptedAt: string; appVersion: string; termsVersion: string }): Promise<void>;
 
   /** Places with a known access_type only; unknown land status is never shown. */
   listPlaces(): Promise<Place[]>;

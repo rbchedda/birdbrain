@@ -7,6 +7,7 @@ import { LegalLinks } from '@/components/LegalLinks';
 import { ScreenHeader } from '@/components/Screen';
 import { Button, Chip, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
+import { syncConsentOnSignIn } from '@/lib/consent';
 import { colors, space } from '@/theme/tokens';
 
 export default function SignInScreen() {
@@ -24,11 +25,15 @@ export default function SignInScreen() {
     try {
       if (mode === 'in') {
         await backend.signIn(email.trim(), password);
+        await syncConsentOnSignIn().catch(() => undefined);
         done();
       } else {
         const { needsConfirmation } = await backend.signUp(email.trim(), password);
         if (needsConfirmation) setMessage({ tone: 'success', text: 'Check your email to confirm, then sign in.' });
-        else done();
+        else {
+          await syncConsentOnSignIn().catch(() => undefined);
+          done();
+        }
       }
     } catch (e) {
       setMessage({ tone: 'error', text: (e as Error).message });
