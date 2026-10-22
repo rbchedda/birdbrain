@@ -23,6 +23,7 @@ import { Tag } from '@/components/Tag';
 import { Button, Chip, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { accessLabel } from '@/data/access';
+import { needsAccount } from '@/lib/gate';
 import { loadPlaces, useAsync, useDataSources, usePlaces, useSession } from '@/data/hooks';
 import {
   DOVE_LINE,
@@ -263,7 +264,7 @@ function PlaceDetails({
   }, [place.id, session]);
 
   const toggleSave = async () => {
-    if (!session) return router.push('/sign-in');
+    if (needsAccount('saveSpot', session)) return router.push('/sign-in');
     try {
       await backend.setPlaceSaved(place.id, !saved);
       setSaved(!saved);

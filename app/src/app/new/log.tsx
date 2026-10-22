@@ -3,6 +3,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { SignInSheet } from '@/components/SignInSheet';
+import { needsAccount as gateNeedsAccount } from '@/lib/gate';
 import { ScreenHeader } from '@/components/Screen';
 import { Button, Chip, Notice, SectionTitle, Stepper, ui } from '@/components/ui';
 import { backend } from '@/data';
@@ -79,6 +81,8 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
   const publicAt = publicAfterET(new Date());
   const today = todayET();
   const needsAccount = backend.mode === 'supabase' && !session;
+  // Hybrid guest mode: the first saved hunt log needs an account (session === null: known signed out).
+  const mustSignIn = session === null && gateNeedsAccount('saveHuntLog', session);
 
   const addPlace = (place: Place | null) => {
     setCounts((c) => [...c, emptyCount(place)]);
@@ -143,7 +147,10 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
               <Button label="Log another" onPress={() => setSavedId(null)} style={{ flex: 1 }} />
             </View>
           )}
-          {!savedId && (
+          {!savedId && mustSignIn && (
+            <SignInSheet onDismiss={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+          )}
+          {!savedId && !mustSignIn && (
             <DiaryForm
               key={`${formKey}-${place?.id ?? ""}`}
               initial={{

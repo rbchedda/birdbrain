@@ -27,7 +27,7 @@ export default function ProfileScreen() {
       />
       <ScrollView contentContainerStyle={styles.body}>
         <Button label="Log a hunt" icon="add" variant="primary" onPress={() => router.push('/new/log')} />
-        {session === null && <SignInPrompt why="Sign in to back up your private hunt log to your account. It works on this device either way." />}
+        {session === null && <SignInPrompt why="Save your hunts so they’re never lost if you switch phones. Sign in to keep your private Hunt Log backed up to your account." />}
         <StatTiles
           testID="profile-stats"
           tiles={[
