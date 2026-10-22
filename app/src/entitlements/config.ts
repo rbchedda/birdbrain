@@ -47,4 +47,18 @@ export const PRODUCTS: Record<ProductConfig['id'], ProductConfig> = {
   },
 };
 
+/**
+ * TODO(BLOCKED on RevenueCat account): when the provider is RevenueCat, show the
+ * store's localized product.priceString instead of these config prices. Config
+ * prices are the mock/dev fallback only.
+ */
 export const PLACEHOLDER_PRICE_NOTE = 'Placeholder prices, not final.';
+
+/** Apple 3.1.2 disclosure copy. Prices come from PRODUCTS above. */
+export const DISCLOSURE = {
+  seasonAutoRenew: (price: string) =>
+    `Season Pass is an auto-renewing yearly subscription at ${price}. Payment is charged to your Apple ID or Google Play account at confirmation. It renews automatically unless cancelled at least 24 hours before the end of the current period, and your account is charged for renewal within 24 hours before the period ends. Manage or cancel in your App Store or Google Play account settings.`,
+  introOffer: (intro: string, price: string) => `${intro} for new subscribers, then ${price} unless cancelled.`,
+  weekendNonRenewing: (hours: number, price: string) =>
+    `Weekend Pass is a one-time ${price} purchase for ${hours} hours of premium. It does not renew and is not a subscription.`,
+} as const;
