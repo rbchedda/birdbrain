@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from '
 import { AppState, Platform } from 'react-native';
 
 import type { Session } from './backend';
+import { onReconnect as onConnectivityBack, startConnectivity } from '@/lib/connectivity';
 import { journalEntries, onJournalChange, startJournalSync, syncJournal } from './journal';
 import { backend } from './index';
 import type { DataSource, Place } from './types';
@@ -99,11 +100,8 @@ function startJournalSyncOnce() {
       return () => sub.remove();
     },
     onReconnect: (cb) => {
-      // Web exposes connectivity events; on native, foreground + backoff timers cover retries.
-      const w = globalThis as { addEventListener?: (e: string, f: () => void) => void; removeEventListener?: (e: string, f: () => void) => void };
-      if (Platform.OS !== 'web' || !w.addEventListener) return () => {};
-      w.addEventListener('online', cb);
-      return () => w.removeEventListener?.('online', cb);
+      startConnectivity();
+      return onConnectivityBack(cb);
     },
     onSignIn: (cb) => {
       startSession();
