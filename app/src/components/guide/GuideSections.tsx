@@ -10,7 +10,7 @@ import { birds, type BirdKey } from '@/data/birds';
 import { gear } from '@/data/gear';
 import { hoursZones, inSeasonRows, segmentsFor, shootingTimes, SPRING_GOBBLER_HOURS, type Badge } from '@/data/guide';
 import { regTopics } from '@/data/guideRegs';
-import { REGS } from '@/data/regs';
+import { HUNTFISHPA_URL, REGS } from '@/data/regs';
 import { allSpecies, speciesLabel } from '@/data/types';
 import { officialHours } from '@/lib/sun';
 import { formatDay, type Ymd } from '@/lib/time';
@@ -58,7 +58,8 @@ export function InSeasonSection({ ymd, zone, now, onZone }: { ymd: Ymd; zone: nu
   );
 }
 
-export function RegsSection() {
+/** buyUrl: HuntFishPA store link on the Licenses card; hidden while null (unverified). */
+export function RegsSection({ buyUrl = HUNTFISHPA_URL }: { buyUrl?: string | null } = {}) {
   return (
     <View style={styles.section}>
       <Header title="Regulations" testID="guide-regs" />
@@ -73,6 +74,11 @@ export function RegsSection() {
           <Text accessibilityRole="link" style={styles.link} onPress={() => Linking.openURL(t.url)}>
             {t.title} in the PGC digest ↗
           </Text>
+          {t.key === 'licenses' && buyUrl ? (
+            <Text accessibilityRole="link" style={styles.link} testID="buy-huntfishpa" onPress={() => Linking.openURL(buyUrl)}>
+              Buy on HuntFishPA ›
+            </Text>
+          ) : null}
         </View>
       ))}
     </View>
