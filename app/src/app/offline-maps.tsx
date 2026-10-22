@@ -60,7 +60,7 @@ function PackRow({ m }: { m: PackManifest }) {
       <View style={ui.row}>
         {running ? (
           <Button label="Cancel" icon="pause-outline" onPress={() => offlinePacks.cancel(m.spec.id)} />
-        ) : m.status !== 'complete' ? (
+        ) : m.status !== 'complete' && canUse('offlineMaps') ? (
           <Button
             label="Resume"
             icon="play-outline"
@@ -117,11 +117,13 @@ export default function OfflineMapsScreen() {
         </Notice>
         {!offlineSupported && <Notice>Offline maps are available in the iOS and Android app.</Notice>}
 
+        {/* Not gated: with a lapsed pass, packs can still be seen and deleted to free storage. */}
+        {saved.length > 0 && <SectionTitle>Your packs</SectionTitle>}
+        {saved.map((m) => (
+          <PackRow key={m.spec.id} m={m} />
+        ))}
+
         <Gated feature="offlineMaps">
-          {saved.length > 0 && <SectionTitle>Your packs</SectionTitle>}
-          {saved.map((m) => (
-            <PackRow key={m.spec.id} m={m} />
-          ))}
 
           <SectionTitle>New pack</SectionTitle>
           <View style={ui.row}>
