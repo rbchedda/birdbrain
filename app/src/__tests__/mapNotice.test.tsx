@@ -6,6 +6,12 @@ import { within } from '@testing-library/react-native';
 import { backend } from '@/data';
 import { loadPlaces } from '@/data/hooks';
 import { ENROLLED_PRIVATE_LINE, MAP_BANNER, MAP_BANNER_SHORT, layerDateFor, publicLayers } from '@/data/mapNotice';
+
+/** The collapsed sheet shows only "N spots nearby"; pull it up to reach the list. */
+async function expandSheet() {
+  const handle = await screen.findByLabelText(/^(Expand|Collapse) details$/);
+  if (handle.props.accessibilityLabel === 'Expand details') await fireEvent.press(handle);
+}
 import { createSupabaseBackend } from '@/data/supabaseBackend';
 
 const metrics = { frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } };
@@ -73,8 +79,9 @@ describe('map and sheet notices', () => {
     try {
       await loadPlaces(true);
       await open('/');
-      await screen.findByText('6 spots');
-      await fireEvent.press(screen.getByLabelText('Pheasant stocking (sample E)'));
+      await screen.findByText('6 spots nearby');
+      await expandSheet();
+    await fireEvent.press(screen.getByLabelText('Pheasant stocking (sample E)'));
       expect(await screen.findByText(ENROLLED_PRIVATE_LINE)).toBeTruthy();
       expect(screen.getByTestId('place-access').props.children.join('')).toMatch(
         /PGC access-program land \(private\) · One PGC pin per property, not a release spot/,
@@ -90,7 +97,8 @@ describe('map and sheet notices', () => {
 
   it('public land sheets do not get the enrolled line', async () => {
     await open('/');
-    await screen.findByText('6 spots');
+    await screen.findByText('6 spots nearby');
+    await expandSheet();
     await fireEvent.press(screen.getByLabelText('Managed dove field (sample C)'));
     expect(await screen.findByText(/Field conditions and crops change/)).toBeTruthy();
     expect(screen.queryByTestId('enrolled-line')).toBeNull();
@@ -102,19 +110,19 @@ describe('map and sheet notices', () => {
       'Boundaries are approximate, not a survey. Shows public land and PGC access-program land only. Get permission before entering any other private land.',
     );
     await open('/');
-    expect(await screen.findByText('6 spots')).toBeTruthy();
+    expect(await screen.findByText('6 spots nearby')).toBeTruthy();
     expect(screen.getByTestId('map-banner')).toHaveTextContent(MAP_BANNER_SHORT);
     expect(screen.queryByTestId('map-full-notice')).toBeNull();
     await fireEvent.press(screen.getByTestId('map-banner'));
     expect(screen.getByTestId('map-full-notice')).toHaveTextContent(MAP_BANNER, { exact: false });
     // The full notice still leads to Data sources.
-    await fireEvent.press(screen.getByText('Data sources'));
+    await fireEvent.press(screen.getByText('View data sources ›'));
     expect(await screen.findByText('Map notice & data sources')).toBeTruthy();
   });
 
   it('banner has no dismiss path: no close control, and it is still shown after collapsing, a remount and a second view', async () => {
     await open('/');
-    await screen.findByText('6 spots');
+    await screen.findByText('6 spots nearby');
     const banner = screen.getByTestId('map-banner');
     expect(banner).toHaveTextContent(MAP_BANNER_SHORT);
     // No dismiss/close control anywhere in or next to the banner.
@@ -130,6 +138,7 @@ describe('map and sheet notices', () => {
 
     // Selecting a place, opening layers and searching keep it visible.
     await fireEvent.press(screen.getByLabelText('Map layers'));
+    await expandSheet();
     await fireEvent.press(screen.getByLabelText('State Game Lands (sample A)'));
     expect(screen.getByTestId('map-banner')).toHaveTextContent(MAP_BANNER_SHORT);
 
@@ -141,12 +150,13 @@ describe('map and sheet notices', () => {
     expect(keys.filter((k) => /banner|notice/i.test(k))).toEqual([]);
 
     await open('/');
-    await screen.findByText('6 spots');
+    await screen.findByText('6 spots nearby');
     expect(screen.getByTestId('map-banner')).toHaveTextContent(MAP_BANNER_SHORT);
   });
 
   it('place sheet keeps the full banner, heading and sheet text verbatim (no truncation)', async () => {
     await open('/');
+    await expandSheet();
     await fireEvent.press(await screen.findByLabelText('State Game Lands (sample A)'));
     expect(await screen.findByTestId('place-map-banner')).toHaveTextContent(MAP_BANNER);
     const notice = screen.getByTestId('place-notice');
