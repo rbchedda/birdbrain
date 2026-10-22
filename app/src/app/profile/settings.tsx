@@ -1,7 +1,7 @@
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { ScreenHeader } from '@/components/Screen';
-import { AccountSettings, ProfileSettings } from '@/components/profile';
+import { AccountSettings, ProfileSettings, SectionRow } from '@/components/profile';
 import { colors, space } from '@/theme/tokens';
 
 export default function SettingsScreen() {
@@ -9,6 +9,7 @@ export default function SettingsScreen() {
     <View style={styles.root}>
       <ScreenHeader back title="Settings" />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+        <SectionRow title="Season stats" summary="flushes, shots, points by month" href="/profile/stats" />
         <ProfileSettings />
         <AccountSettings />
       </ScrollView>
