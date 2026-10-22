@@ -1,84 +1,113 @@
-import { useNavigation } from 'expo-router';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { router, useNavigation } from 'expo-router';
+import { useLayoutEffect } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { DEFAULT_AT } from '@/components/OpenToday';
 import { DigestLink } from '@/components/guide/DigestLink';
-import {
-  BagSection,
-  BirdIdSection,
-  GearSection,
-  HoursSection,
-  InSeasonSection,
-  RegsSection,
-} from '@/components/guide/GuideSections';
+import { ZonePicker } from '@/components/guide/GuideSections';
+import { useGuideZone } from '@/components/guide/useGuideZone';
 import { ScreenHeader } from '@/components/Screen';
-import { Chip } from '@/components/ui';
-import type { BirdKey } from '@/data/birds';
-import { GUIDE_SECTIONS, type GuideSection } from '@/data/guide';
-import { readJson, writeJson } from '@/lib/localStore';
-import { pgcHoursZone } from '@/lib/sun';
+import { Tag } from '@/components/Tag';
+import { SectionTitle, ui } from '@/components/ui';
+import { birds } from '@/data/birds';
+import { inSeasonRows, shootingTimes, type Badge } from '@/data/guide';
+import { REGS } from '@/data/regs';
 import { todayET } from '@/lib/time';
-import { colors, space } from '@/theme/tokens';
+import { colors, fonts, radius, space } from '@/theme/tokens';
 
-const ZONE_KEY = 'guide.zone';
-const defaultZone = pgcHoursZone(DEFAULT_AT.lng)?.zone ?? 1;
+const badgeTone: Record<Badge, 'accent' | 'dove' | 'neutral'> = { OPEN: 'accent', SOON: 'dove', CLOSED: 'neutral', CHECK: 'neutral' };
+const badgeText: Record<Badge, string> = { OPEN: 'Open', SOON: 'Soon', CLOSED: 'Closed', CHECK: 'Check digest' };
 
+type Tile = { key: string; glyph: string; title: string; sub: string; href: '/guide/birds' | '/guide/regs' | '/guide/gear' };
+const tiles: Tile[] = [
+  { key: 'birds', glyph: '❦', title: 'Bird ID', sub: `${birds.length} upland species`, href: '/guide/birds' },
+  { key: 'regs', glyph: '§', title: 'Regulations', sub: 'Orange, Sunday, SGL', href: '/guide/regs' },
+  { key: 'gear', glyph: '☑', title: 'Gear checklist', sub: 'By species', href: '/guide/gear' },
+  { key: 'licenses', glyph: '⌂', title: 'Licenses', sub: 'Licenses and permits', href: '/guide/regs' },
+];
+
+/** Guide (mockup 04): Today hero, In season now, then a 2×2 Explore grid. Values come from the bundled PGC data. */
 export default function GuideScreen() {
   const navigation = useNavigation();
-  // The tab entry belongs to dev-1's _layout.tsx; set the label from here until it points at this screen.
   useLayoutEffect(() => navigation.setOptions({ title: 'Guide' }), [navigation]);
 
   const now = new Date();
   const ymd = todayET(now);
-  const [zone, setZone] = useState(defaultZone);
-  const [bird, setBird] = useState<BirdKey>('pheasant');
-  const [active, setActive] = useState<GuideSection>('season');
-  const scroll = useRef<ScrollView>(null);
-  const offsets = useRef<Partial<Record<GuideSection, number>>>({});
-
-  useEffect(() => {
-    readJson<number>(ZONE_KEY, defaultZone).then(setZone);
-  }, []);
-  const pickZone = (z: number) => {
-    setZone(z);
-    writeJson(ZONE_KEY, z);
-  };
-  const jump = (key: GuideSection) => {
-    setActive(key);
-    scroll.current?.scrollTo({ y: offsets.current[key] ?? 0, animated: true });
-  };
-  const at = (key: GuideSection) => ({ onLayout: (e: { nativeEvent: { layout: { y: number } } }) => (offsets.current[key] = e.nativeEvent.layout.y) });
+  const [zone, pickZone] = useGuideZone();
+  const today = shootingTimes(ymd, zone, 1)[0];
+  const rows = inSeasonRows(ymd, zone, now).filter((r) => r.badge !== 'CLOSED');
 
   return (
     <View style={styles.root}>
       <ScreenHeader title="Guide" />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipBar}>
-        {GUIDE_SECTIONS.map((s) => (
-          <Chip key={s.key} label={s.label} active={active === s.key} onPress={() => jump(s.key)} />
-        ))}
-      </ScrollView>
-      <View style={styles.top}>
-        <DigestLink testID="guide-digest-top" />
-      </View>
-      <ScrollView ref={scroll} contentContainerStyle={styles.body}>
-        <View {...at('season')}>
-          <InSeasonSection ymd={ymd} zone={zone} now={now} onZone={pickZone} />
+      <ScrollView contentContainerStyle={styles.body}>
+        <View style={styles.meta}>
+          <Text style={ui.muted}>Zone {zone} · today · </Text>
+          <DigestLink testID="guide-digest-top" />
         </View>
-        <View {...at('regs')}>
-          <RegsSection />
+
+        <View style={[ui.card, styles.hero]} testID="guide-today">
+          <View style={styles.heroHead}>
+            <Text style={styles.name}>Today</Text>
+            <Text accessibilityRole="link" style={styles.link} onPress={() => router.push('/guide/hours')}>
+              PGC table ›
+            </Text>
+          </View>
+          <Text style={ui.muted}>Pheasant, grouse, fall turkey</Text>
+          {today?.smallGame ? (
+            <View style={styles.times}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.time}>{today.smallGame.start}</Text>
+                <Text style={ui.muted}>Shooting starts</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.time}>{today.smallGame.end}</Text>
+                <Text style={ui.muted}>Shooting ends</Text>
+              </View>
+            </View>
+          ) : (
+            <Text style={ui.body}>Check the digest for today's hours.</Text>
+          )}
+          <Text style={ui.muted} testID="guide-today-migratory">
+            Doves, woodcock, waterfowl:{' '}
+            {today?.sunday ? 'closed Sundays' : today?.migratory ? `${today.migratory.start} – ${today.migratory.end}` : 'check the digest'}
+          </Text>
+          <ZonePicker zone={zone} onChange={pickZone} />
         </View>
-        <View {...at('birds')}>
-          <BirdIdSection />
+
+        <View style={styles.section} testID="guide-season">
+          <SectionTitle>{`In season now · Zone ${zone}`}</SectionTitle>
+          {rows.length === 0 && <Text style={ui.muted}>Nothing open today. See the PGC table for all seasons.</Text>}
+          {rows.map((r) => (
+            <View key={r.species} style={[ui.card, styles.rowCard]} testID={`in-season-${r.species}`}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowName}>{r.label}</Text>
+                <Text style={ui.muted}>
+                  {r.detail} · bag {REGS.species[r.species].daily}
+                </Text>
+              </View>
+              <Tag label={badgeText[r.badge]} tone={badgeTone[r.badge]} />
+            </View>
+          ))}
         </View>
-        <View {...at('gear')}>
-          <GearSection bird={bird} onBird={setBird} />
-        </View>
-        <View {...at('bag')}>
-          <BagSection />
-        </View>
-        <View {...at('hours')}>
-          <HoursSection ymd={ymd} zone={zone} />
+
+        <View style={styles.section}>
+          <SectionTitle>Explore</SectionTitle>
+          <View style={styles.grid}>
+            {tiles.map((t) => (
+              <Pressable
+                key={t.key}
+                accessibilityRole="button"
+                accessibilityLabel={t.title}
+                testID={`guide-tile-${t.key}`}
+                onPress={() => router.push(t.href)}
+                style={[ui.card, styles.tile]}
+              >
+                <Text style={styles.glyph}>{t.glyph}</Text>
+                <Text style={styles.rowName}>{t.title}</Text>
+                <Text style={ui.muted}>{t.sub}</Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -87,8 +116,18 @@ export default function GuideScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
-  chipBar: { flexGrow: 0 },
-  chips: { gap: space.sm, paddingHorizontal: space.lg, paddingVertical: space.xs },
-  top: { paddingHorizontal: space.lg },
-  body: { paddingHorizontal: space.lg, paddingBottom: space.xxl },
+  body: { paddingHorizontal: space.lg, paddingBottom: space.xxl, gap: space.md },
+  meta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
+  hero: { gap: space.xs },
+  heroHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  times: { flexDirection: 'row', gap: space.md, paddingVertical: space.xs },
+  time: { fontFamily: fonts.headingSemi, fontSize: 28, color: colors.text },
+  section: { gap: space.sm },
+  rowCard: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  name: { fontFamily: fonts.headingSemi, fontSize: 18, color: colors.text },
+  rowName: { fontFamily: fonts.bodySemi, fontSize: 16, color: colors.text },
+  link: { color: colors.accent, fontFamily: fonts.bodySemi, paddingVertical: space.xs },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  tile: { width: '48%', flexGrow: 1, gap: 2, minHeight: 96, borderRadius: radius.md },
+  glyph: { fontSize: 20, color: colors.dove },
 });

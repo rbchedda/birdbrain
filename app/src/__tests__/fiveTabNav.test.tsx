@@ -31,7 +31,7 @@ describe('Five-tab nav', () => {
 
   it.each([
     ['/feed', /Invite your crew/],
-    ['/guide', /Open today\?/],
+    ['/guide', /In season now/],
     ['/profile', /Hunt diary/],
     ['/log', /Private diary entry · not a post/],
     ['/new/log', /Private diary entry · not a post/],
@@ -47,7 +47,7 @@ describe('Five-tab nav', () => {
 describe('Old routes redirect to Guide', () => {
   it.each(['/learn', '/plan'])('%s redirects to the Guide tab', async (url) => {
     await open(url);
-    expect(await screen.findByText('Open today?')).toBeTruthy();
+    expect(await screen.findByTestId('guide-today')).toBeTruthy();
     expect(screen.getByRole('header', { name: 'Guide' })).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Guide', selected: true })).toBeTruthy();
   });
