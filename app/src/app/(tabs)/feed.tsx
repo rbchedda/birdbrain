@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, Share, StyleSheet, Text, View } from 'react-native';
 
 import { PostCard } from '@/components/PostCard';
 import { ScreenHeader } from '@/components/Screen';
@@ -10,12 +10,75 @@ import { Button, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { useSession } from '@/data/hooks';
 import type { Post } from '@/data/types';
-import { colors, space, touchTarget } from '@/theme/tokens';
+import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
 
 const PAGE = 10;
 
+type Segment = 'crew' | 'community';
+
+/** Segmented control: My crew | Community (redesign mockup 03). */
+function Segments({ value, onChange }: { value: Segment; onChange: (s: Segment) => void }) {
+  return (
+    <View style={styles.segments} accessibilityRole="tablist">
+      {(['crew', 'community'] as const).map((s) => (
+        <Pressable
+          key={s}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: value === s }}
+          onPress={() => onChange(s)}
+          style={[styles.segment, value === s && styles.segmentActive]}
+        >
+          <Text style={[styles.segmentText, value === s && styles.segmentTextActive]}>{s === 'crew' ? 'My crew' : 'Community'}</Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+/**
+ * Zero-crew empty state. Crews don't exist in the backend yet, so every user has
+ * zero crew for now; the Invite share sheet sends a plain-text invite.
+ */
+export function CrewEmpty({ onCommunity }: { onCommunity: () => void }) {
+  const [qr, setQr] = useState(false);
+  return (
+    <View style={styles.empty} testID="crew-empty">
+      <View style={styles.illustration} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <Ionicons name="people-outline" size={56} color={colors.accent} />
+      </View>
+      <Text style={styles.emptyTitle} accessibilityRole="header">Hunt with a crew</Text>
+      <Text style={[ui.body, { textAlign: 'center' }]}>
+        Invite the people you hunt with. Crew posts show up here 12+ hours after the hunt, with no live locations.
+      </Text>
+      <Button
+        label="Invite your crew"
+        icon="person-add-outline"
+        variant="primary"
+        style={{ alignSelf: 'stretch' }}
+        onPress={() =>
+          Share.share({ message: 'Join my hunting crew on BirdBrain. Hunt logs are private, and shared posts are delayed 12+ hours with no live locations.' }).catch(() => {})
+        }
+      />
+      <Pressable accessibilityRole="link" onPress={() => setQr(true)}>
+        <Text style={styles.link}>Show a QR code instead</Text>
+      </Pressable>
+      {qr && <Notice>QR invites are coming soon.</Notice>}
+      <Pressable accessibilityRole="button" accessibilityLabel="Browse Community" onPress={onCommunity} style={styles.communityCard}>
+        <Ionicons name="earth-outline" size={22} color={colors.accent} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.cardTitle}>Browse Community</Text>
+          <Text style={ui.muted}>Delayed, blurred posts from PA hunters</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+      </Pressable>
+    </View>
+  );
+}
+
 export default function FeedScreen() {
   const session = useSession();
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const [segment, setSegment] = useState<Segment>(tab === 'community' ? 'community' : 'crew');
   const [posts, setPosts] = useState<Post[]>([]);
   const [next, setNext] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -79,17 +142,22 @@ export default function FeedScreen() {
     }
   };
 
-  const profileButton = (
-    <Pressable accessibilityRole="button" accessibilityLabel="My profile" onPress={() => router.push('/profile')} style={styles.profile}>
-      <Ionicons name="person-circle-outline" size={30} color={colors.text} />
-    </Pressable>
-  );
-
   if (session === null) {
     return (
       <View style={styles.root}>
-        <ScreenHeader title="Feed" right={profileButton} />
+        <ScreenHeader title="Feed" />
         <SignInPrompt why="The feed is for signed-in hunters. Posts show up the day after they’re shared, with locations blurred to about 5 km." />
+      </View>
+    );
+  }
+
+  // Crew has no posts yet, so the empty state doesn't wait on the rules check.
+  if (segment === 'crew') {
+    return (
+      <View style={styles.root}>
+        <ScreenHeader title="Feed" />
+        <Segments value={segment} onChange={setSegment} />
+        <CrewEmpty onCommunity={() => setSegment('community')} />
       </View>
     );
   }
@@ -97,7 +165,8 @@ export default function FeedScreen() {
   if (rules === 'required' || rules === 'error') {
     return (
       <View style={styles.root}>
-        <ScreenHeader title="Feed" right={profileButton} />
+        <ScreenHeader title="Feed" />
+        <Segments value={segment} onChange={setSegment} />
         <View style={styles.gate}>
           {rules === 'required' && <Notice>Before you see or share posts, please read and accept the community rules.</Notice>}
           {error && <Notice tone="error">{error}</Notice>}
@@ -111,7 +180,8 @@ export default function FeedScreen() {
   if (rules === 'unknown') {
     return (
       <View style={styles.root}>
-        <ScreenHeader title="Feed" right={profileButton} />
+        <ScreenHeader title="Feed" />
+        <Segments value={segment} onChange={setSegment} />
         <ActivityIndicator color={colors.accent} style={{ margin: space.lg }} accessibilityLabel="Loading feed" />
       </View>
     );
@@ -119,7 +189,8 @@ export default function FeedScreen() {
 
   return (
     <View style={styles.root}>
-      <ScreenHeader title="Feed" subtitle="Hunts from yesterday and before. Never live." right={profileButton} />
+      <ScreenHeader title="Feed" />
+      <Segments value={segment} onChange={setSegment} />
       <FlatList
         data={posts}
         keyExtractor={(p) => p.id}
@@ -161,5 +232,15 @@ const styles = StyleSheet.create({
   gate: { padding: space.lg, gap: space.md },
   rulesLink: { color: colors.accent, textDecorationLine: 'underline' },
   list: { paddingHorizontal: space.lg, paddingBottom: space.xxl },
-  profile: { width: touchTarget, height: touchTarget, alignItems: 'center', justifyContent: 'center', marginRight: -space.sm },
+  segments: { flexDirection: 'row', marginHorizontal: space.lg, marginBottom: space.md, padding: 3, borderRadius: radius.md, backgroundColor: colors.surface },
+  segment: { flex: 1, minHeight: touchTarget - 8, alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm },
+  segmentActive: { backgroundColor: colors.surfaceRaised },
+  segmentText: { fontFamily: fonts.bodySemi, color: colors.muted },
+  segmentTextActive: { color: colors.text },
+  empty: { alignItems: 'center', gap: space.md, paddingHorizontal: space.xl, paddingTop: space.xl },
+  illustration: { width: 112, height: 112, borderRadius: 56, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
+  emptyTitle: { fontFamily: fonts.heading, fontSize: 24, color: colors.text },
+  link: { color: colors.accent, fontFamily: fonts.bodySemi, minHeight: touchTarget, textAlignVertical: 'center' },
+  cardTitle: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text },
+  communityCard: { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, marginTop: space.lg },
 });
