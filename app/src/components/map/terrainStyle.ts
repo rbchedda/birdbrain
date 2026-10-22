@@ -79,7 +79,7 @@ export function terrainLayers(): Layer[] {
       },
       paint: { 'text-color': c.contour.label, 'text-halo-color': c.halo, 'text-halo-width': 1.5 },
     },
-    // Protomaps v4: motorway/trunk = highway, primary/secondary = major_road, tertiary = medium_road.
+    // Protomaps v4: motorway/trunk = highway; primary/secondary/tertiary = major_road (kind_detail keeps the OSM class).
     {
       id: 'roads-major',
       type: 'line',
@@ -95,7 +95,8 @@ export function terrainLayers(): Layer[] {
       source: 'protomaps',
       'source-layer': 'roads',
       minzoom: 13,
-      filter: ['in', ['get', 'kind'], ['literal', ['minor_road', 'other']]],
+      // Checked against the 2026-10-22 PA extract: residential/unclassified/service are minor_road; tracks are path + kind_detail track.
+      filter: ['any', ['==', ['get', 'kind'], 'minor_road'], ['all', ['==', ['get', 'kind'], 'path'], ['==', ['get', 'kind_detail'], 'track']]],
       paint: {
         'line-color': c.road,
         'line-opacity': 0.5,

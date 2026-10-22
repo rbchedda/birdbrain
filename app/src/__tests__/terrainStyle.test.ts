@@ -41,6 +41,12 @@ describe('Terrain style', () => {
     expect(paint('terrain-hillshade')['hillshade-illumination-direction']).toBe(315);
   });
 
+  it('shows tracks (path + kind_detail track) dashed, but not footpaths', () => {
+    const track = terrainLayers().find((l) => l.id === 'roads-track')!;
+    expect(JSON.stringify(track.filter)).toContain('"track"');
+    expect(JSON.stringify(track.filter)).not.toContain('footway');
+  });
+
   it('contours are 20/100 ft from z15, in feet', () => {
     expect(CONTOUR_THRESHOLDS_FT[15]).toEqual([20, 100]);
     expect(CONTOUR_THRESHOLDS_FT[11]).toEqual([500, 500]);

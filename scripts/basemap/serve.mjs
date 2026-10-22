@@ -9,7 +9,7 @@ import { extname, join, normalize } from 'node:path';
 import { OUT } from './common.mjs';
 
 const port = Number(process.argv[process.argv.indexOf('--port') + 1]) || 8787;
-const types = { '.png': 'image/png', '.pbf': 'application/x-protobuf', '.pmtiles': 'application/octet-stream' };
+const types = { '.html': 'text/html; charset=utf-8', '.png': 'image/png', '.pbf': 'application/x-protobuf', '.pmtiles': 'application/octet-stream' };
 
 export const server = createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
