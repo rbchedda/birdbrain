@@ -38,11 +38,17 @@ export function SignInSheet({
   appleEnabled = flags.appleSignIn,
   title = signInSheetTitle,
   body = signInSheetBody,
+  dismissible = true,
+  status,
 }: {
+  /** false on the Log hunt first save: no "Not now"; the hunt is already on the phone. */
+  dismissible?: boolean;
+  /** e.g. no-signal or confirm-your-email notice for the held entry. */
+  status?: { tone: 'info' | 'error' | 'success'; text: string } | null;
   /** Per-action copy; defaults to the hunt-diary copy from 02b. */
   title?: string;
   body?: string;
-  onDismiss: () => void;
+  onDismiss?: () => void;
   /** e.g. "SGL 211 · Pheasant": an entry is waiting on the phone for sign-in. */
   held?: string | null;
   appleEnabled?: boolean;
@@ -75,9 +81,12 @@ export function SignInSheet({
           </Text>
         </View>
       )}
-      <Pressable accessibilityRole="link" accessibilityLabel={notNowLabel} onPress={onDismiss} style={styles.notNow}>
-        <Text style={styles.notNowText}>{notNowLabel}</Text>
-      </Pressable>
+      {status && <Notice tone={status.tone}>{status.text}</Notice>}
+      {dismissible && (
+        <Pressable accessibilityRole="link" accessibilityLabel={notNowLabel} onPress={onDismiss} style={styles.notNow}>
+          <Text style={styles.notNowText}>{notNowLabel}</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
