@@ -9,7 +9,7 @@
 // batches per bucket and deletes a queue row only after the API call succeeds.
 // A failed batch bumps attempts and records last_error, and is retried on the next
 // run. Rows that reach MAX_ATTEMPTS are left for a human and reported.
-// Scheduled by .github/workflows/storage-cleanup.yml. Secrets come from the
+// Scheduled by docs/workflows/storage-cleanup.yml (copy to .github/workflows/ to enable). Secrets come from the
 // environment only.
 
 import { pathToFileURL } from 'node:url';
