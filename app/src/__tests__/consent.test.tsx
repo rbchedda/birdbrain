@@ -34,7 +34,7 @@ describe('Onboarding consent', () => {
     await open('/');
     expect(await screen.findByText('Before you use BirdBrain maps:')).toBeTruthy();
     for (const b of consentBullets) expect(screen.getByText(b)).toBeTruthy();
-    expect(screen.queryByText('6 spots')).toBeNull();
+    expect(screen.queryByText('6 spots nearby')).toBeNull();
     expect(screen.queryByTestId('place-map')).toBeNull();
   });
 
@@ -58,7 +58,7 @@ describe('Onboarding consent', () => {
     await open('/');
     await fireEvent.press(await screen.findByRole('checkbox', { name: consentCheckboxLabel }));
     await fireEvent.press(continueButton());
-    expect(await screen.findByText('6 spots')).toBeTruthy();
+    expect(await screen.findByText('6 spots nearby')).toBeTruthy();
 
     expect(record).toHaveBeenCalledTimes(1);
     const a = record.mock.calls[0][0];
@@ -79,7 +79,7 @@ describe('Onboarding consent', () => {
   it('does not show again for the same terms version', async () => {
     await AsyncStorage.setItem(ACCEPTED_KEY, JSON.stringify({ acceptedAt: new Date().toISOString(), appVersion: '1.0.0', termsVersion: TERMS_VERSION }));
     await open('/');
-    expect(await screen.findByText('6 spots')).toBeTruthy();
+    expect(await screen.findByText('6 spots nearby')).toBeTruthy();
     expect(screen.queryByText('Before you use BirdBrain maps:')).toBeNull();
   });
 
@@ -107,7 +107,7 @@ describe('Offline acceptance queue', () => {
     await open('/');
     await fireEvent.press(await screen.findByRole('checkbox', { name: consentCheckboxLabel }));
     await fireEvent.press(continueButton());
-    expect(await screen.findByText('6 spots')).toBeTruthy();
+    expect(await screen.findByText('6 spots nearby')).toBeTruthy();
 
     expect(record).not.toHaveBeenCalled();
     const queued = await readQueue();
@@ -126,7 +126,7 @@ describe('Offline acceptance queue', () => {
     await open('/');
     await fireEvent.press(await screen.findByRole('checkbox', { name: consentCheckboxLabel }));
     await fireEvent.press(continueButton());
-    expect(await screen.findByText('6 spots')).toBeTruthy();
+    expect(await screen.findByText('6 spots nearby')).toBeTruthy();
     expect(await readQueue()).toHaveLength(1);
 
     expect(await flushTermsQueue()).toBe(1);
@@ -161,7 +161,7 @@ describe('Hybrid guest mode (no anonymous accounts)', () => {
     await open('/');
     await fireEvent.press(await screen.findByRole('checkbox', { name: consentCheckboxLabel }));
     await fireEvent.press(continueButton());
-    expect(await screen.findByText('6 spots')).toBeTruthy();
+    expect(await screen.findByText('6 spots nearby')).toBeTruthy();
 
     for (const fn of auth) expect(fn).not.toHaveBeenCalled();
     expect(record).not.toHaveBeenCalled();
