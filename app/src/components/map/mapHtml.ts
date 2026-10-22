@@ -20,6 +20,16 @@ export const USGS_IMAGERY_ATTRIBUTION = 'USDA, USGS The National Map: Orthoimage
 export const basemapLayers = { topo: ['topo'], satellite: ['satellite'], terrain: [] as string[] };
 
 /** Self-contained map page. Talks to the app through postMessage only. */
+/**
+ * Offline copies of the raster basemaps, read through the bboffline:// protocol
+ * (RN answers from downloaded packs; a miss falls back to the network URL). Satellite
+ * packs stop at z15, so its offline source overzooms past that.
+ */
+export const offlineLayers = {
+  topo: { maxzoom: 16, network: `${USGS}/USGSTopo/MapServer/tile/{z}/{y}/{x}` },
+  satellite: { maxzoom: 15, network: `${USGS}/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}` },
+} as const;
+
 export const mapHtml = `<!doctype html>
 <html>
 <head>
@@ -46,6 +56,46 @@ export const mapHtml = `<!doctype html>
     return;
   }
   var GROUPS = ${JSON.stringify(basemapLayers)};
+  var OFFLINE = ${JSON.stringify(offlineLayers)};
+  var offline = [], current = 'topo';
+  // Offline packs: tiles come from the app over the bridge. Esri is never a pack source.
+  var tileId = 0, pending = {};
+  function b64ToBuffer(b64) {
+    var bin = atob(b64), n = bin.length, out = new Uint8Array(n);
+    for (var i = 0; i < n; i++) out[i] = bin.charCodeAt(i);
+    return out.buffer;
+  }
+  function networkTile(url) {
+    var m = /^bboffline:\/\/([a-z]+)\/(\d+)\/(\d+)\/(\d+)$/.exec(url);
+    if (!m || !OFFLINE[m[1]]) return null;
+    return OFFLINE[m[1]].network.replace('{z}', m[2]).replace('{x}', m[3]).replace('{y}', m[4]);
+  }
+  maplibregl.addProtocol('bboffline', function (params, abort) {
+    return new Promise(function (resolve, reject) {
+      var id = ++tileId;
+      pending[id] = function (b64) {
+        if (b64) return resolve({ data: b64ToBuffer(b64) });
+        var net = networkTile(params.url);
+        if (!net) return reject(new Error('no tile'));
+        fetch(net, { signal: abort.signal }).then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.arrayBuffer();
+        }).then(function (data) { resolve({ data: data }); }, reject);
+      };
+      abort.signal.addEventListener('abort', function () { delete pending[id]; reject(new Error('aborted')); });
+      send({ type: 'tile', id: id, url: params.url });
+    });
+  });
+  function showBasemap(name) {
+    current = name;
+    Object.keys(GROUPS).forEach(function (g) {
+      GROUPS[g].forEach(function (id) {
+        var useOffline = OFFLINE[id] && offline.indexOf(id) >= 0;
+        map.setLayoutProperty(id, 'visibility', g === name && !useOffline ? 'visible' : 'none');
+        if (OFFLINE[id]) map.setLayoutProperty(id + '-offline', 'visibility', g === name && useOffline ? 'visible' : 'none');
+      });
+    });
+  }
   var empty = { type: 'FeatureCollection', features: [] };
   var map = new maplibregl.Map({
     container: 'map',
@@ -62,11 +112,19 @@ export const mapHtml = `<!doctype html>
           attribution: '${USGS_ATTRIBUTION}' },
         satellite: { type: 'raster', tileSize: 256, maxzoom: 16,
           tiles: ['${USGS}/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}'],
+          attribution: '${USGS_IMAGERY_ATTRIBUTION} ${USGS_ATTRIBUTION}' },
+        'topo-offline': { type: 'raster', tileSize: 256, maxzoom: ${offlineLayers.topo.maxzoom},
+          tiles: ['bboffline://topo/{z}/{x}/{y}'],
+          attribution: '${USGS_ATTRIBUTION}' },
+        'satellite-offline': { type: 'raster', tileSize: 256, maxzoom: ${offlineLayers.satellite.maxzoom},
+          tiles: ['bboffline://satellite/{z}/{x}/{y}'],
           attribution: '${USGS_IMAGERY_ATTRIBUTION} ${USGS_ATTRIBUTION}' }
       },
       layers: [
         { id: 'topo', type: 'raster', source: 'topo' },
-        { id: 'satellite', type: 'raster', source: 'satellite', layout: { visibility: 'none' } }
+        { id: 'satellite', type: 'raster', source: 'satellite', layout: { visibility: 'none' } },
+        { id: 'topo-offline', type: 'raster', source: 'topo-offline', layout: { visibility: 'none' } },
+        { id: 'satellite-offline', type: 'raster', source: 'satellite-offline', layout: { visibility: 'none' } }
       ]
     }
   });
@@ -79,10 +137,12 @@ export const mapHtml = `<!doctype html>
     if (m.type === 'basemap') {
       // Unknown or not-yet-built basemaps (terrain before PR 2) fall back to topo.
       var name = GROUPS[m.name] && GROUPS[m.name].length ? m.name : 'topo';
-      Object.keys(GROUPS).forEach(function (g) {
-        GROUPS[g].forEach(function (id) { map.setLayoutProperty(id, 'visibility', g === name ? 'visible' : 'none'); });
-      });
+      showBasemap(name);
       send({ type: 'basemap', name: name });
+    }
+    if (m.type === 'offline') {
+      offline = m.basemaps || [];
+      showBasemap(current);
     }
     if (m.type === 'select') {
       selected = m.id;
@@ -91,7 +151,16 @@ export const mapHtml = `<!doctype html>
     }
     if (m.type === 'focus') map.easeTo({ center: m.center, zoom: Math.max(map.getZoom(), 11), duration: 600 });
   }
-  window.bbReceive = function (m) { if (loaded) apply(m); else queue.push(m); };
+  window.bbReceive = function (m) {
+    // Tile replies can't wait for 'load': the style's own tiles are requested before it.
+    if (m.type === 'tileData') {
+      var cb = pending[m.id];
+      delete pending[m.id];
+      if (cb) cb(m.data);
+      return;
+    }
+    if (loaded) apply(m); else queue.push(m);
+  };
   window.addEventListener('message', function (e) {
     if (e.data && e.data.birdbrain) window.bbReceive(JSON.parse(e.data.birdbrain));
   });

@@ -31,6 +31,12 @@ export interface PlaceMapProps {
   /** Bump to recenter on the selected place (e.g. picked from the list). */
   focus?: { center: LngLat; key: number };
   onSelect: (id: string | null) => void;
+  /**
+   * Downloaded packs (premium). Basemaps listed here are drawn from bboffline://
+   * tiles answered by getTile (base64, or null to fall back to the network).
+   * Safety overlays never depend on this.
+   */
+  offline?: { basemaps: Basemap[]; getTile: (url: string) => Promise<string | null> };
 }
 
 export const pinColor: Record<PlaceType, string> = {

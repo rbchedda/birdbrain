@@ -38,6 +38,8 @@ import {
   STOCKING_PIN_NOTE,
 } from '@/data/mapNotice';
 import { legal } from '@/lib/env';
+import { useEntitlements } from '@/entitlements';
+import { useOfflineMapSource, withOfflineOutline } from '@/offline';
 import { STOCKING_SOURCE, stockingCountyOf, windowsForCounty } from '@/data/places';
 import { PGC_DIGEST_URL } from '@/data/regs';
 import { describeStatus, placeToday, SEASON_YEAR, type PlaceToday } from '@/data/seasons';
@@ -112,7 +114,13 @@ export default function MapScreen() {
     setExpanded(true);
   };
 
-  const detail = useAsync(() => (selectedId ? backend.placeDetail(selectedId) : Promise.resolve(null)), [selectedId]);
+  const { canUse } = useEntitlements();
+  const offline = useOfflineMapSource(canUse('offlineMaps'));
+
+  const detail = useAsync(
+    () => (selectedId ? withOfflineOutline(selectedId, () => backend.placeDetail(selectedId)) : Promise.resolve(null)),
+    [selectedId],
+  );
 
   return (
     <View style={styles.root} onLayout={(e) => setScreenH(e.nativeEvent.layout.height)}>
@@ -123,6 +131,7 @@ export default function MapScreen() {
         basemap={basemap}
         focus={focus}
         onSelect={onMapSelect}
+        offline={offline}
       />
 
       <View
