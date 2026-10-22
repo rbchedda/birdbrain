@@ -39,9 +39,8 @@ import {
 import { legal } from '@/lib/env';
 import { STOCKING_SOURCE, stockingCountyOf, windowsForCounty } from '@/data/places';
 import { PGC_DIGEST_URL } from '@/data/regs';
-import { describeStatus, placeToday, SEASON_YEAR } from '@/data/seasons';
+import { describeStatus, placeToday, SEASON_YEAR, type PlaceToday } from '@/data/seasons';
 import { migratory, placeTypeLabel, speciesLabel, type Place, type PlaceType } from '@/data/types';
-import { officialDay } from '@/lib/sun';
 import { formatDay, formatTime, todayET } from '@/lib/time';
 import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
 
@@ -53,6 +52,10 @@ const filters: { key: PlaceType | 'all'; label: string }[] = [
 ];
 
 const PEEK = 150;
+/** Nothing selected: just the handle and the spot count. */
+const PEEK_EMPTY = 84;
+/** Map left visible between the banner block and the expanded sheet. */
+const MAP_GAP = 72;
 const LIST_LIMIT = 60;
 
 export default function MapScreen() {
@@ -69,6 +72,9 @@ export default function MapScreen() {
   const [planner, setPlanner] = useState(false);
   const [fullNotice, setFullNotice] = useState(false);
   const [layersOpen, setLayersOpen] = useState(false);
+  // The sheet's top never rises above the banner block (search, layers, banner, expanded notice).
+  const [screenH, setScreenH] = useState(height);
+  const [topH, setTopH] = useState(0);
   const session = useSession();
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const refreshSaved = useCallback(() => {
@@ -108,7 +114,7 @@ export default function MapScreen() {
   const detail = useAsync(() => (selectedId ? backend.placeDetail(selectedId) : Promise.resolve(null)), [selectedId]);
 
   return (
-    <View style={styles.root}>
+    <View style={styles.root} onLayout={(e) => setScreenH(e.nativeEvent.layout.height)}>
       <PlaceMap
         places={places}
         selectedId={selectedId}
@@ -118,7 +124,12 @@ export default function MapScreen() {
         onSelect={onMapSelect}
       />
 
-      <View style={[styles.top, { paddingTop: insets.top + space.sm }]} pointerEvents="box-none">
+      <View
+        style={[styles.top, { paddingTop: insets.top + space.sm }]}
+        pointerEvents="box-none"
+        onLayout={(e) => setTopH(e.nativeEvent.layout.height)}
+        testID="map-top"
+      >
         <View style={styles.titleRow}>
           <TextInput
             value={query}
@@ -173,11 +184,13 @@ export default function MapScreen() {
         )}
         {/*
           Legal banner (lawyer-approved one-liner): always rendered, no close control,
-          no "seen" state, scales with system text size. Tap shows the full notice.
+          no "seen" state, no font cap or line clamp. The whole banner (>= 44 pt) toggles
+          the full notice inline; its a11y label is the exact full notice text.
         */}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${MAP_BANNER_SHORT} ${fullNotice ? 'Hides' : 'Shows'} the full map notice.`}
+          accessibilityLabel={MAP_BANNER}
+          accessibilityHint="Double-tap to expand."
           accessibilityState={{ expanded: fullNotice }}
           onPress={() => setFullNotice((v) => !v)}
           style={styles.banner}
@@ -189,8 +202,9 @@ export default function MapScreen() {
           <View style={styles.fullNotice} testID="map-full-notice">
             <Text style={styles.bannerText}>{MAP_BANNER}</Text>
             <Text accessibilityRole="link" style={styles.link} onPress={() => router.push('/data-sources')}>
-              Data sources
+              View data sources ›
             </Text>
+            <Button label="Got it" variant="primary" onPress={() => setFullNotice(false)} />
           </View>
         )}
       </View>
@@ -198,11 +212,11 @@ export default function MapScreen() {
       <BottomSheet
         expanded={expanded}
         onExpandedChange={setExpanded}
-        peekHeight={PEEK}
-        expandedHeight={Math.min(560, height * 0.66)}
+        peekHeight={selected || planner ? PEEK : PEEK_EMPTY}
+        expandedHeight={sheetHeight(screenH, topH, height)}
       >
         {selected ? (
-          <PlaceDetails place={selected} onClose={() => setSelectedId(undefined)} onSavedChange={refreshSaved} />
+          <PlaceDetails place={selected} expanded={expanded} onClose={() => setSelectedId(undefined)} onSavedChange={refreshSaved} />
         ) : planner ? (
           <StockingList places={all} savedIds={savedIds} onPick={pick} />
         ) : (
@@ -210,8 +224,17 @@ export default function MapScreen() {
             <Text style={styles.sheetTitle}>
               {loading && !all.length
                 ? 'Loading public land…'
-                : `${places.length} ${places.length === 1 ? 'spot' : 'spots'}`}
+                : `${places.length} ${places.length === 1 ? 'spot' : 'spots'} nearby`}
             </Text>
+            {error && (
+              <View style={{ gap: space.sm }}>
+                <Notice tone="error">Couldn’t load places: {error.message}</Notice>
+                <Button label="Try again" icon="refresh" onPress={() => loadPlaces(true)} />
+              </View>
+            )}
+            {/* Collapsed: handle + count only. The list appears on pull-up (search expands the sheet). */}
+            {expanded && (
+              <>
             <Text style={ui.muted}>
               {openIds.size} with a season open today ({formatDay(today)}).{' '}
               {backend.mode === 'sample'
@@ -220,12 +243,6 @@ export default function MapScreen() {
                   ? 'Not connected to a server. Set app/.env.'
                   : 'Data: Pennsylvania Game Commission.'}
             </Text>
-            {error && (
-              <View style={{ gap: space.sm }}>
-                <Notice tone="error">Couldn’t load places: {error.message}</Notice>
-                <Button label="Try again" icon="refresh" onPress={() => loadPlaces(true)} />
-              </View>
-            )}
             <FlatList
               data={listed}
               keyExtractor={(p) => p.id}
@@ -237,6 +254,8 @@ export default function MapScreen() {
                 ) : undefined
               }
             />
+              </>
+            )}
           </View>
         )}
       </BottomSheet>
@@ -262,12 +281,44 @@ function PlaceRow({ place, open, onPress }: { place: Place; open: boolean; onPre
   );
 }
 
+/**
+ * Per-species legal hours for today, only where the 2026-27 digest gives a fixed rule
+ * the bundled PGC table can fill: pheasant, grouse, fall turkey (½ h before sunrise to
+ * ½ h after sunset, hunting hours table) and doves (½ h before sunrise until sunset,
+ * digest note 5 "every segment of dove season") and spring gobbler (noon through May 15,
+ * digest note 3). Waterfowl is left out: its hours have
+ * goose-season exceptions, so it stays in the season list as "check the digest".
+ */
+export function knownHours(today: PlaceToday) {
+  return today.statuses.flatMap(({ species, status }) =>
+    status.kind === 'open' && !status.season.youth && species !== 'waterfowl' && status.start && status.end
+      ? [{ species, start: status.start, end: status.end }]
+      : [],
+  );
+}
+
+/** Sheet height that keeps a strip of map visible below the banner block at every snap point. */
+export function sheetHeight(screenH: number, topH: number, windowH: number) {
+  const room = screenH - topH - MAP_GAP;
+  return Math.max(PEEK, Math.min(560, windowH * 0.66, room));
+}
+
+/** "Pheasant open" when exactly one species is in season here today, else "Season open today". */
+export function openTag(today: PlaceToday): string | null {
+  if (!today.open) return null;
+  const open = today.statuses.filter((s) => s.status.kind === 'open' && !s.status.season.youth);
+  return open.length === 1 ? `${speciesLabel[open[0].species]} open` : 'Season open today';
+}
+
 function PlaceDetails({
   place,
+  expanded,
   onClose,
   onSavedChange,
 }: {
   place: Place;
+  /** The release card only shows on the expanded sheet. */
+  expanded: boolean;
   onClose: () => void;
   onSavedChange?: () => void;
 }) {
@@ -315,7 +366,7 @@ function PlaceDetails({
   };
 
   const nextRelease = stocking.find((w) => w.windowEnd >= today.date);
-  const hours = officialDay(today.date, place.center.lng);
+  const speciesHours = knownHours(today);
 
   return (
     <ScrollView contentContainerStyle={{ gap: space.md, paddingBottom: space.xl }}>
@@ -334,22 +385,30 @@ function PlaceDetails({
         </Pressable>
       </View>
       <View style={styles.tags}>
-        <View style={[styles.accessTag, place.access === 'enrolled_private' && styles.accessTagOutlined]}>
-          <Text style={styles.accessTagText} testID="place-access">
+        <View style={[styles.accessTag, place.access === 'enrolled_private' && styles.accessTagEnrolled]} testID="access-tag">
+          <Text style={[styles.accessTagText, place.access === 'enrolled_private' && styles.accessTagEnrolledText]} testID="place-access">
             {accessLabel[place.access]}
             {place.type === 'stocking' ? ` · ${STOCKING_PIN_NOTE}` : ''}
           </Text>
         </View>
-        {today.open && <Tag label="Season open today" tone="accent" />}
+        {openTag(today) && <Tag label={openTag(today)!} tone="accent" />}
       </View>
 
       <View style={styles.stats}>
         <View style={styles.stat}>
-          <Text style={styles.statValue}>{hours ? `${formatTime(hours.huntStart)}–${formatTime(hours.huntEnd)}` : 'Check digest'}</Text>
-          <Text style={styles.fine}>Small-game legal hours today</Text>
+          {speciesHours.length ? (
+            speciesHours.map((h) => (
+              <Text key={h.species} style={styles.hoursRow} testID={`hours-${h.species}`}>
+                {`${speciesLabel[h.species]} ${formatTime(h.start)}–${formatTime(h.end)}`}
+              </Text>
+            ))
+          ) : (
+            <Text style={styles.statValue}>Check digest</Text>
+          )}
+          <Text style={styles.fine}>Legal hours today</Text>
         </View>
-        {place.type === 'stocking' && (
-          <View style={[styles.stat, styles.statDivider]}>
+        {place.type === 'stocking' && expanded && (
+          <View style={[styles.stat, styles.statDivider]} testID="release-card">
             <Text style={[styles.statValue, { color: colors.dove }]}>{nextRelease ? formatDay(nextRelease.windowStart) : 'None listed'}</Text>
             <Text style={styles.fine}>Next county release wk</Text>
           </View>
@@ -528,11 +587,22 @@ const styles = StyleSheet.create({
   close: { width: touchTarget, height: touchTarget, alignItems: 'center', justifyContent: 'center', marginRight: -space.sm },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   accessTag: { borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: colors.surfaceRaised, borderWidth: 1, borderColor: colors.dove },
-  accessTagOutlined: { backgroundColor: 'transparent', borderColor: colors.text, borderStyle: 'dashed' },
+  // Enrolled private land (designer spec): transparent, 1px dashed dove tan, Inter Medium 12, radius 6, 4/8 padding.
+  accessTagEnrolled: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.dove,
+    borderRadius: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  accessTagEnrolledText: { fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.dove },
   accessTagText: { fontFamily: fonts.bodySemi, fontSize: 12, color: colors.text },
   stats: { flexDirection: 'row', gap: space.md, padding: space.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border },
   stat: { flex: 1, gap: 2 },
   statDivider: { borderLeftWidth: 1, borderLeftColor: colors.border, paddingLeft: space.md },
+  hoursRow: { fontFamily: fonts.body, fontSize: 15, lineHeight: 21, color: colors.text },
   statValue: { fontFamily: fonts.heading, fontSize: 24, color: colors.text },
   secondary: { flexDirection: 'row', gap: space.sm },
   callout: {
@@ -549,6 +619,7 @@ const styles = StyleSheet.create({
   fine: { fontFamily: fonts.body, fontSize: 12, lineHeight: 17, color: colors.muted },
   actions: { flexDirection: 'row', gap: space.sm },
   banner: {
+    minHeight: touchTarget,
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: space.xs,
@@ -562,6 +633,16 @@ const styles = StyleSheet.create({
   // No maxFontSizeMultiplier and no numberOfLines: the banner must stay fully readable at large text sizes.
   // Body-text size and colors.text (tokens.ts) for normal body contrast.
   bannerText: { flex: 1, fontFamily: fonts.bodyMedium, fontSize: 13, lineHeight: 18, color: colors.text },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: space.lg },
+  modalCard: {
+    gap: space.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: space.lg,
+  },
+  modalText: { fontFamily: fonts.body, fontSize: 17, lineHeight: 25, color: colors.text },
   fullNotice: {
     gap: space.sm,
     backgroundColor: colors.surface,
