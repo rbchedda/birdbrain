@@ -17,6 +17,8 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import { classifyAccess } from '../app/src/data/access.ts';
+
 const PGC = 'https://services1.arcgis.com/k8yxvICm95iIFicb/arcgis/rest/services';
 const PAGE_SIZE = 1000;
 // PGC's ArcGIS host is sometimes slow; cap each request so one hung layer can't wedge a run.
@@ -64,7 +66,7 @@ export const SOURCES = {
         county: null,
         acres: round1(num(pick(p, 'gis_area_ac'))),
         source_updated_at: epochToIso(pick(p, 'last_edited_date')),
-        properties: { sgl, pgc_region: pick(p, 'pgc_region'), status: pick(p, 'sgl_status') },
+        properties: { sgl, pgc_region: pick(p, 'pgc_region'), status: pick(p, 'sgl_status'), access_type: 'state_game_land' },
       };
     },
     // Several polygons can share one SGL number; merge them into one row.
@@ -84,19 +86,23 @@ export const SOURCES = {
       // Game lands are listed by bare number ("65"), sometimes without a property_type.
       const sgl = /^\d{1,3}$/.test(String(property).trim()) ? Number(property) : null;
       const late = pick(p, 'late_season_status');
+      const name = sgl !== null ? `State Game Lands ${sgl}` : String(property).trim();
+      const propertyType = pick(p, 'property_type');
       return {
         // Keyed by property, not GlobalID: PGC rebuilds this layer each season
         // (every feature was re-created in Sept-Oct 2026), which would churn
         // GlobalIDs and cascade-delete users' saved places.
         source_id: sgl !== null ? `sgl:${sgl}` : `name:${slug(property)}`,
-        name: sgl !== null ? `State Game Lands ${sgl}` : String(property).trim(),
+        name,
         county: null,
         acres: null,
         source_updated_at: epochToIso(pick(p, 'last_edited_date')),
         properties: {
           sgl,
           pgc_region: pick(p, 'pgc_region'),
-          property_type: pick(p, 'property_type'),
+          property_type: propertyType,
+          // null = unknown land status; the app hides these (app/src/data/access.ts).
+          access_type: classifyAccess({ type: 'stocking', name, propertyType, sgl }),
           late_season: late === null ? null : !/^no\b/i.test(late),
           number_releases: num(pick(p, 'number_releases')),
           total_released: num(pick(p, 'total_released')),
@@ -127,7 +133,14 @@ export const SOURCES = {
         // Blank for a few fields; upsertRows fills those from the geometry.
         acres: round1(num(pick(p, 'Project_Area'))),
         source_updated_at: epochToIso(pick(p, 'last_edited_date')),
-        properties: { sgl: null, project_name: label, description, crops: cropsIn(description) },
+        properties: {
+          sgl: null,
+          project_name: label,
+          description,
+          crops: cropsIn(description),
+          // Off-SGL fields stay enrolled_private or null; assignSglByOverlap upgrades SGL overlaps.
+          access_type: classifyAccess({ type: 'dove_field', name: label ?? '', sgl: null, description }),
+        },
       };
     },
     sglByOverlap: { nameSuffix: 'dove field' },
@@ -286,7 +299,8 @@ export async function upsertRows(db, config, rows, { layerUrl, lastEditDate } = 
 async function assignSglByOverlap(db, config) {
   await db.query(
     `update public.places d set
-       properties = d.properties || jsonb_build_object('sgl', gl.sgl),
+       properties = d.properties || jsonb_build_object('sgl', gl.sgl)
+         || case when gl.sgl is null then '{}'::jsonb else jsonb_build_object('access_type', 'state_game_land') end,
        name = case when gl.sgl is null then d.name else 'SGL ' || gl.sgl || ' ' || $3 end
      from public.places d2
      left join lateral (
