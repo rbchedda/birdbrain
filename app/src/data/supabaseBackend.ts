@@ -419,7 +419,9 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
     },
 
     async recordTermsAcceptance(a) {
-      await me();
+      // Only real accounts get a consent row; anonymous sessions are not signed in.
+      const { data } = await sb.auth.getSession();
+      if (!data.session?.user.id || data.session.user.is_anonymous) throw new NotSignedInError();
       const r = await sb
         .from('accepted_terms')
         .insert({ accepted_at: a.acceptedAt, app_version: a.appVersion, terms_version: a.termsVersion });

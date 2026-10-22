@@ -81,6 +81,9 @@ export interface ConsentSyncResult {
  * the queue intact. Never signs in, never creates an account.
  */
 export async function syncConsentOnSignIn(): Promise<ConsentSyncResult> {
+  // A flush already in flight (e.g. for the previous account) read the queue
+  // before this sign-in; let it finish so it can't drop the row we requeue.
+  if (flushing) await flushing.catch(() => 0);
   const acceptance = await readAccepted();
   if (acceptance && !needsConsent(acceptance)) {
     const queue = await readQueue();
@@ -92,6 +95,7 @@ export async function syncConsentOnSignIn(): Promise<ConsentSyncResult> {
   return { sent, pending: (await readQueue()).length };
 }
 
+const queueKey = (a: TermsAcceptance) => `${a.termsVersion}|${a.acceptedAt}`;
 let flushing: Promise<number> | null = null;
 /**
  * Internal: send queued acceptances to accepted_terms when signed in with a real account. Rows that fail stay
@@ -105,17 +109,19 @@ export function flushTermsQueue(): Promise<number> {
       const session = await backend.getSession().catch(() => null);
       // Guests (no user_id) and anonymous sessions keep the acceptance on the device.
       if (!session || session.anonymous) return 0;
-      const left: TermsAcceptance[] = [];
-      let sent = 0;
+      const done = new Set<string>();
       for (const a of queue) {
         try {
           await backend.recordTermsAcceptance(a);
-          sent++;
+          done.add(queueKey(a));
         } catch {
-          left.push(a);
+          // stays queued
         }
       }
-      await writeJson(QUEUE_KEY, left);
+      // Re-read so anything queued while we were sending is kept.
+      const now = await readQueue();
+      await writeJson(QUEUE_KEY, now.filter((q) => !done.has(queueKey(q))));
+      const sent = done.size;
       return sent;
     } finally {
       flushing = null;
