@@ -31,14 +31,14 @@ describe('first-save sign-in sheet (redesign 02b)', () => {
     expect(screen.queryByText('Continue with Apple')).toBeNull();
     expect(screen.getByText('Continue with email')).toBeTruthy();
     await fireEvent.press(screen.getByText('Not now — keep on this phone only'));
-    expect(await screen.findByText('Save to diary')).toBeTruthy();
+    expect(await screen.findByText('Save hunt')).toBeTruthy();
   });
 
   it('does not ask again on later taps', async () => {
     await AsyncStorage.setItem('birdbrain.signInPromptSeen.v1', 'true');
     await renderRouter('./src/app', { initialUrl: '/new' });
     await fireEvent.press(await screen.findByTestId('choose-diary'));
-    expect(await screen.findByText('Save to diary')).toBeTruthy();
+    expect(await screen.findByText('Save hunt')).toBeTruthy();
     expect(screen.queryByText('Keep your hunt diary')).toBeNull();
   });
 });

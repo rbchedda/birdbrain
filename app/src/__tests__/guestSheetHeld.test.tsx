@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
+import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 
 import { backend } from '@/data';
 import type { Session } from '@/data/backend';
@@ -29,13 +29,15 @@ describe('first-save sign-in sheet (redesign 02b)', () => {
   it('holds the entry on Save; "Not now" keeps it on the phone and sends nothing', async () => {
     const upsert = jest.spyOn(backend, 'upsertHuntLogEntry');
     await renderRouter('./src/app', { initialUrl: '/new/log' });
-    await fireEvent.changeText(await screen.findByLabelText('Notes'), 'Cold start');
-    await fireEvent.press(screen.getByText('Save to diary'));
+    await fireEvent.press(await screen.findByLabelText('Add dog, weather, cover, notes, photo'));
+    await fireEvent.changeText(screen.getByLabelText('Notes'), 'Cold start');
+    await fireEvent.press(screen.getByText('Save hunt'));
     expect(await screen.findByText('Keep your hunt diary')).toBeTruthy();
     expect(screen.getByText(/is held on this phone and saves the moment you sign in/)).toBeTruthy();
     expect(await journalEntries()).toHaveLength(0);
     await fireEvent.press(screen.getByText('Not now — keep on this phone only'));
-    await waitFor(async () => expect(await journalEntries()).toHaveLength(1));
+    expect(await screen.findByText(/Saved to your private log on this phone/)).toBeTruthy();
+    expect(await journalEntries()).toHaveLength(1);
     expect(upsert).not.toHaveBeenCalled();
     upsert.mockRestore();
   });

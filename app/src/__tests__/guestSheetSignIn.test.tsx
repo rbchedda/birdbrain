@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
+import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 
 import { backend } from '@/data';
 import type { Session } from '@/data/backend';
@@ -30,13 +30,16 @@ describe('first-save sign-in sheet (redesign 02b)', () => {
       return () => {};
     });
     await renderRouter('./src/app', { initialUrl: '/new/log' });
-    await fireEvent.changeText(await screen.findByLabelText('Notes'), 'Held');
-    await fireEvent.press(screen.getByText('Save to diary'));
+    await fireEvent.press(await screen.findByLabelText('Add dog, weather, cover, notes, photo'));
+    await fireEvent.changeText(screen.getByLabelText('Notes'), 'Held');
+    await fireEvent.press(screen.getByText('Save hunt'));
     await fireEvent.press(await screen.findByText('Continue with email'));
     expect(await journalEntries()).toHaveLength(0);
     // The hooks store subscribed at first use; emit a sign-in through every listener we can reach.
     const { act } = require('@testing-library/react-native');
     await act(async () => emit(me));
-    await waitFor(async () => expect((await journalEntries()).map((e) => e.caption)).toEqual(['Held']), { timeout: 3000 });
+    // Poll the store directly (an async waitFor callback leaves Jest spinning after the file).
+    for (let i = 0; i < 100 && !(await journalEntries()).length; i++) await act(() => new Promise((r) => setTimeout(r, 30)));
+    expect((await journalEntries()).map((e) => e.caption)).toEqual(['Held']);
   });
 });

@@ -323,6 +323,9 @@ export function startJournalSync(backend: Backend, triggers: SyncTriggers): () =
     if (timer) clearTimeout(timer);
     timer = null;
     if (stopped) return;
+    // Signed out: nothing uploads, so don't spin on due retries (sign-in or a new entry restarts it).
+    if (typeof backend.getSession === 'function' && !(await backend.getSession().catch(() => null))) return;
+    if (stopped) return;
     const waiting = (await allEntries()).filter((e) => e.sync.status === 'failed' && (e.deleted || !e.sync.conflict));
     if (!waiting.length || stopped) return;
     const next = Math.min(...waiting.map((e) => e.sync.nextAttemptAt));
