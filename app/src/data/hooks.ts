@@ -5,7 +5,7 @@ import { AppState, Platform } from 'react-native';
 import type { Session } from './backend';
 import { journalEntries, onJournalChange, startJournalSync, syncJournal } from './journal';
 import { backend } from './index';
-import type { Place } from './types';
+import type { DataSource, Place } from './types';
 
 /** Run an async loader, re-running when deps change. Stale results are dropped. */
 export function useAsync<T>(load: () => Promise<T>, deps: unknown[]) {
@@ -116,4 +116,10 @@ export function useJournal() {
   useEffect(() => onJournalChange(reload), [reload]);
   const retry = useCallback(() => syncJournal(backend, { force: true }).then(() => undefined), []);
   return { ...state, retry };
+}
+
+/** Per-layer dates from ingest_state (Data sources page, place sheets). Empty until loaded or on error. */
+export function useDataSources(): DataSource[] {
+  const { data } = useAsync(() => backend.dataSources().catch(() => [] as DataSource[]), []);
+  return data ?? [];
 }

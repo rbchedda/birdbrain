@@ -1,0 +1,106 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
+
+import { backend } from '@/data';
+import { loadPlaces } from '@/data/hooks';
+import { ENROLLED_PRIVATE_LINE, MAP_BANNER, layerDateFor, publicLayers } from '@/data/mapNotice';
+import { createSupabaseBackend } from '@/data/supabaseBackend';
+
+const metrics = { frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } };
+jest.mock('react-native-safe-area-context', () => {
+  const real = jest.requireActual('react-native-safe-area-context');
+  return { ...real, SafeAreaProvider: (p: object) => <real.SafeAreaProvider initialMetrics={metrics} {...p} /> };
+});
+afterAll(() => AsyncStorage.clear());
+
+/** Minimal chainable supabase-js stand-in: every query on `table` resolves to rows[table]. */
+function fakeSb(rows: Record<string, unknown[]>) {
+  return {
+    from(table: string) {
+      const b: Record<string, unknown> = {};
+      for (const m of ['select', 'order', 'range', 'eq', 'in']) b[m] = () => b;
+      b.then = (res: (v: unknown) => unknown) => res({ data: rows[table] ?? [], error: null });
+      return b;
+    },
+  } as unknown as SupabaseClient;
+}
+const pt = (lng: number, lat: number) => ({ type: 'Point', coordinates: [lng, lat] });
+
+describe('hosted places: unknown land status is hidden', () => {
+  it('keeps SGL, other public and enrolled land, drops unknown or missing property_type', async () => {
+    const sb = fakeSb({
+      places: [
+        { id: 'g', type: 'game_land', name: 'State Game Lands 1', centroid: pt(-77, 41), acres: 10, source: 'pgc:state_game_lands' },
+        { id: 's1', type: 'stocking', name: 'State Game Lands 109', centroid: pt(-80, 42), property_type: 'SGL', sgl: '109' },
+        { id: 's2', type: 'stocking', name: 'Codorus State Park', centroid: pt(-76.9, 39.8), property_type: 'Other Properties' },
+        { id: 's3', type: 'stocking', name: 'Carlson Hunter Access Property', centroid: pt(-78.3, 41.9), property_type: 'Other Properties' },
+        { id: 's4', type: 'stocking', name: 'Jeffers Tree Farm', centroid: pt(-75.7, 41.8), property_type: null },
+        { id: 's5', type: 'stocking', name: 'Hanson Aggregates', centroid: pt(-79.3, 40.3), property_type: 'Other Properties' },
+        { id: 'd1', type: 'dove_field', name: 'Dove field 419', centroid: pt(-76, 40), sgl: null, description: 'Millet' },
+        // A stored label wins over re-derivation.
+        { id: 's6', type: 'stocking', name: 'Odd name', centroid: pt(-77, 40), property_type: 'Other Properties', access_type: 'other_public' },
+      ],
+    });
+    const places = await createSupabaseBackend(sb).listPlaces();
+    expect(Object.fromEntries(places.map((p) => [p.id, p.access]))).toEqual({
+      g: 'state_game_land', s1: 'state_game_land', s2: 'other_public', s3: 'enrolled_private', s6: 'other_public',
+    });
+  });
+
+  it('reads per-layer dates from ingest_state and shows public layers only', async () => {
+    const sb = fakeSb({
+      ingest_state: [
+        { source: 'pgc:state_game_lands', last_edit_date: '2026-10-19T19:03:13Z', last_run_at: '2026-10-22T01:34:48Z' },
+        { source: 'internal:something', last_edit_date: null, last_run_at: null },
+      ],
+    });
+    const rows = await createSupabaseBackend(sb).dataSources();
+    expect(layerDateFor('game_land', rows)).toBe('Oct 19, 2026');
+    expect(layerDateFor('stocking', rows)).toBe('date unknown');
+    expect(publicLayers(rows).map((r) => r.source)).toEqual(['pgc:state_game_lands', 'pgc:hunting_hours']);
+  });
+});
+
+describe('map and sheet notices', () => {
+  const open = (url: string) => renderRouter('./src/app', { initialUrl: url });
+
+  it('sheet: season-only note, layer date, stocking pin note, enrolled line, report link', async () => {
+    const spy = jest.spyOn(backend, 'dataSources').mockResolvedValue([
+      { source: 'pgc:pheasant_stocking', lastEditDate: '2026-10-20T19:02:48Z', lastRunAt: '2026-10-22T01:34:50Z' },
+    ]);
+    try {
+      await loadPlaces(true);
+      await open('/');
+      await screen.findByText('6 spots');
+      await fireEvent.press(screen.getByLabelText('Pheasant stocking (sample E)'));
+      expect(await screen.findByText(ENROLLED_PRIVATE_LINE)).toBeTruthy();
+      expect(screen.getByTestId('place-access').props.children.join('')).toMatch(
+        /PGC access-program land \(private\) · One PGC pin per property, not a release spot/,
+      );
+      expect(screen.getByTestId('season-only-note')).toBeTruthy();
+      expect(await screen.findByText(/last updated Oct 20, 2026/)).toBeTruthy();
+      expect(screen.getByText(/never approach a release vehicle/)).toBeTruthy();
+      expect(screen.getByText('Report a map error')).toBeTruthy();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('public land sheets do not get the enrolled line', async () => {
+    await open('/');
+    await screen.findByText('6 spots');
+    await fireEvent.press(screen.getByLabelText('Managed dove field (sample C)'));
+    expect(await screen.findByText(/Field conditions and crops change/)).toBeTruthy();
+    expect(screen.queryByTestId('enrolled-line')).toBeNull();
+  });
+
+  it('shows the banner on the map, and tapping it opens the full notice', async () => {
+    await open('/');
+    expect(await screen.findByText('6 spots')).toBeTruthy();
+    expect(screen.getByText(MAP_BANNER)).toBeTruthy();
+    fireEvent.press(screen.getByTestId('map-banner'));
+    expect(await screen.findByText('Map notice & data sources')).toBeTruthy();
+    expect(screen.getByTestId('data-sources-text')).toBeTruthy();
+  });
+});
