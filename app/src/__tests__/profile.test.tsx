@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 
 import { addJournalEntry, journalEntries, journalIdle, pendingDeletes, resetJournalForRestart, syncJournal } from '@/data/journal';
+import { homeCountyLabel } from '@/app/(tabs)/profile';
 import { backend } from '@/data';
 import { saveDog } from '@/data/dogs';
 import { HUNT_LOG_KEY } from '@/data/sampleBackend';
@@ -143,5 +144,37 @@ describe('Deleting a diary entry', () => {
     await journalIdle();
     expect(await pendingDeletes()).toEqual([]);
     expect(JSON.parse((await AsyncStorage.getItem(HUNT_LOG_KEY))!)[e.clientId]).toBeUndefined();
+  });
+});
+
+describe('Profile home county', () => {
+  it('shows only an explicitly set county, never a zone', () => {
+    expect(homeCountyLabel({ homeCounty: 'Lancaster' })).toBe('Lancaster County');
+    expect(homeCountyLabel({ homeCounty: 'Centre County' })).toBe('Centre County');
+    for (const unset of [null, undefined, {}, { homeCounty: null }, { homeCounty: '  ' }]) expect(homeCountyLabel(unset as never)).toBeNull();
+  });
+
+  it('renders the county when the profile has it and hides the row otherwise', async () => {
+    await seed();
+    const spy = jest.spyOn(backend, 'profile');
+    const base = { username: 'tester', displayName: 'Test Hunter', hasDog: false };
+    spy.mockImplementation(async (id: string) => ({ id, ...base, homeCounty: 'Lancaster' }));
+    await open('/profile');
+    expect(await screen.findByTestId('home-county')).toBeTruthy();
+    expect(screen.getByText('Lancaster County')).toBeTruthy();
+    expect(screen.queryByText(/Zone \d/)).toBeNull();
+    spy.mockImplementation(async (id: string) => ({ id, ...base, homeCounty: null }));
+    await open('/profile');
+    await screen.findByText('Hunt diary');
+    expect(screen.queryByTestId('home-county')).toBeNull();
+    expect(screen.queryByText(/Zone \d|County$/)).toBeNull();
+    spy.mockRestore();
+  });
+
+  it('never infers county from places, entries or location', async () => {
+    await seed();
+    await open('/profile');
+    await screen.findByText('Hunt diary');
+    expect(screen.queryByTestId('home-county')).toBeNull();
   });
 });
