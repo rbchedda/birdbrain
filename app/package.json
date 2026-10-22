@@ -52,6 +52,7 @@
   "jest": {
     "preset": "jest-expo",
     "setupFiles": [
+      "<rootDir>/jest.env.js",
       "<rootDir>/jest.setup.tsx"
     ]
   }
