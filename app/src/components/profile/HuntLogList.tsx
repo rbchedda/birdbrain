@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ui } from '@/components/ui';
 import type { JournalEntry } from '@/data/journal';
-import { offlineIndicatorText } from '@/lib/fieldDraft';
+import { copy } from '@/lib/fieldDraft';
 import { coverLabel, speciesLabel } from '@/data/types';
 import { formatDay } from '@/lib/time';
 import { colors, fonts, space } from '@/theme/tokens';
@@ -58,7 +58,7 @@ export function HuntLogList({ entries, signedOut, limit }: { entries: JournalEnt
             </View>
             {e.sync.status !== 'synced' && !e.sync.conflict && (
               <Text style={[ui.muted, { fontSize: 12 }]} testID={`offline-${e.clientId}`}>
-                {offlineIndicatorText}
+                {copy.waiting}
               </Text>
             )}
           </Pressable>

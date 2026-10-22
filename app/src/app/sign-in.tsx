@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
 
 import { AgeGate } from '@/components/AgeGate';
@@ -7,7 +7,8 @@ import { LegalLinks } from '@/components/LegalLinks';
 import { ScreenHeader } from '@/components/Screen';
 import { Button, Chip, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
-import { confirmPendingText, heldHunt, isNetworkError, markConfirmPending, noSignalText } from '@/lib/fieldDraft';
+import { reportSignal } from '@/lib/connectivity';
+import { copy, isNetworkError, pendingHunts, setFlags, signInDidNotFinish } from '@/lib/fieldDraft';
 import { syncConsentOnSignIn } from '@/lib/termsConsent';
 import { colors, space } from '@/theme/tokens';
 
@@ -16,9 +17,24 @@ export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState<'email' | null>(null);
-  const [message, setMessage] = useState<{ tone: 'error' | 'success'; text: string }>();
+  const params = useLocalSearchParams<{ message?: string }>();
+  const [message, setMessage] = useState<{ tone: 'error' | 'success' | 'info'; text: string } | undefined>(
+    params.message ? { tone: 'info', text: params.message } : undefined,
+  );
 
-  const done = () => (router.canGoBack() ? router.back() : router.replace('/feed'));
+  // Leaving without finishing (Back) keeps the hunt and shows the 06 toast.
+  const finished = useRef(false);
+  useEffect(
+    () => () => {
+      if (!finished.current) void signInDidNotFinish();
+    },
+    [],
+  );
+  const done = () => {
+    finished.current = true;
+    void setFlags({ signInFailed: false, confirmPending: false }).catch(() => undefined);
+    return router.canGoBack() ? router.back() : router.replace('/feed');
+  };
 
   const submit = async () => {
     setBusy('email');
@@ -32,9 +48,10 @@ export default function SignInScreen() {
         const { needsConfirmation } = await backend.signUp(email.trim(), password);
         if (needsConfirmation) {
           // No deep link needed: the hunt stays on the phone and syncs whenever a session exists.
-          const held = await markConfirmPending().catch(() => null);
-          setMessage({ tone: 'success', text: held ? confirmPendingText : 'Check your email to confirm, then sign in.' });
-          if (held) setMode('in');
+          const pending = (await pendingHunts().catch(() => [])).length > 0;
+          if (pending) await setFlags({ confirmPending: true }).catch(() => undefined);
+          setMessage({ tone: 'success', text: pending ? copy.confirmPending : 'Check your email to confirm, then sign in.' });
+          if (pending) setMode('in');
         }
         else {
           await syncConsentOnSignIn().catch(() => undefined);
@@ -42,10 +59,13 @@ export default function SignInScreen() {
         }
       }
     } catch (e) {
+      const pending = (await pendingHunts().catch(() => [])).length > 0;
       if (isNetworkError(e)) {
-        const held = await heldHunt().catch(() => null);
-        setMessage({ tone: 'error', text: held ? noSignalText : 'No signal. Try again when you have service.' });
+        // Spec 03: no error state; the hunt waits and the chip turns orange when signal returns.
+        reportSignal(false);
+        setMessage({ tone: 'info', text: pending ? copy.savedOffline : 'No signal. Try again when you have service.' });
       } else setMessage({ tone: 'error', text: (e as Error).message });
+      if (pending) await setFlags({ signInFailed: true }).catch(() => undefined);
     } finally {
       setBusy(null);
     }
