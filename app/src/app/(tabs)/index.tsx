@@ -29,6 +29,7 @@ import {
   ENROLLED_PRIVATE_LINE,
   layerDateFor,
   MAP_BANNER,
+  MAP_BANNER_SHORT,
   SEASON_ONLY_NOTE,
   SHEET_HEADING,
   sheetText,
@@ -65,6 +66,7 @@ export default function MapScreen() {
   const [expanded, setExpanded] = useState(false);
   const [focus, setFocus] = useState<{ center: Place['center']; key: number }>();
   const [planner, setPlanner] = useState(false);
+  const [fullNotice, setFullNotice] = useState(false);
   const session = useSession();
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const refreshSaved = useCallback(() => {
@@ -142,17 +144,28 @@ export default function MapScreen() {
             <Chip key={f.key} label={f.label} active={f.key === filter} onPress={() => setFilter(f.key)} />
           ))}
         </ScrollView>
-        {/* Legal notice: always visible, never dismissible, scales with system text size. */}
+        {/*
+          Legal banner (lawyer-approved one-liner): always rendered, no close control,
+          no "seen" state, scales with system text size. Tap shows the full notice.
+        */}
         <Pressable
-          accessibilityRole="link"
-          accessibilityLabel={`${MAP_BANNER} Opens the full map notice.`}
-          onPress={() => router.push('/data-sources')}
+          accessibilityRole="button"
+          accessibilityLabel={`${MAP_BANNER_SHORT} ${fullNotice ? 'Hides' : 'Shows'} the full map notice.`}
+          accessibilityState={{ expanded: fullNotice }}
+          onPress={() => setFullNotice((v) => !v)}
           style={styles.banner}
           testID="map-banner"
         >
-          <Ionicons name="information-circle-outline" size={16} color={colors.text} />
-          <Text style={styles.bannerText}>{MAP_BANNER}</Text>
+          <Text style={styles.bannerText}>{MAP_BANNER_SHORT}</Text>
         </Pressable>
+        {fullNotice && (
+          <View style={styles.fullNotice} testID="map-full-notice">
+            <Text style={styles.bannerText}>{MAP_BANNER}</Text>
+            <Text accessibilityRole="link" style={styles.link} onPress={() => router.push('/data-sources')}>
+              Data sources
+            </Text>
+          </View>
+        )}
       </View>
 
       <BottomSheet
@@ -475,7 +488,16 @@ const styles = StyleSheet.create({
     paddingVertical: space.xs,
   },
   // No maxFontSizeMultiplier and no numberOfLines: the banner must stay fully readable at large text sizes.
-  bannerText: { flex: 1, fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 16, color: colors.text },
+  // Body-text size and colors.text (tokens.ts) for normal body contrast.
+  bannerText: { flex: 1, fontFamily: fonts.bodyMedium, fontSize: 13, lineHeight: 18, color: colors.text },
+  fullNotice: {
+    gap: space.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: space.md,
+  },
   notice: {
     gap: space.sm,
     padding: space.md,
