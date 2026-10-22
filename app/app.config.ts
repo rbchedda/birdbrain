@@ -10,8 +10,8 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 // PLACEHOLDER: no bundle id was set in the repo or spec. Confirm before the first App Store Connect record.
 export const IOS_BUNDLE_ID = process.env.BIRDBRAIN_IOS_BUNDLE_ID || 'com.rbchedda.birdbrain';
 
-// No permission usage strings yet: nothing in the app reads location, the camera or
-// the photo library (photos are "coming soon"). Add them with the features; see docs/release.md.
+// Location is foreground / When In Use only (app.json: expo-location plugin, no background).
+// No camera or photo-library strings yet (photos are "coming soon"); see docs/release.md.
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   const appleSignIn = process.env.EXPO_PUBLIC_FLAG_APPLE_SIGN_IN === '1';
