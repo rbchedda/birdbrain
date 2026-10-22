@@ -8,14 +8,14 @@ import { colors, space } from '@/theme/tokens';
 
 /** Guide › PGC table: the 8-day shooting-times table and the full bag table. */
 export default function GuideHoursScreen() {
-  const [zone, pickZone] = useGuideZone();
+  const [zone, pickZone, picked] = useGuideZone();
   const ymd = todayET(new Date());
   return (
     <View style={styles.root}>
       <ScreenHeader title="PGC table" back />
       <ScrollView contentContainerStyle={styles.body}>
-        <ZonePicker zone={zone} onChange={pickZone} />
-        <HoursSection ymd={ymd} zone={zone} />
+        <ZonePicker zone={picked ? zone : null} onChange={pickZone} />
+        <HoursSection ymd={ymd} zone={zone} picked={picked} />
         <BagSection />
       </ScrollView>
     </View>

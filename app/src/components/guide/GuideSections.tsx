@@ -27,11 +27,11 @@ function Header({ title, testID }: { title: string; testID: string }) {
   );
 }
 
-export function ZonePicker({ zone, onChange }: { zone: number; onChange: (z: number) => void }) {
+export function ZonePicker({ zone, onChange }: { zone: number | null; onChange: (z: number) => void }) {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
       {hoursZones().map((z) => (
-        <Chip key={z.zone} label={`Zone ${z.zone}`} active={z.zone === zone} onPress={() => onChange(z.zone)} />
+        <Chip key={z.zone} label={`PGC hours zone ${z.zone}`} active={z.zone === zone} onPress={() => onChange(z.zone)} />
       ))}
     </ScrollView>
   );
@@ -41,7 +41,7 @@ export function InSeasonSection({ ymd, zone, now, onZone }: { ymd: Ymd; zone: nu
   const lng = hoursZones().find((z) => z.zone === zone)?.lng ?? -76.88;
   return (
     <View style={styles.section}>
-      <Header title={`In season now · Zone ${zone}`} testID="guide-season" />
+      <Header title="In season now" testID="guide-season" />
       <Text style={ui.muted}>PGC hours zone (east 1 → west 7). Pick yours:</Text>
       <ZonePicker zone={zone} onChange={onZone} />
       {inSeasonRows(ymd, zone, now).map((r) => (
@@ -58,7 +58,7 @@ export function InSeasonSection({ ymd, zone, now, onZone }: { ymd: Ymd; zone: nu
   );
 }
 
-/** buyUrl: HuntFishPA store link on the Licenses card; hidden while null (unverified). */
+/** buyUrl: HuntFishPA store link on the Licenses card; hidden while null. */
 export function RegsSection({ buyUrl = HUNTFISHPA_URL }: { buyUrl?: string | null } = {}) {
   return (
     <View style={styles.section}>
@@ -143,12 +143,12 @@ export function BagSection() {
   );
 }
 
-export function HoursSection({ ymd, zone }: { ymd: Ymd; zone: number }) {
+export function HoursSection({ ymd, zone, picked = true }: { ymd: Ymd; zone: number; picked?: boolean }) {
   const rows = shootingTimes(ymd, zone);
   const span = (h: { start: string; end: string } | null) => (h ? `${h.start} – ${h.end}` : 'check the digest');
   return (
     <View style={styles.section}>
-      <Header title={`Shooting times · Zone ${zone}`} testID="guide-hours" />
+      <Header title={picked ? `Shooting times · PGC hours zone ${zone}` : `Shooting times · PGC hours zone ${zone} (default), pick yours`} testID="guide-hours" />
       <Text style={ui.muted}>From the official PGC hunting-hours table ({officialHours.version}). Never computed.</Text>
       <Text style={ui.body} testID="hours-spring-gobbler">{SPRING_GOBBLER_HOURS}</Text>
       {rows.map((r, i) => (

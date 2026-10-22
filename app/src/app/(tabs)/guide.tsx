@@ -32,8 +32,8 @@ export default function GuideScreen() {
 
   const now = new Date();
   const ymd = todayET(now);
-  // Zone is picked on the PGC table screen; the Today card just uses it.
-  const [zone] = useGuideZone();
+  // The PGC hours zone is picked on the PGC table screen; until then nothing is shown as the user's zone.
+  const [zone, , zonePicked] = useGuideZone();
   const today = shootingTimes(ymd, zone, 1)[0];
   const all = inSeasonRows(ymd, zone, now);
   const rows = inSeasonNow(all);
@@ -45,7 +45,13 @@ export default function GuideScreen() {
       <ScreenHeader title="Guide" />
       <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.meta}>
-          <Text style={ui.muted}>Zone {zone} · today · </Text>
+          {zonePicked ? (
+            <Text style={ui.muted} testID="guide-zone">PGC hours zone {zone} · today · </Text>
+          ) : (
+            <Text style={[ui.muted, styles.link]} accessibilityRole="link" testID="guide-zone" onPress={() => router.push('/guide/hours')}>
+              Pick your hours zone ›{' '}
+            </Text>
+          )}
           <DigestLink testID="guide-digest-top" />
         </View>
 
@@ -59,6 +65,11 @@ export default function GuideScreen() {
           <Text style={ui.muted} testID="guide-today-label">
             {hours.label}
           </Text>
+          {!zonePicked && (
+            <Text style={ui.muted} testID="guide-today-default-zone">
+              Showing PGC hours zone {zone} (default), pick yours on the PGC table
+            </Text>
+          )}
           {today?.smallGame ? (
             <View style={styles.times}>
               <View style={{ flex: 1 }}>
@@ -81,7 +92,7 @@ export default function GuideScreen() {
         </View>
 
         <View style={styles.section} testID="guide-season">
-          <SectionTitle>{`In season now · Zone ${zone}`}</SectionTitle>
+          <SectionTitle>In season now</SectionTitle>
           {rows.length === 0 && <Text style={ui.muted}>Nothing open today. See the PGC table for all seasons.</Text>}
           {rows.map((r) => (
             <SpeciesRow key={r.species} species={r.species} testID={`in-season-${r.species}`}>
