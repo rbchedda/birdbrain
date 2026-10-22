@@ -1,6 +1,7 @@
 import type {
   Author,
   Comment,
+  DataSource,
   DiaryDetails,
   Group,
   Place,
@@ -44,6 +45,13 @@ export interface HuntLogUpload {
   details?: DiaryDetails | null;
 }
 
+/** One onboarding acceptance (liability memo §4C), as logged to accepted_terms. */
+export interface TermsAcceptance {
+  acceptedAt: string;
+  appVersion: string;
+  termsVersion: string;
+}
+
 export interface HuntLogUpsertResult {
   version: number;
   /** The server copy changed since baseVersion; nothing was written. */
@@ -63,7 +71,10 @@ export interface Backend {
   /** Permanently delete the signed-in account and everything it owns, then sign out. */
   deleteAccount(): Promise<void>;
 
+  /** Places with a known access_type only; unknown land status is never shown. */
   listPlaces(): Promise<Place[]>;
+  /** Per-layer dates from ingest_state for the Data sources page and place sheets. */
+  dataSources(): Promise<DataSource[]>;
   placeDetail(id: string): Promise<PlaceDetail>;
   savedPlaceIds(): Promise<string[]>;
   setPlaceSaved(id: string, saved: boolean): Promise<void>;
@@ -86,6 +97,8 @@ export interface Backend {
   /** Whether the signed-in user has accepted the community rules (once, ever). */
   rulesAccepted(): Promise<boolean>;
   acceptRules(): Promise<void>;
+  /** Log a ToS/onboarding acceptance to accepted_terms (owner-only). Re-sending the same terms version is a no-op. */
+  recordTermsAcceptance(a: TermsAcceptance): Promise<void>;
 
   groups(): Promise<Group[]>;
   setMember(groupId: string, member: boolean): Promise<void>;

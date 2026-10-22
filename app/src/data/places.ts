@@ -15,6 +15,7 @@ export const samplePlaces: Place[] = [
     species: [],
     center: { lng: -77.93, lat: 40.86 },
     acres: 7200,
+    access: 'state_game_land',
     note: 'Mixed hardwood ridges. Parking lots on the north and east sides.',
   },
   {
@@ -25,6 +26,7 @@ export const samplePlaces: Place[] = [
     species: ['pheasant'],
     center: { lng: -76.21, lat: 40.11 },
     acres: null,
+    access: 'other_public',
     note: 'Warm-season grass fields along the creek bottom.',
   },
   {
@@ -35,6 +37,7 @@ export const samplePlaces: Place[] = [
     species: ['dove'],
     center: { lng: -76.83, lat: 39.93 },
     acres: 35,
+    access: 'state_game_land',
     note: 'Sunflower and wheat plots. Migratory bird license required.',
   },
   {
@@ -45,6 +48,7 @@ export const samplePlaces: Place[] = [
     species: [],
     center: { lng: -80.21, lat: 41.62 },
     acres: 5400,
+    access: 'state_game_land',
     note: 'Marsh impoundments and wooded edges.',
   },
   {
@@ -55,6 +59,7 @@ export const samplePlaces: Place[] = [
     species: ['pheasant'],
     center: { lng: -75.12, lat: 40.43 },
     acres: null,
+    access: 'enrolled_private',
     note: 'Hedgerows and cut corn. Busy on Saturdays.',
   },
   {
@@ -65,6 +70,7 @@ export const samplePlaces: Place[] = [
     species: [],
     center: { lng: -77.62, lat: 41.29 },
     acres: 12100,
+    access: 'state_game_land',
     note: 'Aspen cuts on the plateau, good grouse cover.',
   },
 ];

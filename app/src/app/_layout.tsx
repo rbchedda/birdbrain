@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { ConsentGate } from '@/components/ConsentGate';
 import { colors } from '@/theme/tokens';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -29,14 +30,17 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <EntitlementsProvider>
-      <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.ground } }}>
-        <Stack.Screen
-          name="new/index"
-          options={{ presentation: 'transparentModal', animation: 'fade', contentStyle: { backgroundColor: 'transparent' } }}
-        />
-      </Stack>
-      <UpgradeSheet />
+        <StatusBar style="light" />
+        {/* Consent first: nothing (including the upgrade sheet) shows until terms are accepted. */}
+        <ConsentGate>
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.ground } }}>
+            <Stack.Screen
+              name="new/index"
+              options={{ presentation: 'transparentModal', animation: 'fade', contentStyle: { backgroundColor: 'transparent' } }}
+            />
+          </Stack>
+          <UpgradeSheet />
+        </ConsentGate>
       </EntitlementsProvider>
     </SafeAreaProvider>
   );

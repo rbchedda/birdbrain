@@ -103,6 +103,8 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
     },
 
     listPlaces: async () => samplePlaces,
+    // Sample data has no ingest: the Data sources page shows dates as unknown.
+    dataSources: async () => [],
     placeDetail: async (id) => ({ stocking: sampleStocking.filter((e) => e.placeId === id), outline: null }),
     savedPlaceIds: async () => (await load()).saved,
     async setPlaceSaved(id, on) {
@@ -246,6 +248,9 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
       s.rulesAcceptedAt ??= now().toISOString();
       await persist(s);
     },
+
+    // Sample mode has no server: acceptances stay in the device-side consent record.
+    async recordTermsAcceptance() {},
 
     async groups() {
       const s = await load();

@@ -101,7 +101,7 @@ describe('supabase placeDetail', () => {
 describe('supabase listPlaces', () => {
   afterEach(() => jest.restoreAllMocks());
   const placeRows = [
-    { id: 'sgl', type: 'stocking', name: 'State Game Lands 1', county: 'Centre', species: ['pheasant'], centroid: { type: 'Point', coordinates: [-77.5, 40.5] }, acres: 10 },
+    { id: 'sgl', type: 'stocking', name: 'State Game Lands 1', county: 'Centre', species: ['pheasant'], centroid: { type: 'Point', coordinates: [-77.5, 40.5] }, acres: 10, property_type: 'SGL', sgl: '1' },
     { id: 'gl', type: 'game_land', name: 'State Game Lands 2', county: 'York', species: [], centroid: { type: 'Point', coordinates: [-76.7, 39.9] }, acres: 5 },
   ];
 

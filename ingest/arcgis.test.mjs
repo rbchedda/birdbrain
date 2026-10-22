@@ -104,7 +104,7 @@ describe('toRows', () => {
     assert.equal(row.acres, 8585.2); // gis_area_ac, not Shape__Area (Web Mercator square metres)
     assert.equal(row.county, null); // the layer has no county
     assert.equal(row.source_updated_at, '2026-10-19T14:48:24.000Z');
-    assert.deepEqual(JSON.parse(row.properties), { sgl: 24, pgc_region: 'Northwest', status: 'Active', raw: gameLands.features[1].properties });
+    assert.deepEqual(JSON.parse(row.properties), { sgl: 24, pgc_region: 'Northwest', status: 'Active', access_type: 'state_game_land', raw: gameLands.features[1].properties });
   });
 
   it('keys stocking points by property and names game lands in full', () => {
@@ -119,6 +119,7 @@ describe('toRows', () => {
     assert.deepEqual({ ...p, raw: undefined }, {
       sgl: 101, pgc_region: 'Northwest', property_type: 'SGL', late_season: false, number_releases: 6,
       total_released: 360, globalid: '02d7cb09-b6ea-4f2a-9a27-7ce5342be0ab', raw: undefined,
+      access_type: 'state_game_land',
     });
     assert.equal(p.raw.late_season_status, 'No Late Season Stocking');
   });
