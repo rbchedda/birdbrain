@@ -7,9 +7,9 @@ import { loadPlaces } from '@/data/hooks';
 import { MAP_BANNER_SHORT } from '@/data/mapNotice';
 import { samplePlaces } from '@/data/places';
 import { canUse, FREE_STATE, isPremium, SAFETY_FEATURES } from '@/entitlements';
-import { useOfflineMapSource } from '@/offline';
+import { offlinePacks, useOfflineMapSource } from '@/offline';
 import { OfflineGateError, PackDownloader } from '@/offline/downloader';
-import { areaPack, planPack, sglPack, type PackManifest, type PackSpec } from '@/offline/packs';
+import { areaPack, InvalidPackIdError, isValidPackId, planPack, sglPack, type PackManifest, type PackSpec } from '@/offline/packs';
 import { cachedOutline, cachedSafetyPlaces, saveOutline, saveSafetyPlaces, withOfflineOutline } from '@/offline/safetyCache';
 import {
   assertCacheable,
@@ -48,6 +48,10 @@ function memoryStore(opts: { fail?: (url: string) => boolean; delay?: () => Prom
     async remove(dir) {
       for (const k of [...files.keys()]) if (k.startsWith(`${dir}/`)) files.delete(k);
     },
+    async clear() {
+      files.clear();
+      manifests = {};
+    },
     readManifests: async () => manifests,
     writeManifests: async (m) => void (manifests = m),
   };
@@ -58,7 +62,11 @@ function memoryStore(opts: { fail?: (url: string) => boolean; delay?: () => Prom
 const spec: PackSpec = areaPack('SGL test', { lng: -77.5, lat: 40.8 }, 0.5, ['topo']);
 
 // The device store, as a phone would have it (jest runs the web/native split unevenly).
-const mockDevice: { manifests: Record<string, PackManifest> } = { manifests: {} };
+const mockDevice: { manifests: Record<string, PackManifest>; removed: string[]; cleared: number } = {
+  manifests: {},
+  removed: [],
+  cleared: 0,
+};
 jest.mock('@/offline/fileTileStore', () => ({
   fileTileStore: {
     supported: true,
@@ -66,7 +74,8 @@ jest.mock('@/offline/fileTileStore', () => ({
     exists: async () => false,
     size: async () => 0,
     readBase64: async () => null,
-    remove: async () => {},
+    remove: async (dir: string) => void mockDevice.removed.push(dir),
+    clear: async () => void (mockDevice.cleared += 1),
     readManifests: async () => mockDevice.manifests,
     writeManifests: async () => {},
   },
@@ -134,6 +143,21 @@ describe('offline sources: Esri is never cached', () => {
     for (const f of readdirSync(dir)) {
       const src = readFileSync(join(dir, f), 'utf8').replace(/BLOCKED_HOST_SUFFIXES = \[[^\]]*\]/, '');
       expect(src).not.toMatch(/arcgisonline|World_Imagery/i);
+    }
+  });
+
+  it('an R2 base pointed at an Esri host is refused (the blocklist wins)', () => {
+    const prev = process.env.EXPO_PUBLIC_OFFLINE_R2_BASE;
+    process.env.EXPO_PUBLIC_OFFLINE_R2_BASE = 'https://tiles.arcgis.com/r2';
+    try {
+      jest.isolateModules(() => {
+        const s = jest.requireActual<typeof import('@/offline/sources')>('@/offline/sources');
+        expect(s.isCacheableTileUrl('https://tiles.arcgis.com/r2/1/0/0')).toBe(false);
+        expect(s.allowedHosts()).not.toContain('tiles.arcgis.com');
+      });
+    } finally {
+      if (prev === undefined) delete process.env.EXPO_PUBLIC_OFFLINE_R2_BASE;
+      else process.env.EXPO_PUBLIC_OFFLINE_R2_BASE = prev;
     }
   });
 
@@ -268,6 +292,71 @@ describe('offline packs: download state', () => {
     expect(await serveTile(`bboffline://satellite/${z}/${x}/${y}`, d.list(), store)).toBeNull();
     expect(await serveTile('https://example.com/1/0/0', d.list(), store)).toBeNull();
   });
+
+  it('serveTile only reads known pack sources (allowlist)', async () => {
+    const store = memoryStore();
+    const d = new PackDownloader(store);
+    await d.download(spec, true).done;
+    const reads: string[] = [];
+    const spy: TileStore = { ...store, readBase64: async (p) => (reads.push(p), store.readBase64(p)) };
+    // A manifest that claims an unknown source must still not be read for it.
+    const forged = { ...d.list(), x: { ...d.list()[spec.id], spec: { ...spec, id: 'x', basemaps: ['esri', 'topo'] as never } } };
+    for (const src of ['esri', 'terrain', 'constructor', 'proto']) {
+      expect(await serveTile(`bboffline://${src}/14/1/1`, forged, spy)).toBeNull();
+    }
+    expect(reads).toEqual([]);
+    const [path] = [...store.files.keys()].filter((k) => k.includes('/topo/14/'));
+    const [, , z, x, y] = path.split('/');
+    expect(await serveTile(`bboffline://topo/${z}/${x}/${y}`, forged, spy)).toBe('AAEC');
+  });
+
+  it('clear() cancels running jobs and removes every pack and the stored index', async () => {
+    let release!: () => void;
+    const held = new Promise<void>((r) => (release = r));
+    let hold = false;
+    const store = memoryStore({ delay: () => (hold ? held : Promise.resolve()) });
+    const d = new PackDownloader(store, { concurrency: 2 });
+    const other = areaPack('Other', { lng: -77.6, lat: 40.9 }, 0.5, ['topo']);
+    await d.download(other, true).done.catch(() => {});
+    hold = true;
+    const running = d.download(spec, true);
+    const cleared = d.clear();
+    release();
+    await cleared;
+    await running.done;
+    expect(d.list()).toEqual({});
+    expect(store.files.size).toBe(0);
+    expect(await store.readManifests()).toEqual({});
+    expect(d.isRunning(spec.id)).toBe(false);
+  });
+});
+
+describe('offline packs: pack ids are one safe path segment', () => {
+  const bad = ['', '..', '/', '../x', 'a/b', 'a\\b', '.hidden', 'a..b', 'sgl-..', ' x', 'x\n'];
+
+  it('rejects empty, traversal and separator ids', () => {
+    for (const id of bad) expect(isValidPackId(id)).toBe(false);
+    for (const id of ['sgl-123', 'sgl-3f2a-9c', spec.id, 'area--77.5000,40.8000-3']) expect(isValidPackId(id)).toBe(true);
+    expect(() => sglPack({ id: '../..', name: 'x', center: { lng: -77, lat: 40 } }, null, ['topo'])).toThrow(InvalidPackIdError);
+    expect(() => sglPack({ id: 'a/b', name: 'x', center: { lng: -77, lat: 40 } }, null, ['topo'])).toThrow(InvalidPackIdError);
+  });
+
+  it('download and delete refuse bad ids before touching storage', async () => {
+    const store = memoryStore();
+    const removed: string[] = [];
+    const d = new PackDownloader({ ...store, remove: async (p) => void removed.push(p) });
+    for (const id of ['', '..', '/']) {
+      expect(() => d.download({ ...spec, id }, true)).toThrow(InvalidPackIdError);
+      await expect(d.delete(id)).rejects.toThrow(InvalidPackIdError);
+    }
+    expect(removed).toEqual([]);
+    expect(store.calls).toEqual([]);
+  });
+
+  it('the device store guards its delete path itself', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../offline/fileTileStore.native.ts'), 'utf8');
+    expect(src).toMatch(/new Directory\(root\(\), assertPackId\(dir\)\)/);
+  });
 });
 
 const metrics = { frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } };
@@ -287,6 +376,48 @@ jest.mock('@/components/map/PlaceMap', () => {
 });
 
 describe('Offline maps screen', () => {
+  it('Delete is not behind the paywall: a lapsed pass can still free storage', async () => {
+    expect(canUse('offlineMaps', FREE_STATE)).toBe(false);
+    await offlinePacks.download(spec, true).done;
+    mockDevice.removed = [];
+    await renderRouter('./src/app', { initialUrl: '/offline-maps' });
+    expect(await screen.findByTestId(`pack-${spec.id}`)).toBeTruthy();
+    expect(screen.getByTestId('gated-offlineMaps')).toBeTruthy();
+    expect(screen.queryByText('Resume')).toBeNull();
+    await fireEvent.press(screen.getByText('Delete'));
+    await waitFor(() => expect(screen.queryByTestId(`pack-${spec.id}`)).toBeNull());
+    expect(mockDevice.removed).toEqual([spec.id]);
+    expect(offlinePacks.list()[spec.id]).toBeUndefined();
+  });
+
+  it('account deletion removes all offline packs and their index', async () => {
+    await offlinePacks.download(spec, true).done;
+    const before = mockDevice.cleared;
+    await renderRouter('./src/app', { initialUrl: '/profile/settings' });
+    await fireEvent.press((await screen.findAllByText('Delete account')).at(-1)!);
+    await fireEvent.press(screen.getByText('Yes, delete my account'));
+    await waitFor(() => expect(mockDevice.cleared).toBe(before + 1));
+    expect(offlinePacks.list()).toEqual({});
+  });
+
+  it('sign-out removes all offline packs and their index', async () => {
+    await offlinePacks.download(spec, true).done;
+    const before = mockDevice.cleared;
+    const mode = Object.getOwnPropertyDescriptor(backend, 'mode')!;
+    Object.defineProperty(backend, 'mode', { ...mode, value: 'supabase' });
+    const out = jest.spyOn(backend, 'signOut');
+    try {
+      await renderRouter('./src/app', { initialUrl: '/profile/settings' });
+      await fireEvent.press(await screen.findByText('Sign out'));
+      await waitFor(() => expect(mockDevice.cleared).toBe(before + 1));
+      expect(out).toHaveBeenCalledTimes(1);
+      expect(offlinePacks.list()).toEqual({});
+    } finally {
+      Object.defineProperty(backend, 'mode', mode);
+      out.mockRestore();
+    }
+  });
+
   it('free users see the pass prompt, not downloads; the free safety note is always shown', async () => {
     await act(() => loadPlaces(true));
     await renderRouter('./src/app', { initialUrl: '/offline-maps' });
