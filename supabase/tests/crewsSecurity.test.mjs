@@ -53,19 +53,52 @@ describe('must 1: anonymous JWT sessions are refused', () => {
 });
 
 describe('must 2: deleting a crew deletes its content', () => {
-  it('posts, comments, likes and photos go; nothing becomes public', async () => {
+  it('posts, comments and likes go; photos are queued, not deleted in SQL, and unreadable', async () => {
     const crew = await crewWithBob();
-    const pid = await post(alice, crew);
-    await db.query(`insert into storage.objects (bucket_id, name, owner) values ('post-photos', $1, $2)`, [`${alice}/p.jpg`, alice]).catch(() =>
-      db.query(`insert into storage.objects (bucket_id, name) values ('post-photos', $1)`, [`${alice}/p.jpg`]),
-    );
-    // Seeded directly: the post is still inside its moderation delay, so RLS would hide it from bob.
+    const path = `${alice}/crew-${crew}.jpg`;
+    const pid = (await rows(alice, `insert into public.posts (author_id, species, group_id, photo_path) values ($1, 'pheasant', $2, $3) returning id`, [alice, crew, path]))[0].id;
+    await db.query(`insert into storage.objects (bucket_id, name) values ('post-photos', $1)`, [path]);
+    await db.query(`update public.posts set public_after = now() - interval '1 hour' where id = $1`, [pid]);
+    // Seeded directly so the test doesn't depend on moderation-delay RLS.
     await db.query(`insert into public.comments (post_id, author_id, body) values ($1, $2, 'hi')`, [pid, bob]);
     await db.query('insert into public.likes (post_id, user_id) values ($1, $2)', [pid, bob]);
+    const bobReads = async () => (await rows(bob, `select name from storage.objects where bucket_id = 'post-photos' and name = $1`, [path])).length;
+    assert.equal(await bobReads(), 1, 'a member can read the photo while the crew exists');
     await q(alice, 'delete from public.groups where id = $1', [crew]);
     for (const [t, col] of [['posts', 'id'], ['comments', 'post_id'], ['likes', 'post_id']])
       assert.equal((await db.query(`select 1 from public.${t} where ${col} = $1`, [pid])).rows.length, 0, t);
-    assert.equal((await db.query(`select 1 from storage.objects where name = $1`, [`${alice}/p.jpg`])).rows.length, 0);
+    assert.deepEqual(
+      (await db.query(`select bucket_id, path, reason, attempts from public.storage_deletion_queue where path = $1`, [path])).rows,
+      [{ bucket_id: 'post-photos', path, reason: 'crew deleted', attempts: 0 }],
+    );
+    // The file is left for the Storage API job; until then no other user can read it.
+    assert.equal((await db.query('select 1 from storage.objects where name = $1', [path])).rows.length, 1);
+    assert.equal(await bobReads(), 0, 'former member');
+    assert.equal((await rows(eve, `select 1 from storage.objects where name = $1`, [path])).length, 0, 'outsider');
+    assert.equal((await as(db, 'anon', null, (tx) => tx.query('select 1 from storage.objects where name = $1', [path]))).rows.length, 0, 'anon');
+  });
+  it('the last member leaving queues every photo path', async () => {
+    const crew = await newCrew(alice);
+    const paths = [1, 2, 3].map((n) => `${alice}/auto-${crew}-${n}.jpg`);
+    for (const p of paths) await q(alice, `insert into public.posts (author_id, species, group_id, photo_path) values ($1, 'pheasant', $2, $3)`, [alice, crew, p]);
+    await q(alice, `insert into public.posts (author_id, species, group_id) values ($1, 'pheasant', $2)`, [alice, crew]); // no photo
+    await q(alice, 'select public.leave_crew($1)', [crew]);
+    const queued = (await db.query('select path from public.storage_deletion_queue where path = any($1) order by path', [paths])).rows.map((r) => r.path);
+    assert.deepEqual(queued, [...paths].sort());
+  });
+  it('clients have no access to the queue', async () => {
+    for (const role of ['anon', 'authenticated'])
+      await assert.rejects(as(db, role, role === 'anon' ? null : alice, (tx) => tx.query('select * from public.storage_deletion_queue')), /permission denied/);
+    await assert.rejects(q(alice, `insert into public.storage_deletion_queue (bucket_id, path, reason) values ('post-photos', 'x', 'y')`), /permission denied/);
+    const rls = (await db.query(`select relrowsecurity from pg_class where oid = 'public.storage_deletion_queue'::regclass`)).rows[0];
+    assert.equal(rls.relrowsecurity, true);
+  });
+  it('no SQL delete from storage.objects remains in crew code', async () => {
+    const src = (await db.query(`select prosrc from pg_proc where proname = 'delete_crew_content'`)).rows[0].prosrc;
+    assert.doesNotMatch(src, /storage\.objects/);
+    const offenders = (await db.query(`select proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname = 'public' and prosrc ~* 'delete\s+from\s+storage\.objects' order by 1`)).rows.map((r) => r.proname);
+    assert.deepEqual(offenders.filter((n) => n !== 'delete_my_account'), [], 'only the legacy account-deletion path may remain');
   });
   it('the last member leaving (auto-delete) also deletes the posts', async () => {
     const crew = await newCrew(alice);
