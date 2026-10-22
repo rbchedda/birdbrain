@@ -56,17 +56,14 @@ describe('Log hunt sheet (redesign 02)', () => {
     expect(screen.queryByText('Woodcock')).toBeNull();
   });
 
-  it('signed out: Save holds the entry and shows the one sign-in sheet; Not now keeps it on the phone', async () => {
+  it('signed out: Save keeps the entry on the phone and shows the one sign-in sheet, without Not now', async () => {
     mockSignedOut = true;
     await open('/new/log?placeId=stock-sample-1');
     expect(await screen.findByText(/First save\? You’ll create a free account/)).toBeTruthy();
     await fireEvent.press(screen.getByText('Save hunt'));
     expect(await screen.findByText('Keep your hunt diary')).toBeTruthy();
     expect(screen.getByText('Pheasant stocking (sample B) · Pheasant')).toBeTruthy();
-    expect((await journalEntries()).length).toBe(0);
-    await fireEvent.press(screen.getByText('Not now — keep on this phone only'));
-    expect(await screen.findByText(/Saved to your private log on this phone/)).toBeTruthy();
-    expect(screen.getByText('Share this hunt later →')).toBeTruthy();
     expect((await journalEntries()).length).toBe(1);
+    expect(screen.queryByText('Not now — keep on this phone only')).toBeNull();
   });
 });
