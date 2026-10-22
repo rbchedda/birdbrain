@@ -138,6 +138,11 @@ export interface Profile {
   username: string | null;
   displayName: string | null;
   hasDog: boolean;
+  /**
+   * Home county, ONLY if the user typed it in themselves. Never inferred from
+   * location. TODO: no backend column or settings field yet, so this is unset today.
+   */
+  homeCounty?: string | null;
 }
 
 /** A private crew the user belongs to (spec §3.6). */

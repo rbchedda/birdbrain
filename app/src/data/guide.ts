@@ -1,6 +1,6 @@
 import { describeStatus, legalHours, seasons, speciesStatus, type SpeciesStatus } from '@/data/seasons';
 import { officialHours, type HoursTable } from '@/lib/sun';
-import { addDays, formatTime, weekdayOf, type Ymd } from '@/lib/time';
+import { addDays, formatDay, formatTime, weekdayOf, type Ymd } from '@/lib/time';
 
 import { allSpecies, speciesLabel, type Species } from './types';
 
@@ -95,3 +95,50 @@ export const segmentsFor = (species: Species) => seasons.filter((s) => s.species
 /** Spring gobbler hours (digest p.10 note 3, p.35). A rule, not a computed time. */
 export const SPRING_GOBBLER_HOURS =
   'Spring gobbler: ½ hour before sunrise to noon through May 15, then ½ hour before sunrise to ½ hour after sunset.';
+
+export interface ComingUpRow {
+  species: Species;
+  label: string;
+  date: Ymd;
+  /** e.g. "Opens Sat, Oct 24" (youth openings say so). */
+  status: string;
+}
+
+/** The next `limit` species openings after today (closed species only, soonest first). */
+export function comingUp(ymd: Ymd, zone: number, now = new Date(), limit = 3, table: HoursTable = officialHours): ComingUpRow[] {
+  return inSeasonRows(ymd, zone, now, table)
+    .flatMap((r) =>
+      r.status.kind === 'closed' && r.status.nextOpen
+        ? [{
+            species: r.species,
+            label: r.label,
+            date: r.status.nextOpen.date,
+            status: `Opens ${formatDay(r.status.nextOpen.date)}${r.status.nextOpen.season.youth ? ' (youth)' : ''}`,
+          }]
+        : [],
+    )
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+    .slice(0, limit);
+}
+
+/** In season now: open species and ones whose dates vary (check digest). Closed ones are hidden. */
+export const inSeasonNow = (rows: InSeasonRow[]) => rows.filter((r) => r.badge === 'OPEN' || r.badge === 'CHECK');
+
+const SMALL_GAME: Species[] = ['pheasant', 'grouse', 'turkey'];
+
+/**
+ * Today card label for the small-game hours: the open species those PGC table
+ * hours apply to, or the neutral "Legal hours today" when none is open.
+ * migratoryDiffers is true only when a migratory species (dove, waterfowl) is
+ * open today and its hours differ from the small-game hours.
+ */
+export function todayHoursSummary(rows: InSeasonRow[], hours: HoursRow | undefined) {
+  const open = rows.filter((r) => r.status.kind === 'open');
+  const smallOpen = open.filter((r) => SMALL_GAME.includes(r.species));
+  const label = smallOpen.length ? smallOpen.map((r) => r.label).join(', ') : 'Legal hours today';
+  const migratoryOpen = open.some((r) => r.species === 'dove' || r.species === 'waterfowl');
+  const sg = hours?.smallGame;
+  const mg = hours?.migratory;
+  const migratoryDiffers = migratoryOpen && !!sg && !!mg && (sg.start !== mg.start || sg.end !== mg.end);
+  return { label, migratoryDiffers };
+}

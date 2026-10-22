@@ -32,7 +32,8 @@ export type LeaveCrewResult = 'left' | 'promoted' | 'deleted';
 export interface Session {
   userId: string;
   email: string | null;
-  anonymous: boolean;
+  /** Never true from our backends (anonymous sessions map to signed out); kept for #25's defensive checks. */
+  anonymous?: boolean;
 }
 
 export interface FeedPage {
@@ -80,7 +81,6 @@ export interface Backend {
   signIn(email: string, password: string): Promise<void>;
   /** Resolves needsConfirmation when the project requires email confirmation first. */
   signUp(email: string, password: string): Promise<{ needsConfirmation: boolean }>;
-  signInAsGuest(): Promise<void>;
   signOut(): Promise<void>;
   /** Permanently delete the signed-in account and everything it owns, then sign out. */
   deleteAccount(): Promise<void>;

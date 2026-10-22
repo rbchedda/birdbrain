@@ -7,7 +7,9 @@ import { ScreenHeader } from '@/components/Screen';
 import { SectionTitle, ui } from '@/components/ui';
 import { birdByKey } from '@/data/birds';
 import { gear } from '@/data/gear';
+import { segmentsFor } from '@/data/guide';
 import { regsFor } from '@/data/regs';
+import { formatDay } from '@/lib/time';
 import { colors, space } from '@/theme/tokens';
 
 /** Guide › Bird ID › species: photos (placeholders for now), field marks, look-alikes, limits and gear. */
@@ -29,12 +31,26 @@ export default function BirdScreen() {
       <ScrollView contentContainerStyle={styles.body}>
         <DigestLink />
         <BirdCard bird={bird} variant="full" />
+        {bird.species && (
+          <>
+            <SectionTitle>Seasons</SectionTitle>
+            <View style={ui.card} testID="bird-seasons">
+              {segmentsFor(bird.species).map((seg) => (
+                <Text key={seg.label} style={ui.body}>
+                  {seg.label}:{' '}
+                  {seg.windows ? seg.windows.map(([a, b]) => `${formatDay(a)} – ${formatDay(b)}`).join('; ') : 'dates vary, check the digest'}
+                </Text>
+              ))}
+            </View>
+          </>
+        )}
         <SectionTitle>Limits</SectionTitle>
         {regs ? (
-          <View style={ui.card}>
+          <View style={ui.card} testID="bird-limits">
             <Text style={ui.body}>Daily: {regs.daily}</Text>
             <Text style={ui.body}>Possession: {regs.possession}</Text>
             <Text style={ui.muted}>{regs.sundayNote}</Text>
+            <DigestLink testID="bird-limits-digest" />
           </View>
         ) : (
           <Text style={ui.body}>{bird.regsNote}</Text>

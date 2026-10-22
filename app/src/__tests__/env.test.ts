@@ -45,7 +45,7 @@ describe('Supabase wiring', () => {
     expect(backend.mode).toBe('unconfigured');
     expect(await backend.getSession()).toBeNull();
     await expect(backend.listPlaces()).rejects.toThrow(/not connected to a server/);
-    await expect(backend.signInAsGuest()).rejects.toThrow(/app\/\.env/);
+    await expect(backend.signIn('a@example.test', 'secret1')).rejects.toThrow(/app\/\.env/);
   });
 
   it('prefers Supabase over the sample flag when both are set', () => {

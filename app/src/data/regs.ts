@@ -9,6 +9,12 @@ import type { Species } from './types';
  */
 export const PGC_DIGEST_URL =
   'https://www.pa.gov/content/dam/copapwp-pagov/en/pgc/documents/hunttrap/law/pa%20game%20hunttrap%20digest%2026-27.pdf';
+/**
+ * HuntFishPA license store link for the Licenses page. Null hides the
+ * "Buy on HuntFishPA ›" link.
+ */
+export const HUNTFISHPA_URL: string | null = 'https://huntfish.pa.gov/';
+
 export const PGC_SEASONS_URL = 'https://www.pa.gov/agencies/pgc/huntingandtrapping/regulations/seasons-and-bag-limits';
 
 export type SundayRule = 'open' | 'closed' | 'check';
