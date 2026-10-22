@@ -24,7 +24,7 @@ const tabBar = () =>
 describe('Five-tab nav', () => {
   it('launches on Map with tabs Map | Feed | ＋ | Guide | Profile', async () => {
     await open('/');
-    expect(await screen.findByText('6 spots')).toBeTruthy();
+    expect(await screen.findByText('6 spots nearby')).toBeTruthy();
     expect(tabBar()).toEqual(['Map', 'Feed', 'New: log a hunt or post', 'Guide', 'Profile']);
     for (const gone of ['Plan', 'Learn', 'Crew', 'Log']) expect(screen.queryByRole('tab', { name: gone })).toBeNull();
   });
@@ -57,7 +57,7 @@ describe('Old routes redirect to Guide', () => {
 describe('＋ chooser', () => {
   it('opens from the center button and offers Log hunt and Post', async () => {
     await open('/');
-    await screen.findByText('6 spots');
+    await screen.findByText('6 spots nearby');
     await fireEvent.press(screen.getByLabelText('New: log a hunt or post'));
     expect(await screen.findByText(/What are you adding\?/)).toBeTruthy();
     expect(screen.getByText(/Never posted\. Only you see it\./)).toBeTruthy();
@@ -81,7 +81,7 @@ describe('＋ chooser', () => {
 
   it('Cancel closes the chooser', async () => {
     await open('/');
-    await screen.findByText('6 spots');
+    await screen.findByText('6 spots nearby');
     await fireEvent.press(screen.getByLabelText('New: log a hunt or post'));
     await fireEvent.press(await screen.findByText('Cancel'));
     expect(screen.queryByText(/What are you adding\?/)).toBeNull();
