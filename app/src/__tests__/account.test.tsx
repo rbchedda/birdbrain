@@ -48,10 +48,10 @@ describe('13+ age gate on sign-in', () => {
   });
 });
 
-describe('Delete account on profile', () => {
+describe('Delete account in Profile › Settings', () => {
   it('requires confirmation, can be cancelled, then deletes', async () => {
     const spy = jest.spyOn(backend, 'deleteAccount');
-    await open('/profile');
+    await open('/profile/settings');
     expect(await screen.findByText('Privacy Policy')).toBeTruthy();
     await fireEvent.press(screen.getAllByText('Delete account').at(-1)!);
     expect(screen.getByText(/permanently deletes your account/)).toBeTruthy();
@@ -68,7 +68,7 @@ describe('Delete account on profile', () => {
 
   it('shows an error and keeps the account when deletion fails', async () => {
     const spy = jest.spyOn(backend, 'deleteAccount').mockRejectedValueOnce(new Error('network down'));
-    await open('/profile');
+    await open('/profile/settings');
     await screen.findByText('Privacy Policy');
     await fireEvent.press(screen.getAllByText('Delete account').at(-1)!);
     await fireEvent.press(screen.getByText('Yes, delete my account'));
