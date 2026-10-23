@@ -4,7 +4,16 @@ import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testi
 import { backend } from '@/data';
 import type { Session } from '@/data/backend';
 import { MAP_BANNER, MAP_BANNER_SHORT, NOTICE_VERSION, PEEK_SURVEY_LINE } from '@/data/mapNotice';
-import { NOTICE_DISMISS_KEY, dismissNoticeFor, isNoticeDismissed, restoreNoticeFor } from '@/lib/noticeDismiss';
+import {
+  DEVICE,
+  NOTICE_QUEUE_KEY,
+  dismissNoticeFor,
+  flushNoticeQueue,
+  isNoticeDismissed,
+  noticeUpdatedFor,
+  resetNoticeCache,
+  syncNoticeOnSignIn,
+} from '@/lib/noticeDismiss';
 
 const metrics = { frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } };
 jest.mock('react-native-safe-area-context', () => {
@@ -62,28 +71,17 @@ describe('flag OFF (default): notice is exactly as before', () => {
   });
 });
 
-describe('flag ON: lawyer conditions', () => {
+describe('flag ON: Option A (HANDOFF §2)', () => {
   beforeEach(() => {
     process.env[FLAG] = '1';
+    resetNoticeCache();
   });
+  const queue = async () => JSON.parse((await AsyncStorage.getItem(NOTICE_QUEUE_KEY)) ?? '[]');
 
-  it('(3)(4) signed out: banner stays, no close control, "Got it" only collapses, (i) always there', async () => {
-    await open();
-    await setSession(null);
-    expect(screen.queryByTestId('map-banner-dismiss')).toBeNull();
-    await fireEvent.press(screen.getByTestId('map-notice-info'));
-    expect(screen.getByTestId('map-full-notice')).toHaveTextContent(MAP_BANNER, { exact: false });
-    await fireEvent.press(screen.getByText('Got it'));
-    expect(screen.queryByTestId('map-full-notice')).toBeNull();
-    expect(screen.getByTestId('map-banner')).toHaveTextContent(MAP_BANNER_SHORT);
-    expect(record).not.toHaveBeenCalled();
-    expect(await dismissNoticeFor(null)).toBe(false);
-  });
-
-  it('(1)(2) only the close button / "Got it" dismiss; each is logged with notice + app version; (4) (i) reopens', async () => {
+  it('(2) only close / "Got it" dismiss; each is logged with method, versions, platform and device time', async () => {
+    jest.spyOn(backend, 'getSession').mockResolvedValue(me);
     await open();
     await setSession(me);
-    const closeBtn = await screen.findByTestId('map-banner-dismiss');
     // Opening/collapsing and other taps never dismiss.
     await fireEvent.press(screen.getByTestId('map-banner'));
     await fireEvent.press(screen.getByTestId('map-banner'));
@@ -91,55 +89,86 @@ describe('flag ON: lawyer conditions', () => {
     expect(screen.getByTestId('map-banner')).toBeTruthy();
     expect(record).not.toHaveBeenCalled();
 
-    await fireEvent.press(closeBtn);
+    await fireEvent.press(await screen.findByLabelText('Hide boundary notice'));
     await waitFor(() => expect(screen.queryByTestId('map-banner')).toBeNull());
-    expect(record).toHaveBeenCalledWith({ noticeVersion: NOTICE_VERSION, appVersion: expect.any(String), method: 'close' });
-    expect(JSON.parse((await AsyncStorage.getItem(NOTICE_DISMISS_KEY))!)).toEqual({ u1: NOTICE_VERSION });
-    await fireEvent.press(screen.getByTestId('map-notice-info'));
+    await waitFor(() =>
+      expect(record).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'notice_dismiss',
+          method: 'close',
+          noticeVersion: NOTICE_VERSION,
+          appVersion: expect.any(String),
+          platform: expect.any(String),
+          at: expect.any(String),
+          clientId: expect.any(String),
+        }),
+      ),
+    );
+    // (3) the (i) is always there and reopens the full notice; "Show on map" restores and logs.
+    await fireEvent.press(screen.getByLabelText('Boundary notice'));
     expect(screen.getByTestId('map-full-notice')).toHaveTextContent(MAP_BANNER, { exact: false });
-    // "Show on map" brings the banner back and clears the dismissal.
     await fireEvent.press(screen.getByText('Show on map'));
     await waitFor(() => expect(screen.getByTestId('map-banner')).toBeTruthy());
-    expect(screen.getByTestId('map-notice-info')).toBeTruthy();
-    await setSession(null);
-    // Signing out brings the banner back.
-    await waitFor(() => expect(screen.getByTestId('map-banner')).toBeTruthy());
-  });
+    await waitFor(() => expect(record).toHaveBeenCalledWith(expect.objectContaining({ kind: 'notice_restore', method: 'show_on_map' })));
 
-  it('"Got it" dismisses for a signed-in account', async () => {
-    await open();
-    await setSession(me);
-    await fireEvent.press(await screen.findByTestId('map-banner'));
+    await fireEvent.press(screen.getByTestId('map-banner'));
     await fireEvent.press(screen.getByText('Got it'));
     await waitFor(() => expect(screen.queryByTestId('map-banner')).toBeNull());
-    expect(record).toHaveBeenCalledTimes(1);
-    expect(record).toHaveBeenCalledWith(expect.objectContaining({ method: 'got_it' }));
+    await waitFor(() => expect(record).toHaveBeenCalledWith(expect.objectContaining({ method: 'got_it' })));
+    jest.spyOn(backend, 'getSession').mockResolvedValue(null);
     await setSession(null);
   });
 
-  it('(2) if the log write fails, nothing is dismissed', async () => {
-    record.mockRejectedValueOnce(new Error('offline'));
-    expect(await dismissNoticeFor('u1')).toBe(false);
-    expect(await isNoticeDismissed('u1')).toBe(false);
-    expect(await AsyncStorage.getItem(NOTICE_DISMISS_KEY)).toBeNull();
+  it('(2) offline: dismissal hides at once, stays queued, and is sent later', async () => {
+    record.mockRejectedValue(new Error('offline'));
+    jest.spyOn(backend, 'getSession').mockResolvedValue(me);
+    expect(await dismissNoticeFor('u1', NOTICE_VERSION, 'close')).toBe(true);
+    expect(await isNoticeDismissed('u1')).toBe(true);
+    await flushNoticeQueue();
+    expect(await queue()).toHaveLength(1);
+    record.mockResolvedValue(undefined);
+    expect(await flushNoticeQueue()).toBe(1);
+    expect(await queue()).toEqual([]);
+    jest.spyOn(backend, 'getSession').mockResolvedValue(null);
   });
 
-  it('(5) a new NOTICE_VERSION brings the banner back; dismissals are per account', async () => {
+  it('(2) signed out: kept on the phone, uploaded under the account at sign-in', async () => {
+    await open();
+    await setSession(null);
+    await fireEvent.press(await screen.findByLabelText('Hide boundary notice'));
+    await waitFor(() => expect(screen.queryByTestId('map-banner')).toBeNull());
+    expect(record).not.toHaveBeenCalled();
+    expect((await queue())[0]).toMatchObject({ owner: DEVICE, method: 'close' });
+    jest.spyOn(backend, 'getSession').mockResolvedValue(me);
+    await syncNoticeOnSignIn('u1');
+    expect(record).toHaveBeenCalledTimes(1);
+    expect(await isNoticeDismissed('u1')).toBe(true);
+    expect(await queue()).toEqual([]);
+    jest.spyOn(backend, 'getSession').mockResolvedValue(null);
+  });
+
+  it('(2) cross-device: the account\'s server state is applied at sign-in', async () => {
+    jest.spyOn(backend, 'getSession').mockResolvedValue(me);
+    const latest = jest.spyOn(backend, 'latestNoticeAction').mockResolvedValue('notice_dismiss');
+    await syncNoticeOnSignIn('u1');
+    expect(await isNoticeDismissed('u1')).toBe(true);
+    latest.mockResolvedValue('notice_restore');
+    await syncNoticeOnSignIn('u1');
+    expect(await isNoticeDismissed('u1')).toBe(false);
+    latest.mockRejectedValue(new Error('offline')); // offline: phone keeps its state
+    await dismissNoticeFor('u1');
+    record.mockRejectedValue(new Error('offline'));
+    await syncNoticeOnSignIn('u1');
+    expect(await isNoticeDismissed('u1')).toBe(true);
+    latest.mockRestore();
+    jest.spyOn(backend, 'getSession').mockResolvedValue(null);
+  });
+
+  it('(4) a NOTICE_VERSION bump brings the banner back labeled "UPDATED NOTICE"', async () => {
     expect(await dismissNoticeFor('u1', 'v-old')).toBe(true);
-    expect(await isNoticeDismissed('u1', 'v-old')).toBe(true);
     expect(await isNoticeDismissed('u1', 'v-new')).toBe(false);
-    expect(await isNoticeDismissed('u2', 'v-old')).toBe(false);
-    expect(await isNoticeDismissed(null, 'v-old')).toBe(false);
-  });
-
-  it('"Show on map" clears the stored dismissal', async () => {
-    expect(await dismissNoticeFor('u1')).toBe(true);
-    await restoreNoticeFor('u1');
-    expect(await isNoticeDismissed('u1')).toBe(false);
-  });
-
-  it('(5) after a version bump the banner returns labeled "UPDATED NOTICE"', async () => {
-    await AsyncStorage.setItem(NOTICE_DISMISS_KEY, JSON.stringify({ u1: 'v-old' }));
+    expect(await noticeUpdatedFor('u1', 'v-new')).toBe(true);
+    expect(await noticeUpdatedFor('u2', 'v-new')).toBe(false);
     await open();
     await setSession(me);
     await waitFor(() => expect(screen.getByTestId('map-notice-updated')).toHaveTextContent('UPDATED NOTICE'));

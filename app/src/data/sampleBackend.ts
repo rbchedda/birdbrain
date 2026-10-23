@@ -285,6 +285,9 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
     // Sample mode has no server: acceptances stay in the device-side consent record.
     async recordTermsAcceptance() {},
     async recordNoticeDismissal() {},
+    async latestNoticeAction() {
+      return null;
+    },
 
     async groups() {
       const s = await load();

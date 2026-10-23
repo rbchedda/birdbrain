@@ -5,9 +5,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TermsContent } from '@/components/TermsContent';
 import { Button, Notice, ui } from '@/components/ui';
+import { DATA_SOURCES_TEXT, MAP_BANNER } from '@/data/mapNotice';
 import { consentBullets, consentCheckboxLabel, consentTitle } from '@/data/terms';
+import { noticeDismissEnabled } from '@/lib/noticeDismiss';
 import { acceptTerms } from '@/lib/termsConsent';
 import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
+
+/** Option A (HANDOFF §2, png 00): second, notice-specific checkbox. Verbatim from the spec. */
+export const NOTICE_CONSENT_LABEL = 'I understand boundaries are approximate and I need permission for private land.';
 
 /**
  * One-time acceptance gate before the first map view (memo 4C). Continue stays
@@ -16,6 +21,10 @@ import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
 export function OnboardingConsent() {
   const insets = useSafeAreaInsets();
   const [checked, setChecked] = useState(false);
+  // Flag on: the full map notice, Data sources, and its own checkbox; both boxes gate the button.
+  const optionA = noticeDismissEnabled();
+  const [noticeChecked, setNoticeChecked] = useState(false);
+  const [showSources, setShowSources] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -44,6 +53,33 @@ export function OnboardingConsent() {
           </View>
         ))}
 
+        {optionA && (
+          <View style={styles.notice} testID="consent-map-notice">
+            <Text style={styles.noticeHead}>Map notice</Text>
+            <Text style={ui.body}>{MAP_BANNER}</Text>
+            <Text accessibilityRole="link" style={styles.link} onPress={() => setShowSources((v) => !v)}>
+              {showSources ? 'Hide data sources' : 'View data sources ›'}
+            </Text>
+            {showSources && (
+              <Text style={ui.body} testID="consent-data-sources">
+                {DATA_SOURCES_TEXT('see Settings › Data sources')}
+              </Text>
+            )}
+            <Pressable
+              accessibilityRole="checkbox"
+              accessibilityLabel={NOTICE_CONSENT_LABEL}
+              accessibilityState={{ checked: noticeChecked }}
+              onPress={() => setNoticeChecked((v) => !v)}
+              style={styles.check}
+            >
+              <View style={[styles.box, noticeChecked && styles.boxOn]}>
+                {noticeChecked && <Ionicons name="checkmark" size={18} color={colors.onAccent} />}
+              </View>
+              <Text style={[ui.body, { flex: 1 }]}>{NOTICE_CONSENT_LABEL}</Text>
+            </Pressable>
+          </View>
+        )}
+
         <Pressable
           accessibilityRole="checkbox"
           accessibilityLabel={consentCheckboxLabel}
@@ -63,7 +99,13 @@ export function OnboardingConsent() {
         {showTerms && <TermsContent />}
 
         {error && <Notice tone="error">{error}</Notice>}
-        <Button label="Continue" variant="primary" disabled={!checked} busy={busy} onPress={onContinue} />
+        <Button
+          label={optionA ? 'I agree, continue' : 'Continue'}
+          variant="primary"
+          disabled={!checked || (optionA && !noticeChecked)}
+          busy={busy}
+          onPress={onContinue}
+        />
       </ScrollView>
     </View>
   );
@@ -85,5 +127,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   boxOn: { backgroundColor: colors.accent, borderColor: colors.accent },
+  notice: { gap: space.sm, padding: space.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  noticeHead: { fontFamily: fonts.bodySemi, fontSize: 16, color: colors.text },
   link: { fontFamily: fonts.bodyMedium, color: colors.text, textDecorationLine: 'underline', minHeight: touchTarget, paddingVertical: space.sm },
 });

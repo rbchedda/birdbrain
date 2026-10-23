@@ -65,6 +65,9 @@ export interface TermsAcceptance {
   acceptedAt: string;
   appVersion: string;
   termsVersion: string;
+  /** Option A (flag on): the map notice version consented to, and the platform. */
+  noticeVersion?: string;
+  platform?: string;
 }
 
 /** One map-notice dismissal, as logged to notice_acknowledgements (kind 'notice_dismiss'). */
@@ -72,7 +75,14 @@ export interface NoticeDismissal {
   noticeVersion: string;
   appVersion: string;
   /** How it was dismissed (spec Option A): the banner close button or "Got it". */
-  method?: 'close' | 'got_it';
+  method?: 'close' | 'got_it' | 'show_on_map';
+  /** Defaults to 'notice_dismiss'. 'notice_restore' = "Show on map". */
+  kind?: 'notice_dismiss' | 'notice_restore';
+  platform?: string;
+  /** Device time of the tap (ISO); the event may be sent later from the offline queue. */
+  at?: string;
+  /** Offline-queue id; a replay is a no-op on the server. */
+  clientId?: string;
 }
 
 export interface HuntLogUpsertResult {
@@ -125,6 +135,8 @@ export interface Backend {
   recordTermsAcceptance(a: TermsAcceptance): Promise<void>;
   /** Log a deliberate map-notice dismissal for the signed-in account (notice_acknowledgements). */
   recordNoticeDismissal(a: NoticeDismissal): Promise<void>;
+  /** The signed-in account's latest notice action for this version, or null if none. Throws offline. */
+  latestNoticeAction(noticeVersion: string): Promise<'notice_dismiss' | 'notice_restore' | null>;
 
   groups(): Promise<Group[]>;
   setMember(groupId: string, member: boolean): Promise<void>;

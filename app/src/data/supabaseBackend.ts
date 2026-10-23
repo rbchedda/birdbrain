@@ -450,7 +450,14 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
       if (!data.session?.user.id || data.session.user.is_anonymous) throw new NotSignedInError();
       const r = await sb
         .from('accepted_terms')
-        .insert({ accepted_at: a.acceptedAt, app_version: a.appVersion, terms_version: a.termsVersion });
+        .insert({
+          accepted_at: a.acceptedAt,
+          app_version: a.appVersion,
+          terms_version: a.termsVersion,
+          // Option A columns: only present (flag on) after migration 20261029000000.
+          ...(a.noticeVersion ? { notice_version: a.noticeVersion } : {}),
+          ...(a.platform ? { platform: a.platform } : {}),
+        });
       // 23505: this version is already logged for the user (a queued retry); that's success.
       if (r.error && r.error.code !== '23505') check(r);
     },
@@ -458,11 +465,35 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
     async recordNoticeDismissal(a) {
       const { data } = await sb.auth.getSession();
       if (!data.session?.user.id || data.session.user.is_anonymous) throw new NotSignedInError();
-      check(
-        await sb
-          .from('notice_acknowledgements')
-          .insert({ kind: 'notice_dismiss', notice_version: a.noticeVersion, app_version: a.appVersion }),
-      );
+      // Option A columns (method, platform, dismissed_at, client_id) exist only after migration
+      // 20261029000000; callers only send them with EXPO_PUBLIC_FLAG_NOTICE_DISMISS on.
+      const row: Record<string, unknown> = {
+        kind: a.kind ?? 'notice_dismiss',
+        notice_version: a.noticeVersion,
+        app_version: a.appVersion,
+      };
+      if (a.method) row.method = a.method;
+      if (a.platform) row.platform = a.platform;
+      if (a.at) row.dismissed_at = a.at;
+      if (a.clientId) row.client_id = a.clientId;
+      const r = await sb.from('notice_acknowledgements').insert(row);
+      // 23505: this queued event (client_id) is already on the server; that's success.
+      if (r.error && r.error.code !== '23505') check(r);
+    },
+
+    async latestNoticeAction(noticeVersion) {
+      const { data } = await sb.auth.getSession();
+      if (!data.session?.user.id || data.session.user.is_anonymous) return null;
+      const r = await sb
+        .from('notice_acknowledgements')
+        .select('kind')
+        .eq('notice_version', noticeVersion)
+        .in('kind', ['notice_dismiss', 'notice_restore'])
+        .order('id', { ascending: false })
+        .limit(1);
+      check(r);
+      const k = r.data?.[0]?.kind;
+      return k === 'notice_dismiss' || k === 'notice_restore' ? k : null;
     },
 
     async groups() {
