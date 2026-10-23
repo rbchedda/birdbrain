@@ -6,7 +6,7 @@ import { usePlaces } from '@/data/hooks';
 import { speciesLabel, type Place } from '@/data/types';
 import { getSignal, onSignal } from '@/lib/connectivity';
 import { cachedPlace, type Plan, type PlanPlace } from '@/lib/plans';
-import { forecastAvailable, formatDay, hoursText, planSeasonClosed, sunText, todayET } from '@/lib/spotPlan';
+import { formatDay, hoursText, planSeasonClosed, sunText } from '@/lib/spotPlan';
 import type { Ymd } from '@/lib/time';
 import { colors, fonts, radius, space } from '@/theme/tokens';
 
@@ -32,25 +32,16 @@ export function useSpot(id: string | undefined): PlanPlace | null {
   return p ? toPlanPlace(p) : null;
 }
 
-export const FORECAST_LATER = 'Forecast closer to the date';
-export const FORECAST_OFFLINE = 'Forecast: needs signal';
-/** No forecast source is wired in this build (no approved API); inside 7 days we say so plainly. */
-export const FORECAST_NONE = 'Forecast and wind: not available in this build';
 
-/** Step 1 card (spec 04/06): legal hours, sunrise/sunset (computed on the phone, so always shown), forecast line. */
+/** Step 1 card (spec 04/06): legal hours and sunrise/sunset (computed on the phone). No forecast in the beta: no approved weather source, so nothing is shown rather than made-up data. */
 export function PlanDayCard({ place, date }: { place: PlanPlace; date: Ymd }) {
-  const online = useOnline();
   const hours = hoursText(place, date);
   const sun = sunText(place, date);
-  const forecast = !forecastAvailable(date, todayET()) ? FORECAST_LATER : online ? FORECAST_NONE : FORECAST_OFFLINE;
   return (
     <View style={styles.card} testID="plan-day-card">
       <Text style={styles.cardTitle}>{formatDay(date)}</Text>
       <Text style={styles.body}>{hours ? `Legal hours ${hours}` : 'Legal hours: check the PGC digest for this date'}</Text>
       {sun && <Text style={styles.muted}>{sun}</Text>}
-      <Text style={styles.muted} testID="plan-forecast">
-        {forecast}
-      </Text>
     </View>
   );
 }

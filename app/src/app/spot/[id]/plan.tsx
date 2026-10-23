@@ -18,7 +18,6 @@ import {
   nextDays,
   nextOpenDate,
   PLAN_NOTES_MAX,
-  reminderLabel,
   speciesChoices,
   todayET,
   type Reminder,
@@ -28,7 +27,7 @@ import { colors, fonts, radius, space } from '@/theme/tokens';
 
 export const planSignInTitle = 'Save your hunt plan';
 export const planSignInBody = 'Sign in once so your plans are backed up and only you (and a crew you share with) can see them. Nothing is posted.';
-const REMINDERS: Reminder[] = ['none', 'night_before_8pm', 'hour_before_legal'];
+export const REMINDERS_SOON = 'Reminders coming soon';
 
 /** Spot detail spec 04–06: Plan a hunt, two steps. `?plan=<id>` edits an existing plan. */
 export default function PlanAHunt() {
@@ -185,13 +184,10 @@ export default function PlanAHunt() {
             <Text style={styles.muted}>
               {notes.length}/{PLAN_NOTES_MAX}
             </Text>
-            <Text style={styles.section}>Reminder</Text>
-            <View style={styles.chips} testID="reminder-choices">
-              {REMINDERS.map((r) => (
-                <Chip key={r} label={reminderLabel[r]} active={reminder === r} onPress={() => setReminder(r)} />
-              ))}
-            </View>
-            {reminder !== 'none' && <Text style={styles.muted}>Phone reminders aren’t switched on in this build yet; the plan keeps your choice.</Text>}
+            {/* No notifications module in this build, so no picker: new plans save reminder 'none'; edits keep the stored value. */}
+            <Text style={styles.muted} testID="reminders-soon">
+              {REMINDERS_SOON}
+            </Text>
             {crewList.length > 0 && (
               <View style={{ gap: space.sm }} testID="share-crew">
                 <View style={styles.switchRow}>

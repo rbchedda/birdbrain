@@ -8,8 +8,6 @@ import { speciesLabel } from '@/data/types';
 import { formatDay, hoursText, SEASON_FOOTER, sunText, todayET, whatToHunt, type HuntRow } from '@/lib/spotPlan';
 import { colors, fonts, radius, space } from '@/theme/tokens';
 
-/** No WMU-by-location data ships yet, so the card says so instead of guessing a unit. */
-export const WMU_PLACEHOLDER = 'WMU: check the PGC WMU map for this spot';
 
 /** Spot detail spec 03: What you can hunt here (pushed screen). */
 export default function WhatToHunt() {
@@ -34,7 +32,6 @@ export default function WhatToHunt() {
         <View style={styles.card} testID="hunt-top-card">
           <Text style={styles.title}>{formatDay(today)}</Text>
           <Text style={styles.text}>{hours ? `Legal hours ${hours}` : 'Legal hours: check the PGC digest'}</Text>
-          <Text style={styles.muted}>{WMU_PLACEHOLDER}</Text>
           {sun && <Text style={styles.muted}>{sun}</Text>}
         </View>
         <Group title="Good fit here" rows={groups.good} testID="group-good" />
