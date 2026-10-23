@@ -62,7 +62,16 @@ import {
   STOCKING_PIN_NOTE,
 } from '@/data/mapNotice';
 import { legal } from '@/lib/env';
-import { dismissNoticeFor, isNoticeDismissed, noticeDismissEnabled, noticeUpdatedFor, restoreNoticeFor, type DismissMethod } from '@/lib/noticeDismiss';
+import {
+  DEVICE,
+  dismissNoticeFor,
+  isNoticeDismissed,
+  noticeDismissEnabled,
+  noticeUpdatedFor,
+  restoreNoticeFor,
+  syncNoticeOnSignIn,
+  type DismissMethod,
+} from '@/lib/noticeDismiss';
 import { useEntitlements } from '@/entitlements';
 import { useOfflineMapSource, withOfflineOutline } from '@/offline';
 import { STOCKING_SOURCE, stockingCountyOf, windowsForCounty } from '@/data/places';
@@ -130,7 +139,9 @@ export default function MapScreen() {
   const session = useSession();
   // Dismissible notice: flag on AND a real signed-in account (legal conditions 1–5).
   const dismissFlag = noticeDismissEnabled();
-  const noticeUser = dismissFlag && session && !session.anonymous ? session.userId : null;
+  // Option A: the owner is the signed-in account, or this phone when signed out (synced at sign-in).
+  const accountId = session && !session.anonymous ? session.userId : null;
+  const noticeUser = dismissFlag ? (accountId ?? DEVICE) : null;
   const [noticeDismissed, setNoticeDismissed] = useState(false);
   const [noticeUpdated, setNoticeUpdated] = useState(false);
   useEffect(() => {
@@ -138,14 +149,19 @@ export default function MapScreen() {
     setNoticeDismissed(false);
     setNoticeUpdated(false);
     if (noticeUser) {
-      isNoticeDismissed(noticeUser).then((d) => live && setNoticeDismissed(d), () => {});
-      noticeUpdatedFor(noticeUser).then((u) => live && setNoticeUpdated(u), () => {});
+      const load = () => {
+        isNoticeDismissed(noticeUser).then((d) => live && setNoticeDismissed(d), () => {});
+        noticeUpdatedFor(noticeUser).then((u) => live && setNoticeUpdated(u), () => {});
+      };
+      load();
+      // Cross-device: pull the account's state (and upload this phone's queue), then re-read.
+      if (noticeUser !== DEVICE) syncNoticeOnSignIn(noticeUser).then(load, () => {});
     }
     return () => {
       live = false;
     };
   }, [noticeUser]);
-  /** Only "Got it" and the close button call this. Signed out: it just collapses the full notice. */
+  /** Only "Got it" and the close button call this (Option A: signed out too, kept on the phone). */
   const dismissNotice = useCallback(
     (method: DismissMethod) => {
       setFullNotice(false);
@@ -393,7 +409,7 @@ export default function MapScreen() {
         {/*
           Legal banner: the one-liner toggles the full notice inline (a11y label = full text).
           Flag off (default): always visible, "Got it" only collapses the full notice.
-          Flag on: a permanent (i) button always opens the full notice; signed-in accounts can
+          Flag on: a permanent (i) button always opens the full notice; anyone can
           dismiss the one-liner with the close button or "Got it" (logged, per NOTICE_VERSION).
         */}
         <View style={styles.bannerRow}>
