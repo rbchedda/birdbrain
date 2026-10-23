@@ -1,3 +1,4 @@
+import { PENDING_CHIP_HEIGHT, PendingChip, usePendingChipShown } from '@/components/FieldSync';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -14,17 +15,21 @@ import {
   View,
 } from 'react-native';
 import { readJson, writeJson } from '@/lib/localStore';
-import { mapAssets } from '@/lib/mapConfig';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomSheet } from '@/components/BottomSheet';
+import { LocateButton } from '@/components/map/LocateButton';
 import { PlaceMap } from '@/components/map/PlaceMap';
+import { StateParkSheet } from '@/components/StateParkSheet';
 import { StockingList, windowText } from '@/components/StockingList';
-import { pinColor, type Basemap } from '@/components/map/types';
+import { pinColor, visibleBasemaps, type Basemap } from '@/components/map/types';
 import { Tag } from '@/components/Tag';
 import { Button, Chip, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { accessLabel } from '@/data/access';
+import { pointInGeometry } from '@/lib/geo';
+import { needsAccount } from '@/lib/gate';
+import { openLocationSettings, useMyLocation } from '@/lib/location';
 import { loadPlaces, useAsync, useDataSources, usePlaces, useSession } from '@/data/hooks';
 import {
   DOVE_LINE,
@@ -39,8 +44,11 @@ import {
   STOCKING_PIN_NOTE,
 } from '@/data/mapNotice';
 import { legal } from '@/lib/env';
+import { useEntitlements } from '@/entitlements';
+import { useOfflineMapSource, withOfflineOutline } from '@/offline';
 import { STOCKING_SOURCE, stockingCountyOf, windowsForCounty } from '@/data/places';
 import { PGC_DIGEST_URL } from '@/data/regs';
+import { STATE_PARKS } from '@/data/stateParks';
 import { describeStatus, placeToday, SEASON_YEAR, type PlaceToday } from '@/data/seasons';
 import { migratory, placeTypeLabel, speciesLabel, type Place, type PlaceType } from '@/data/types';
 import { formatDay, formatTime, todayET } from '@/lib/time';
@@ -70,17 +78,18 @@ export default function MapScreen() {
   const [openOnly, setOpenOnly] = useState(false);
   const [query, setQuery] = useState('');
   const [basemap, setBasemapState] = useState<Basemap>('topo');
-  // Persisted (spec §5); defaults to Standard. Terrain only when its tile host is configured.
+  // Persisted (spec §5); defaults to Standard. Unknown or hidden values fall back to Standard.
   useEffect(() => {
-    readJson<Basemap>(BASEMAP_KEY, 'topo').then((b) => setBasemapState(b === 'terrain' && !mapAssets ? 'topo' : b), () => {});
+    readJson<Basemap>(BASEMAP_KEY, 'topo').then((b) => setBasemapState(visibleBasemaps().some((o) => o.key === b) ? b : 'topo'), () => {});
   }, []);
   const setBasemap = (b: Basemap) => {
     setBasemapState(b);
     void writeJson(BASEMAP_KEY, b);
   };
   const [selectedId, setSelectedId] = useState<string>();
+  const [parkId, setParkId] = useState<string>();
   const [expanded, setExpanded] = useState(false);
-  const [focus, setFocus] = useState<{ center: Place['center']; key: number }>();
+  const [focus, setFocus] = useState<{ center: Place['center']; key: number; zoom?: number }>();
   const [planner, setPlanner] = useState(false);
   const [fullNotice, setFullNotice] = useState(false);
   const [layersOpen, setLayersOpen] = useState(false);
@@ -114,8 +123,16 @@ export default function MapScreen() {
 
   const onMapSelect = useCallback((id: string | null) => {
     setSelectedId(id ?? undefined);
+    setParkId(undefined);
     if (id) setExpanded(true);
   }, []);
+  const onSelectPark = useCallback((id: string) => {
+    setSelectedId(undefined);
+    setPlanner(false);
+    setParkId(id);
+    setExpanded(true);
+  }, []);
+  const park = STATE_PARKS.find((p) => p.id === parkId);
 
   const pick = (place: Place) => {
     setSelectedId(place.id);
@@ -123,7 +140,30 @@ export default function MapScreen() {
     setExpanded(true);
   };
 
-  const detail = useAsync(() => (selectedId ? backend.placeDetail(selectedId) : Promise.resolve(null)), [selectedId]);
+  const { canUse } = useEntitlements();
+  const offline = useOfflineMapSource(canUse('offlineMaps'));
+
+  const detail = useAsync(
+    () => (selectedId ? withOfflineOutline(selectedId, () => backend.placeDetail(selectedId)) : Promise.resolve(null)),
+    [selectedId],
+  );
+
+  const chipShown = usePendingChipShown();
+  const peek = selected || planner || park ? PEEK : PEEK_EMPTY;
+  const { status: locStatus, location: me, start: startLocation } = useMyLocation();
+  const [locMessage, setLocMessage] = useState(false);
+  const centerOnMe = async () => {
+    if (me) setFocus({ center: { lng: me.lng, lat: me.lat }, key: Date.now(), zoom: 14 });
+    const fix = await startLocation();
+    if (fix) {
+      setLocMessage(false);
+      if (!me) setFocus({ center: { lng: fix.lng, lat: fix.lat }, key: Date.now(), zoom: 14 });
+    } else setLocMessage(true);
+  };
+  // Only the selected place's boundary is loaded, so that's the one we can test against.
+  const outline = detail.data?.outline;
+  const hereLabel =
+    me && selected && outline && pointInGeometry(me.lng, me.lat, outline) ? accessLabel[selected.access] : null;
 
   return (
     <View style={styles.root} onLayout={(e) => setScreenH(e.nativeEvent.layout.height)}>
@@ -134,7 +174,25 @@ export default function MapScreen() {
         basemap={basemap}
         focus={focus}
         onSelect={onMapSelect}
+        offline={offline}
+        onSelectPark={onSelectPark}
+        me={me}
       />
+
+      {!expanded && (
+        <View style={[StyleSheet.absoluteFill, { bottom: locateBottom(peek, chipShown) }]} pointerEvents="box-none" testID="locate-slot">
+          <View style={{ flex: 1, justifyContent: 'flex-end' }} pointerEvents="box-none">
+            <LocateButton
+              status={locStatus}
+              onPress={centerOnMe}
+              onOpenSettings={openLocationSettings}
+              onDismiss={() => setLocMessage(false)}
+              showMessage={locMessage}
+              hereLabel={hereLabel}
+            />
+          </View>
+        </View>
+      )}
 
       <View
         style={[styles.top, { paddingTop: insets.top + space.sm }]}
@@ -171,9 +229,9 @@ export default function MapScreen() {
           <View style={styles.layers} testID="layers-panel">
             <Text style={styles.layersTitle}>Map</Text>
             <View style={styles.chips}>
-              <Chip label="Topo" icon="map-outline" active={basemap === 'topo'} onPress={() => setBasemap('topo')} />
-              {mapAssets && <Chip label="Terrain" icon="trail-sign-outline" active={basemap === 'terrain'} onPress={() => setBasemap('terrain')} />}
-              <Chip label="Satellite" icon="earth-outline" active={basemap === 'imagery'} onPress={() => setBasemap('imagery')} />
+              {visibleBasemaps().map((o) => (
+                <Chip key={o.key} label={o.label} icon={o.icon} active={basemap === o.key} onPress={() => setBasemap(o.key)} />
+              ))}
             </View>
             <Text style={styles.layersTitle}>Show</Text>
             <View style={styles.chips}>
@@ -222,13 +280,17 @@ export default function MapScreen() {
         )}
       </View>
 
+      {/* Spec 04: above the sheet/action bar, never over the trespass banner or map controls. */}
+      {!expanded && <PendingChip bottom={peek + space.sm} />}
       <BottomSheet
         expanded={expanded}
         onExpandedChange={setExpanded}
-        peekHeight={selected || planner ? PEEK : PEEK_EMPTY}
+        peekHeight={selected || planner || park ? PEEK : PEEK_EMPTY}
         expandedHeight={sheetHeight(screenH, topH, height)}
       >
-        {selected ? (
+        {park && !selected ? (
+          <StateParkSheet park={park} onClose={() => setParkId(undefined)} />
+        ) : selected ? (
           <PlaceDetails place={selected} expanded={expanded} onClose={() => setSelectedId(undefined)} onSavedChange={refreshSaved} />
         ) : planner ? (
           <StockingList places={all} savedIds={savedIds} onPick={pick} />
@@ -311,6 +373,11 @@ export function knownHours(today: PlaceToday) {
 }
 
 /** Sheet height that keeps a strip of map visible below the banner block at every snap point. */
+/** Locate button's bottom: above the sheet peek, or stacked above the pending chip when it shows. */
+export function locateBottom(peek: number, chipShown: boolean) {
+  return chipShown ? peek + space.sm + PENDING_CHIP_HEIGHT + space.sm : peek + space.lg;
+}
+
 export function sheetHeight(screenH: number, topH: number, windowH: number) {
   const room = screenH - topH - MAP_GAP;
   return Math.max(PEEK, Math.min(560, windowH * 0.66, room));
@@ -358,7 +425,7 @@ function PlaceDetails({
   }, [place.id, session]);
 
   const toggleSave = async () => {
-    if (!session) return router.push('/sign-in');
+    if (needsAccount('saveSpot', session)) return router.push('/sign-in');
     try {
       await backend.setPlaceSaved(place.id, !saved);
       setSaved(!saved);

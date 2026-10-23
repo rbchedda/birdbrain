@@ -58,7 +58,7 @@ export default function ProfileScreen() {
         </Pressable>
       </View>
       <ScrollView contentContainerStyle={styles.body}>
-        {session === null && <SignInPrompt why="Sign in to back up your private hunt log to your account. It works on this device either way." />}
+        {session === null && <SignInPrompt why="Save your hunts so they’re never lost if you switch phones. Sign in to keep your private Hunt Log backed up to your account." />}
         <Pressable accessibilityRole="button" accessibilityHint="Opens season stats" onPress={() => router.push('/profile/stats')}>
           <StatTiles
             testID="profile-stats"

@@ -1,0 +1,29 @@
+# Delete files queued in public.storage_deletion_queue (e.g. photos of deleted
+# crews) through the Storage API. See ingest/storage_cleanup.mjs.
+# Requires repository secrets DATABASE_URL (direct connection, postgres role),
+# SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.
+name: Storage cleanup
+
+on:
+  schedule:
+    - cron: '*/15 * * * *' # every 15 minutes, UTC
+  workflow_dispatch:
+
+concurrency: storage-cleanup
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --omit=dev
+      - run: node ingest/storage_cleanup.mjs
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

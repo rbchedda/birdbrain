@@ -1,4 +1,7 @@
 import type {
+  Crew,
+  CrewDetail,
+  CrewInvite,
   Author,
   Comment,
   DataSource,
@@ -15,10 +18,22 @@ import type {
   Species,
 } from './types';
 
+/** Plain-language versions of the crew RPCs' errors. */
+export function crewError(message: string): string {
+  if (/crew is full/.test(message)) return 'This crew is full (25 members max).';
+  if (/too many active invites/.test(message)) return 'This crew already has 10 active invites. Wait for one to expire (invites last 7 days).';
+  if (/create an account/.test(message)) return 'Create an account to start or join a crew.';
+  if (/invalid or expired/.test(message)) return 'That invite is invalid or has expired.';
+  return message;
+}
+
+export type LeaveCrewResult = 'left' | 'promoted' | 'deleted';
+
 export interface Session {
   userId: string;
   email: string | null;
-  anonymous: boolean;
+  /** Never true from our backends (anonymous sessions map to signed out); kept for #25's defensive checks. */
+  anonymous?: boolean;
 }
 
 export interface FeedPage {
@@ -66,7 +81,8 @@ export interface Backend {
   signIn(email: string, password: string): Promise<void>;
   /** Resolves needsConfirmation when the project requires email confirmation first. */
   signUp(email: string, password: string): Promise<{ needsConfirmation: boolean }>;
-  signInAsGuest(): Promise<void>;
+  /** Finish an email-link sign-in (PKCE code, or access/refresh tokens). Throws if the link is bad or expired. */
+  completeAuthRedirect(p: { code?: string; accessToken?: string; refreshToken?: string }): Promise<void>;
   signOut(): Promise<void>;
   /** Permanently delete the signed-in account and everything it owns, then sign out. */
   deleteAccount(): Promise<void>;
@@ -102,6 +118,19 @@ export interface Backend {
 
   groups(): Promise<Group[]>;
   setMember(groupId: string, member: boolean): Promise<void>;
+
+  /** Private crews the signed-in user belongs to (empty when signed out). */
+  myCrews(): Promise<Crew[]>;
+  /** A crew with its members; null when it doesn't exist or the user isn't a member (RLS). */
+  crew(id: string): Promise<CrewDetail | null>;
+  /** Create a crew; the caller becomes its admin. Returns the crew id. */
+  createCrew(name: string): Promise<string>;
+  /** New invite token for a crew the caller administers. */
+  createCrewInvite(crewId: string): Promise<CrewInvite>;
+  /** Join a crew by invite token (always as a member). Returns the crew id. */
+  joinCrew(token: string): Promise<string>;
+  /** 'promoted': you were the last admin and the longest-standing member took over; 'deleted': you were the last member. */
+  leaveCrew(crewId: string): Promise<LeaveCrewResult>;
 
   /** Idempotent upsert of a private hunt log entry by its client UUID (owner-only). */
   upsertHuntLogEntry(entry: HuntLogUpload): Promise<HuntLogUpsertResult>;

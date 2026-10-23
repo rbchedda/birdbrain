@@ -8,8 +8,12 @@
  *   <base>/fonts/{fontstack}/{range}.pbf      Inter Medium, Inter Medium Italic, Barlow Condensed Bold
  *
  * Dev: `npm run basemap:serve` serves it at http://<lan-ip>:8787.
- * Production host (Cloudflare R2) is BLOCKED; until then Terrain is only
- * offered when this is set.
+ *
+ * When it is unset (the default until an R2 host exists), Terrain uses the
+ * French Creek State Park bundle that ships inside the app
+ * (components/map/frenchCreekTerrain.ts): Protomaps vectors, z0-12 DEM and
+ * glyphs, so it works there with no tile host and offline. Elsewhere the DEM
+ * (tint, hillshade, contours) comes straight from AWS Terrain Tiles when online.
  */
 export interface MapAssets {
   pmtiles: string;
@@ -28,6 +32,9 @@ export function mapAssetsFrom(base: string | undefined | null): MapAssets | null
 }
 
 export const mapAssets = mapAssetsFrom(process.env.EXPO_PUBLIC_MAP_ASSETS_URL);
+
+/** AWS Terrain Tiles (open data, CORS *, no key). Same Terrarium encoding as our own DEM copy. */
+export const AWS_TERRARIUM = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
 
 /** DEM tiles stop at z12 (one shared fetch; MapLibre overzooms past it). */
 export const DEM_MAXZOOM = 12;

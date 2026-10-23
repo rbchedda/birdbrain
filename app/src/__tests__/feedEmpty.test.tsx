@@ -1,6 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
-import { Share } from 'react-native';
 
 import { delayLabel } from '@/components/PostCard';
 import * as crew from '@/data/crew';
@@ -25,9 +24,8 @@ describe('Feed: no crew', () => {
     expect(screen.getByRole('tab', { name: 'Community', selected: true })).toBeTruthy();
     expect(screen.queryByTestId('crew-empty')).toBeNull();
     expect(screen.queryByLabelText('My profile')).toBeNull();
-    const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' } as never);
     await fireEvent.press(screen.getByText('Invite'));
-    expect(share).toHaveBeenCalled();
+    expect(await screen.findByText('Start a crew')).toBeTruthy();
   });
 
   it('dismissing the card hides it for the session and persists it on the device', async () => {

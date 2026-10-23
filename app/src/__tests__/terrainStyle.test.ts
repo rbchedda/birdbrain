@@ -66,7 +66,7 @@ describe('Terrain style', () => {
 
 describe('map page', () => {
   it('shares one DEM fetch via sharedDemProtocolUrl at maxzoom 12 and reads URLs from config', () => {
-    const html = buildMapHtml(assets);
+    const html = buildMapHtml({ terrain: true, assets });
     expect(html).toContain('demSource.sharedDemProtocolUrl');
     expect(html).toContain('contourProtocolUrl');
     expect(html).toContain('"demMaxzoom":12');
@@ -78,11 +78,26 @@ describe('map page', () => {
     expect(html).toContain('USGSImageryOnly');
   });
 
-  it('without a configured host, ships no Terrain code and falls back to topo', () => {
-    const html = buildMapHtml(null);
-    expect(html).not.toContain('pmtiles.js');
-    expect(html).toContain('var terrain = null');
+  it('with Terrain off, ships no Terrain code and falls back to topo', () => {
+    const html = buildMapHtml({ terrain: false });
+    expect(html).not.toContain('var pmtiles=');
+    expect(html).toContain('var TERRAIN = null');
     expect(mapAssetsFrom('')).toBeNull();
     expect(mapAssetsFrom('ftp://x')).toBeNull();
+  });
+
+  it('without a configured host, uses the bundled French Creek extract and AWS DEM (no CDN, no R2)', () => {
+    const html = buildMapHtml({ terrain: true, assets: null });
+    expect(html).toContain('pmtiles://frenchcreek');
+    expect(html).toContain('https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png');
+    expect(html).toContain('bbglyph://{fontstack}/{range}');
+    expect(html).not.toContain('unpkg.com');
+    const { frenchCreekTerrain: b, FRENCH_CREEK_BBOX } = require('@/components/map/frenchCreekTerrain');
+    // Big Woods tract sits inside the bundled box.
+    expect(FRENCH_CREEK_BBOX[0]).toBeLessThan(-75.82);
+    expect(FRENCH_CREEK_BBOX[2]).toBeGreaterThan(-75.75);
+    expect(Buffer.from(b.pmtiles, 'base64').subarray(0, 7).toString()).toBe('PMTiles');
+    expect(Object.keys(b.dem)).toEqual(expect.arrayContaining(['12/1185/1546']));
+    for (const f of ['Inter Medium', 'Inter Medium Italic', 'Barlow Condensed Bold']) expect(b.glyphs[`${f}/0-255`]).toBeTruthy();
   });
 });

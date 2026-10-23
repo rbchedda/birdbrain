@@ -61,3 +61,30 @@ export function areaLabel(area: LngLat | null, places: Place[]) {
   }
   return best && bestKm < 40 ? `Near ${best.county} County` : 'Pennsylvania';
 }
+
+type Ring = [number, number][];
+
+/** Ray casting; points on an edge may land either way, which is fine for a label. */
+function inRing(lng: number, lat: number, ring: Ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    if (yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+function inPolygon(lng: number, lat: number, rings: Ring[]) {
+  if (!rings.length || !inRing(lng, lat, rings[0])) return false;
+  return !rings.slice(1).some((hole) => inRing(lng, lat, hole));
+}
+
+/** True when [lng, lat] is inside a Polygon, MultiPolygon or GeometryCollection of them. */
+export function pointInGeometry(lng: number, lat: number, g: GeoJSONGeometry | null | undefined): boolean {
+  if (!g) return false;
+  if (g.type === 'Polygon') return inPolygon(lng, lat, (g.coordinates as Ring[]) ?? []);
+  if (g.type === 'MultiPolygon') return ((g.coordinates as Ring[][]) ?? []).some((p) => inPolygon(lng, lat, p));
+  if (g.type === 'GeometryCollection') return (g.geometries ?? []).some((c) => pointInGeometry(lng, lat, c));
+  return false;
+}

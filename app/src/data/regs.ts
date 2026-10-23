@@ -73,6 +73,13 @@ export const REGS: Regs = {
       sunday: 'closed',
       sundayNote: 'Closed Sundays (migratory birds).',
     },
+    // Digest PDF p.47 (printed p.45): woodcock 3 daily, 9 possession, statewide Oct 17-Dec 8, closed Sundays.
+    woodcock: {
+      daily: '3',
+      possession: '9',
+      sunday: 'closed',
+      sundayNote: 'Closed Sundays (migratory birds).',
+    },
   },
 };
 

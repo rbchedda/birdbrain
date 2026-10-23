@@ -1,3 +1,4 @@
+import { isNetworkError, reportSignal } from '@/lib/connectivity';
 import { newClientId, readJson, updateJson, writeJson } from '@/lib/localStore';
 
 import { NotSignedInError, postKind, sumCounts, type Backend, type HuntLogUpload } from './backend';
@@ -41,9 +42,16 @@ export interface JournalEntry extends Post {
   deleted?: boolean;
 }
 
-export const BACKOFF_BASE_MS = 2_000;
-export const BACKOFF_MAX_MS = 5 * 60_000;
-export const backoffMs = (attempts: number) => Math.min(BACKOFF_MAX_MS, BACKOFF_BASE_MS * 2 ** Math.max(0, attempts - 1));
+/** Upload backoff per field spec: 30 s → 2 m → 10 m → 30 m cap. */
+export const BACKOFF_STEPS_MS = [30_000, 2 * 60_000, 10 * 60_000, 30 * 60_000];
+export const BACKOFF_BASE_MS = BACKOFF_STEPS_MS[0];
+export const BACKOFF_MAX_MS = BACKOFF_STEPS_MS[BACKOFF_STEPS_MS.length - 1];
+export const backoffMs = (attempts: number) => BACKOFF_STEPS_MS[Math.min(BACKOFF_STEPS_MS.length - 1, Math.max(0, attempts - 1))];
+
+/** Guest author id for hunts saved before any sign-in on this device. */
+export const GUEST_AUTHOR = 'me';
+/** The first account that signs in on this device; guest hunts attach to it only. */
+export const OWNER_KEY = 'birdbrain.journalOwner.v1';
 
 const fresh = (rev = 0): SyncState => ({
   status: 'pending',
@@ -241,8 +249,24 @@ export function syncJournal(backend: Backend, opts: SyncOptions = {}): Promise<S
 
 async function runSync(backend: Backend, { now = Date.now, force = false }: SyncOptions): Promise<SyncReport> {
   const report: SyncReport = { synced: 0, failed: 0, conflicts: 0, skipped: 0 };
+  // Signed out (hybrid guest mode): entries stay on this phone; nothing goes to the server.
+  let mine: (e: JournalEntry) => boolean = () => true;
+  if (typeof backend.getSession === 'function') {
+    const session = await backend.getSession().catch(() => null);
+    if (!session) return report;
+    // Guest hunts attach to the first account that signs in here; a later, different account never takes them.
+    let owner = await readJson<string | null>(OWNER_KEY, null);
+    if (!owner) {
+      owner = session.userId;
+      await writeJson(OWNER_KEY, owner);
+    }
+    if (owner === session.userId) {
+      await update((cur) => cur.map((x) => (x.author.id === GUEST_AUTHOR ? { ...x, author: { ...x.author, id: owner! } } : x)));
+    }
+    mine = (e) => e.author.id === session.userId;
+  }
   const due = (await allEntries()).filter(
-    (e) => e.sync.status !== 'synced' && (e.deleted || !e.sync.conflict) && (force || e.sync.nextAttemptAt <= now()),
+    (e) => mine(e) && e.sync.status !== 'synced' && (e.deleted || !e.sync.conflict) && (force || e.sync.nextAttemptAt <= now()),
   );
   for (const e of due) {
     try {
@@ -264,6 +288,7 @@ async function runSync(backend: Backend, { now = Date.now, force = false }: Sync
         });
       } else {
         report.synced++;
+        reportSignal(true);
         await patchSync(e.id, e.sync.rev, { status: 'synced', version: res.version, attempts: 0, nextAttemptAt: 0, error: null }, res.version);
       }
     } catch (err) {
@@ -272,6 +297,7 @@ async function runSync(backend: Backend, { now = Date.now, force = false }: Sync
         report.skipped++;
         continue;
       }
+      if (isNetworkError(err)) reportSignal(false);
       report.failed++;
       const attempts = e.sync.attempts + 1;
       await patchSync(e.id, e.sync.rev, {
@@ -308,6 +334,8 @@ export interface SyncTriggers {
   onForeground(cb: () => void): () => void;
   /** Subscribe to "network came back". */
   onReconnect(cb: () => void): () => void;
+  /** Subscribe to "a session now exists" (sign-in, or confirmed email signed in). */
+  onSignIn?(cb: () => void): () => void;
 }
 
 /**
@@ -320,6 +348,9 @@ export function startJournalSync(backend: Backend, triggers: SyncTriggers): () =
   const schedule = async () => {
     if (timer) clearTimeout(timer);
     timer = null;
+    if (stopped) return;
+    // Signed out: nothing uploads, so don't spin on due retries (sign-in or a new entry restarts it).
+    if (typeof backend.getSession === 'function' && !(await backend.getSession().catch(() => null))) return;
     if (stopped) return;
     const waiting = (await allEntries()).filter((e) => e.sync.status === 'failed' && (e.deleted || !e.sync.conflict));
     if (!waiting.length || stopped) return;
@@ -334,6 +365,7 @@ export function startJournalSync(backend: Backend, triggers: SyncTriggers): () =
   const subs = [
     triggers.onForeground(() => run()),
     triggers.onReconnect(() => run(true)),
+    triggers.onSignIn?.(() => run(true)) ?? (() => {}),
     // A new or edited entry uploads right away.
     (queuedListeners.add(run), () => queuedListeners.delete(run)),
   ];

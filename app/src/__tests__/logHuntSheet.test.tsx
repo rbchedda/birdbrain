@@ -18,11 +18,8 @@ jest.mock('@/data/hooks', () => {
   return { ...real, useSession: () => (mockSignedOut ? null : real.useSession()) };
 });
 
-const mockPrompt = jest.fn();
-jest.mock('@/auth/usePromptSignIn', () => ({ usePromptSignIn: () => mockPrompt }));
 
 afterEach(async () => {
-  mockPrompt.mockClear();
   mockSignedOut = false;
   await AsyncStorage.clear();
 });
@@ -55,25 +52,18 @@ describe('Log hunt sheet (redesign 02)', () => {
     expect(await screen.findByText('Share this hunt later →')).toBeTruthy();
     const [e] = await journalEntries();
     expect(e.details?.birds[0]).toMatchObject({ species: 'pheasant', roosters: 2, count: 2 });
-    expect(mockPrompt).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('sign-in-sheet')).toBeNull();
     expect(screen.queryByText('Woodcock')).toBeNull();
   });
 
-  it('signed out on the hosted backend: saves on the phone, then prompts sign-in via the shared hook', async () => {
+  it('signed out: Save keeps the entry on the phone and shows the one sign-in sheet, without Not now', async () => {
     mockSignedOut = true;
-    const mode = Object.getOwnPropertyDescriptor(backend, 'mode');
-    Object.defineProperty(backend, 'mode', { value: 'supabase', configurable: true });
-    try {
-      await open('/new/log?placeId=stock-sample-1');
-      expect(await screen.findByText(/First save\? You’ll create a free account/)).toBeTruthy();
-      await fireEvent.press(screen.getByText('Save hunt'));
-      expect(await screen.findByText(/Saved to your private log on this phone/)).toBeTruthy();
-      expect((await journalEntries()).length).toBe(1);
-      expect(mockPrompt).toHaveBeenCalledTimes(1);
-      expect(mockPrompt).toHaveBeenCalledWith({ reason: 'first-hunt-save', entryLabel: 'Pheasant stocking (sample B) · Pheasant' });
-      expect(screen.queryByTestId('signin-on-save')).toBeNull();
-    } finally {
-      if (mode) Object.defineProperty(backend, 'mode', mode);
-    }
+    await open('/new/log?placeId=stock-sample-1');
+    expect(await screen.findByText(/First save\? You’ll create a free account/)).toBeTruthy();
+    await fireEvent.press(screen.getByText('Save hunt'));
+    expect(await screen.findByText('Sign in to save this hunt')).toBeTruthy();
+    expect(screen.getByText('Pheasant stocking (sample B) · Pheasant')).toBeTruthy();
+    expect((await journalEntries()).length).toBe(1);
+    expect(screen.queryByText('Not now — keep on this phone only')).toBeNull();
   });
 });

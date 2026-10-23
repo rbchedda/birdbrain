@@ -11,6 +11,8 @@ export const colors = {
   onDove: '#0E1A13',
   danger: '#FF8A80',
   success: '#8FD19E',
+  /** State park outline (DCNR): blue dashed, unlike SGL/place styling, never an "open" color. */
+  park: '#7DB8FF',
 } as const;
 
 export const fonts = {
