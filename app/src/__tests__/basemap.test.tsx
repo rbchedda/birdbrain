@@ -19,7 +19,8 @@ describe('map page', () => {
     expect(mapHtml).not.toContain('USGSImageryTopo');
     expect(mapHtml).toMatch(/satellite: \{ type: 'raster', tileSize: 256, maxzoom: 16,/);
     expect(USGS_ATTRIBUTION).toBe('Map services and data available from U.S. Geological Survey, National Geospatial Program.');
-    expect(mapHtml.split(USGS_ATTRIBUTION).length - 1).toBe(2);
+    // Once per USGS source: topo and satellite, online and offline (bboffline://) copies.
+    expect(mapHtml.split(USGS_ATTRIBUTION).length - 1).toBe(4);
     expect(mapHtml).not.toContain("'USGS The National Map'");
   });
 
