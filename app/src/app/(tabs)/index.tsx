@@ -1,6 +1,6 @@
 import { PENDING_CHIP_HEIGHT, PendingChip, usePendingChipShown } from '@/components/FieldSync';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { type ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
@@ -19,6 +19,7 @@ import { readJson, writeJson } from '@/lib/localStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomSheet, useBottomSheetScroll } from '@/components/BottomSheet';
+import { PlanTripHint } from '@/components/guide/PlanTripHint';
 import { LocateButton } from '@/components/map/LocateButton';
 import { PlaceMap } from '@/components/map/PlaceMap';
 import { StateParkSheet } from '@/components/StateParkSheet';
@@ -76,6 +77,7 @@ const BASEMAP_KEY = 'birdbrain.basemap.v1';
 
 export default function MapScreen() {
   const insets = useSafeAreaInsets();
+  const { hint } = useLocalSearchParams<{ hint?: string }>();
   const { height } = useWindowDimensions();
   const { places: all, loading, error } = usePlaces();
   const [filter, setFilter] = useState<PlaceType | 'all'>('all');
@@ -373,6 +375,8 @@ export default function MapScreen() {
 
       {/* Spec 04: above the sheet/action bar, never over the trespass banner or map controls. */}
       {!expanded && <PendingChip bottom={peek + space.sm} />}
+      <PlanTripHint requested={hint === 'plan'} top={topH + space.sm} />
+
       <BottomSheet
         expanded={expanded}
         onExpandedChange={setExpanded}
