@@ -1,7 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 
+import { backend } from '@/data';
 import { sampleMe } from '@/data/posts';
+import { samplePlans } from '@/data/sampleBackend';
 import { resetSignal } from '@/lib/connectivity';
 import { PLANS_KEY, type Plan } from '@/lib/plans';
 
@@ -16,6 +18,8 @@ jest.mock('react-native-safe-area-context', () => {
 
 beforeEach(async () => {
   await AsyncStorage.clear();
+  samplePlans.clear();
+  jest.restoreAllMocks();
   resetSignal();
 });
 
@@ -56,7 +60,7 @@ describe('What you can hunt here', () => {
   it('top card, groups with status tags, footer', async () => {
     await openSpot();
     await fireEvent.press(await screen.findByTestId('tile-hunt'));
-    expect(await screen.findByTestId('hunt-top-card')).toHaveTextContent(/WMU/);
+    expect(await screen.findByTestId('hunt-top-card')).not.toHaveTextContent(/WMU|forecast/i);
     expect(screen.getByTestId('group-good')).toBeTruthy();
     expect(screen.getByTestId('hunt-row-pheasant')).toBeTruthy();
     expect(screen.getByTestId('season-footer')).toHaveTextContent('Season dates: PGC 2026-27 digest. Check WMU rules before you hunt.');
@@ -74,18 +78,20 @@ describe('Plan a hunt → Profile › Plans', () => {
     await fireEvent.press(screen.getByLabelText('Next month'));
     await fireEvent.press(screen.getByLabelText('2026-11-14'));
     expect(screen.getByTestId('plan-day-card')).toHaveTextContent(/Sat, Nov 14/);
-    expect(screen.getByTestId('plan-forecast')).toHaveTextContent('Forecast closer to the date');
+    expect(screen.queryByTestId('plan-forecast')).toBeNull();
+    expect(screen.getByTestId('plan-day-card')).not.toHaveTextContent(/forecast|wind|°/i);
     await fireEvent.press(screen.getByTestId('species-pheasant'));
     await fireEvent.press(screen.getByRole('button', { name: 'Next' }));
     await fireEvent.changeText(screen.getByTestId('plan-notes'), 'x'.repeat(600));
     expect(screen.getByText('500/500')).toBeTruthy();
-    await fireEvent.press(screen.getByText('Night before at 8 PM'));
+    expect(screen.getByTestId('reminders-soon')).toHaveTextContent('Reminders coming soon');
+    expect(screen.queryByTestId('reminder-choices')).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: 'Save plan' }));
     expect(await screen.findByTestId('plan-saved-toast')).toHaveTextContent(/^Plan saved/);
 
     const stored = JSON.parse((await AsyncStorage.getItem(PLANS_KEY))!) as Plan[];
     expect(stored).toHaveLength(1);
-    expect(stored[0]).toMatchObject({ date: '2026-11-14', species: ['pheasant'], reminder: 'night_before_8pm', crew: null });
+    expect(stored[0]).toMatchObject({ date: '2026-11-14', species: ['pheasant'], reminder: 'none', crew: null });
     expect(stored[0].notes).toHaveLength(500);
 
     await fireEvent.press(screen.getByTestId('toast-view'));
@@ -116,12 +122,36 @@ describe('Plan a hunt → Profile › Plans', () => {
       updatedAt: '2026-10-23T12:00:00Z',
     };
     const owner = sampleMe.id;
-    resetSignal({ online: false, back: false });
+    jest.spyOn(backend, 'upsertPlan').mockRejectedValue(new Error('relation "public.plans" does not exist'));
     await AsyncStorage.setItem(PLANS_KEY, JSON.stringify([{ ...plan, owner }]));
     await open('/profile');
     const row = await screen.findByTestId(`plan-row-${plan.id}`);
     expect(row).toHaveTextContent(/Sat.*Nov 14.*Pheasant stocking \(sample B\).*Pheasant/);
     expect(screen.getByTestId('badge-waiting')).toHaveTextContent('Saved on phone · waiting to sync');
     expect(screen.queryByTestId('plans-empty')).toBeNull();
+  });
+
+  it('a crew plan shared by someone else opens view-only (no Edit, Share or Delete)', async () => {
+    const pal: Plan = {
+      id: 'pal-1',
+      owner: 'someone-else',
+      account: sampleMe.id,
+      readOnly: true,
+      place: { id: 'stock-sample-1', name: 'Pheasant stocking (sample B)', type: 'stocking', access: 'state_game_land', center: { lng: -76.7, lat: 40.45 }, species: ['pheasant'] },
+      date: '2026-11-14',
+      species: ['pheasant'],
+      notes: '',
+      reminder: 'none',
+      reminderScheduled: false,
+      crew: { id: 'crew-1', name: 'Ridge Crew' },
+      sync: 'synced',
+      createdAt: '2026-10-23T12:00:00Z',
+      updatedAt: '2026-10-23T12:00:00Z',
+    };
+    await AsyncStorage.setItem(PLANS_KEY, JSON.stringify([pal]));
+    await open('/plans/pal-1');
+    expect(await screen.findByTestId('plan-read-only')).toHaveTextContent('Shared with you by Ridge Crew · view only');
+    expect(screen.getByRole('button', { name: 'Directions' })).toBeTruthy();
+    for (const name of ['Edit', 'Delete', 'Unshare']) expect(screen.queryByRole('button', { name })).toBeNull();
   });
 });
