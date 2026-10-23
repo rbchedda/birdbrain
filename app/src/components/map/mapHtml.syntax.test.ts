@@ -7,3 +7,11 @@ it('every inline script in mapHtml parses', () => {
   expect(scripts.length).toBeGreaterThan(0);
   for (const code of scripts) expect(() => new vm.Script(code)).not.toThrow();
 });
+
+it('has the species-search rank layer, numbered markers and fit/center messages', () => {
+  expect(mapHtml).toContain("id: 'places-rank'");
+  expect(mapHtml).toContain("layers: ['places-rank', 'places-circle']");
+  expect(mapHtml).toContain('bb-rank');
+  expect(mapHtml).toContain("m.type === 'fit'");
+  expect(mapHtml).toContain("type: 'center'");
+});
