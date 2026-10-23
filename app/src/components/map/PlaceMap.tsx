@@ -26,7 +26,8 @@ export function PlaceMap(props: PlaceMapProps) {
       <WebView
         ref={ref}
         source={{ html: mapHtml, baseUrl: 'https://birdbrain.local/' }}
-        originWhitelist={['*']}
+        originWhitelist={MAP_ORIGINS}
+        onShouldStartLoadWithRequest={(r) => isMapDocument(r.url)}
         onMessage={(e) => receive(e.nativeEvent.data)}
         style={styles.web}
         scrollEnabled={false}
@@ -37,6 +38,13 @@ export function PlaceMap(props: PlaceMapProps) {
       {error && <MapError message={error} />}
     </View>
   );
+}
+
+// The map is a local HTML document; tiles load via fetch, not navigation, so nothing
+// else ever needs to load as a page inside this WebView.
+const MAP_ORIGINS = ['https://birdbrain.local*', 'about:*', 'data:*'];
+export function isMapDocument(url: string) {
+  return url.startsWith('https://birdbrain.local/') || url.startsWith('about:') || url.startsWith('data:');
 }
 
 const styles = StyleSheet.create({
