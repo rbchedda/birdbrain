@@ -21,3 +21,14 @@ jest.mock('react-native-webview', () => {
 jest.mock('@/components/ConsentGate', () => ({
   ConsentGate: ({ children }: { children: React.ReactNode }) => children,
 }));
+
+// Native location module has no Jest registry; screens start with permission not yet asked.
+jest.mock('expo-location', () => ({
+  Accuracy: { High: 4, Balanced: 3 },
+  getForegroundPermissionsAsync: jest.fn(async () => ({ granted: false, canAskAgain: true, status: 'undetermined' })),
+  requestForegroundPermissionsAsync: jest.fn(async () => ({ granted: false, canAskAgain: false, status: 'denied' })),
+  watchPositionAsync: jest.fn(async () => ({ remove: jest.fn() })),
+  getCurrentPositionAsync: jest.fn(async () => {
+    throw new Error('no fix in tests');
+  }),
+}));

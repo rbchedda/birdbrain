@@ -40,6 +40,16 @@ export function usePending() {
  * Spec 04/05/06/07: a persistent 56pt chip above the action bar while hunts wait
  * for sign-in. Never a modal; signal returning only recolours it.
  */
+/** The chip's height (minHeight 56, single line), for things stacked above it. */
+export const PENDING_CHIP_HEIGHT = 56;
+
+/** Whether PendingChip renders: signed out on Supabase with hunts waiting. */
+export function usePendingChipShown() {
+  const session = useSession();
+  const { count } = usePending();
+  return session === null && backend.mode === 'supabase' && !!count;
+}
+
 export function PendingChip({ bottom }: { bottom: number }) {
   const session = useSession();
   const signal = useSignal();
