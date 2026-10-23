@@ -87,8 +87,8 @@ describe('spot detail helpers', () => {
 
   it('reminders: 8 PM ET the night before, 1 hr before legal start', () => {
     expect(reminderAt('none', '2026-10-24', sgl.center)).toBeNull();
-    expect(reminderAt('night_before', '2026-10-24', sgl.center)?.toISOString()).toBe('2026-10-24T00:00:00.000Z');
-    const h = reminderAt('hour_before', '2026-10-24', sgl.center)!;
+    expect(reminderAt('night_before_8pm', '2026-10-24', sgl.center)?.toISOString()).toBe('2026-10-24T00:00:00.000Z');
+    const h = reminderAt('hour_before_legal', '2026-10-24', sgl.center)!;
     expect(h.getUTCHours()).toBeGreaterThanOrEqual(9);
     expect(h.getUTCHours()).toBeLessThanOrEqual(10);
   });

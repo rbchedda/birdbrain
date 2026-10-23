@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import type { AccessType } from '@/data/access';
+import { NotSignedInError, type Backend, type PlanUpload } from '@/data/backend';
 import type { LngLat, PlaceType, Species } from '@/data/types';
 import { flags } from '@/lib/flags';
 import { newClientId, readJson, updateJson } from '@/lib/localStore';
@@ -8,10 +9,11 @@ import type { Reminder } from '@/lib/spotPlan';
 import { todayET, type Ymd } from '@/lib/time';
 
 /**
- * Hunt plans (spot-detail spec: Plan a hunt, Profile › Plans). LOCAL ONLY: a
- * hosted plans table is not approved, so plans live on this phone, keyed to
- * the signed-in account. EXPO_PUBLIC_FLAG_PLANS (off by default) only marks
- * new plans as waiting to sync; no server call exists in this build.
+ * Hunt plans (spot-detail spec: Plan a hunt, Profile › Plans). Offline first:
+ * every plan is saved on this phone (keyed to the signed-in account) and queued;
+ * syncPlans pushes the queue to hosted public.plans (hosted-changes-needed.md
+ * §2-3) by client UUID, so replays are idempotent. EXPO_PUBLIC_FLAG_PLANS=0
+ * turns sync off (plans stay 'local', phone-only).
  */
 export const PLANS_KEY = 'birdbrain.plans.v1';
 
@@ -38,6 +40,10 @@ export interface Plan {
   crew: { id: string; name: string } | null;
   /** 'local': phone-only (flag off). 'pending': waiting to sync (flag on). */
   sync: 'local' | 'pending' | 'synced';
+  /** Tombstone: deleted here, delete not yet pushed. Hidden from every list. */
+  deleted?: boolean;
+  /** Asked to share with a crew but the server refused (crew sharing not live, or not a member). */
+  shareFailed?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -60,7 +66,14 @@ export function onPlansChange(cb: () => void) {
   };
 }
 
-const all = () => readJson<Plan[]>(PLANS_KEY, []);
+const raw = () => readJson<Plan[]>(PLANS_KEY, []);
+const all = async () => (await raw()).filter((p) => !p.deleted);
+
+// The app registers one syncer (data/hooks); any change kicks it so new plans upload right away.
+let kick: () => void = () => {};
+export const setPlansSyncKick = (k: () => void) => {
+  kick = k;
+};
 
 export async function listPlans(owner: string): Promise<Plan[]> {
   return (await all()).filter((p) => p.owner === owner).sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
@@ -94,6 +107,7 @@ export async function savePlan(owner: string, draft: PlanDraft, now = new Date()
   plan.reminderScheduled = plan.reminder !== 'none' && (await scheduler(plan).catch(() => false));
   await updateJson<Plan[]>(PLANS_KEY, [], (list) => [...list, plan]);
   changed();
+  kick();
   return plan;
 }
 
@@ -102,7 +116,7 @@ export async function updatePlan(id: string, patch: Partial<PlanDraft>, now = ne
   await updateJson<Plan[]>(PLANS_KEY, [], (list) =>
     list.map((p) => {
       if (p.id !== id) return p;
-      out = { ...p, ...patch, notes: (patch.notes ?? p.notes).trim().slice(0, 500), updatedAt: now.toISOString(), sync: flags.plans ? 'pending' : p.sync };
+      out = { ...p, ...patch, shareFailed: false, notes: (patch.notes ?? p.notes).trim().slice(0, 500), updatedAt: now.toISOString(), sync: flags.plans ? 'pending' : p.sync };
       return out;
     }),
   );
@@ -113,12 +127,73 @@ export async function updatePlan(id: string, patch: Partial<PlanDraft>, now = ne
     next.reminderScheduled = scheduled;
   }
   changed();
+  kick();
   return next;
 }
 
-export async function deletePlan(id: string) {
-  await updateJson<Plan[]>(PLANS_KEY, [], (list) => list.filter((p) => p.id !== id));
+/** Deletes now on the phone; a plan that may be on the server keeps a tombstone until the delete is pushed. */
+export async function deletePlan(id: string, now = new Date()) {
+  await updateJson<Plan[]>(PLANS_KEY, [], (list) =>
+    list.flatMap((p) => {
+      if (p.id !== id) return [p];
+      if (!flags.plans) return [];
+      return [{ ...p, deleted: true, sync: 'pending' as const, updatedAt: now.toISOString() }];
+    }),
+  );
   changed();
+  kick();
+}
+
+const toUpload = (p: Plan): PlanUpload => ({
+  clientId: p.id,
+  placeId: p.place.id,
+  placeName: p.place.name,
+  planDate: p.date,
+  species: p.species,
+  notes: p.notes,
+  reminder: p.reminder,
+  crewId: p.crew?.id ?? null,
+});
+
+export interface PlansSyncReport {
+  pushed: number;
+  failed: number;
+}
+
+let inFlight: Promise<PlansSyncReport> | null = null;
+/** Push this owner's queued plans (one run at a time). Failures stay queued for the next trigger. */
+export function syncPlans(backend: Backend, owner: string): Promise<PlansSyncReport> {
+  inFlight ??= runSync(backend, owner).finally(() => {
+    inFlight = null;
+  });
+  return inFlight;
+}
+
+async function runSync(backend: Backend, owner: string): Promise<PlansSyncReport> {
+  const report = { pushed: 0, failed: 0 };
+  if (!flags.plans) return report;
+  // Plans saved while sync was off ('local') join the queue too.
+  const queue = (await raw()).filter((p) => p.owner === owner && p.sync !== 'synced');
+  for (const p of queue) {
+    try {
+      if (p.deleted) {
+        await backend.deletePlan(p.id);
+        await updateJson<Plan[]>(PLANS_KEY, [], (list) => list.filter((x) => !(x.id === p.id && x.updatedAt === p.updatedAt)));
+      } else {
+        const { shared } = await backend.upsertPlan(toUpload(p));
+        // Only mark synced if it wasn't edited mid-push; otherwise the next run sends the newer copy.
+        await updateJson<Plan[]>(PLANS_KEY, [], (list) =>
+          list.map((x) => (x.id === p.id && x.updatedAt === p.updatedAt ? { ...x, sync: 'synced' as const, shareFailed: !!p.crew && !shared } : x)),
+        );
+      }
+      report.pushed++;
+    } catch (e) {
+      report.failed++;
+      if (e instanceof NotSignedInError) break;
+    }
+  }
+  if (report.pushed) changed();
+  return report;
 }
 
 /** Live list of the owner's plans (null while loading, [] when signed out). */

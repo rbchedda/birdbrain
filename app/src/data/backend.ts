@@ -148,6 +148,27 @@ export interface Backend {
   uploadDiaryPhoto(clientId: string, photo: { id: string; localUri: string }): Promise<string>;
   /** Delete a private hunt log entry (and its diary details and photos) by client UUID. Idempotent; owner-only. */
   deleteHuntLogEntry(clientId: string): Promise<void>;
+
+  /**
+   * Idempotent push of a hunt plan to public.plans (hosted-changes-needed.md §2-3):
+   * insert-or-ignore on (user_id, client_id), then update the editable columns.
+   * shared=false when crewId was asked for but the server refused it (e.g. §3 not applied).
+   */
+  upsertPlan(plan: PlanUpload): Promise<{ shared: boolean }>;
+  /** Delete a hunt plan by client UUID. Idempotent; owner-only. */
+  deletePlan(clientId: string): Promise<void>;
+}
+
+export type PlanReminder = 'none' | 'night_before_8pm' | 'hour_before_legal';
+export interface PlanUpload {
+  clientId: string;
+  placeId: string;
+  placeName: string;
+  planDate: string;
+  species: string[];
+  notes: string;
+  reminder: PlanReminder;
+  crewId: string | null;
 }
 
 export class NotSignedInError extends Error {

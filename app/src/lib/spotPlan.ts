@@ -3,6 +3,9 @@ import { speciesLabel, type LngLat, type Place, type Species } from '@/data/type
 import { officialDay } from '@/lib/sun';
 import { addDays, formatDay, formatTime, midnightET, todayET, weekdayOf, type Ymd } from '@/lib/time';
 
+/** The bits of a place these helpers need (a Place or a saved plan's snapshot). */
+export type SpotLike = Pick<Place, 'id' | 'name' | 'type' | 'species' | 'center' | 'access'> & { parking?: LngLat | null };
+
 /**
  * Pure helpers for the spot detail redesign (spot-detail/spec.md): open-species
  * tags, "What you can hunt here" groups, Plan a hunt days and reminders,
@@ -18,7 +21,7 @@ export const SEASON_FOOTER = 'Season dates: PGC 2026-27 digest. Check WMU rules 
 const isOpen = (s: SpeciesStatus) => s.kind === 'open' && !s.season.youth;
 
 /** Species open (general season) at a place on a date, in place order. */
-export function openSpecies(place: Place, ymd: Ymd): Species[] {
+export function openSpecies(place: SpotLike, ymd: Ymd): Species[] {
   return placeSpecies(place).filter((sp) => isOpen(speciesStatus(sp, ymd, place.center)));
 }
 
@@ -30,18 +33,18 @@ export function openTags(open: Species[]): string[] {
 }
 
 /** "6:54 AM – 6:11 PM" small-game legal hours for a place and date, or null when the table has no row. */
-export function hoursText(place: Place, ymd: Ymd, hours: 'smallGame' | 'migratory' = 'smallGame'): string | null {
+export function hoursText(place: SpotLike, ymd: Ymd, hours: 'smallGame' | 'migratory' = 'smallGame'): string | null {
   const h = legalHours(hours, ymd, place.center.lng);
   return h ? `${formatTime(h.start)} – ${formatTime(h.end)}` : null;
 }
 
-export function sunText(place: Place, ymd: Ymd): string | null {
+export function sunText(place: SpotLike, ymd: Ymd): string | null {
   const d = officialDay(ymd, place.center.lng);
   return d ? `Sunrise ${formatTime(d.sunrise)} · Sunset ${formatTime(d.sunset)}` : null;
 }
 
 /** "Today: 2 species open" row text. */
-export function todayRow(place: Place, ymd: Ymd) {
+export function todayRow(place: SpotLike, ymd: Ymd) {
   const open = openSpecies(place, ymd);
   const hours = hoursText(place, ymd);
   return {
@@ -79,7 +82,7 @@ function nextGeneralOpen(species: Species, ymd: Ymd): Ymd | null {
 }
 
 /** Row tag: Open / Opens Sat / Closes Nov 8 / Closed. Closes shows within 14 days of the end. */
-export function statusTag(species: Species, place: Place, ymd: Ymd): { text: string; tone: 'open' | 'soon' | 'closed' } {
+export function statusTag(species: Species, place: SpotLike, ymd: Ymd): { text: string; tone: 'open' | 'soon' | 'closed' } {
   const st = speciesStatus(species, ymd, place.center);
   if (isOpen(st)) {
     const end = windowEnd(species, ymd);
@@ -114,7 +117,7 @@ const seasonNote = (species: Species) => {
 };
 
 const UPLAND: Species[] = ['pheasant', 'grouse', 'turkey', 'woodcock'];
-const reasonFor = (place: Place, species: Species, good: boolean): string => {
+const reasonFor = (place: SpotLike, species: Species, good: boolean): string => {
   if (place.type === 'stocking' && place.species.includes(species)) return 'PGC stocks this property';
   if (place.type === 'dove_field' && species === 'dove') return 'Managed dove field';
   if (place.type === 'game_land') return good ? 'Game land habitat; common target here' : 'Allowed on game lands; habitat varies';
@@ -130,7 +133,7 @@ export interface HuntRow {
 }
 
 /** "Good fit here" / "Possible" groups for What you can hunt here. No bag limits by design. */
-export function whatToHunt(place: Place, ymd: Ymd): { good: HuntRow[]; possible: HuntRow[] } {
+export function whatToHunt(place: SpotLike, ymd: Ymd): { good: HuntRow[]; possible: HuntRow[] } {
   const all = placeSpecies(place);
   const goodSet = new Set<Species>(place.species.length ? place.species : UPLAND.filter((s) => all.includes(s)));
   const row = (sp: Species, good: boolean): HuntRow => ({
@@ -161,7 +164,7 @@ export interface SpeciesChoice {
 }
 
 /** Species chips for a plan date: only species fitting this spot; closed ones carry their open date. */
-export function speciesChoices(place: Place, ymd: Ymd): SpeciesChoice[] {
+export function speciesChoices(place: SpotLike, ymd: Ymd): SpeciesChoice[] {
   return placeSpecies(place).map((species) => {
     const st = speciesStatus(species, ymd, place.center);
     if (isOpen(st)) return { species, open: true };
@@ -173,7 +176,7 @@ export function speciesChoices(place: Place, ymd: Ymd): SpeciesChoice[] {
 }
 
 /** Next date on/after ymd when anything here is open (searches to the license year end). */
-export function nextOpenDate(place: Place, ymd: Ymd): Ymd | null {
+export function nextOpenDate(place: SpotLike, ymd: Ymd): Ymd | null {
   for (let d = addDays(ymd, 1); d <= LICENSE_YEAR_END; d = addDays(d, 1)) if (openSpecies(place, d).length) return d;
   return null;
 }
@@ -183,24 +186,24 @@ export function planSeasonClosed(place: Pick<Place, 'center'>, ymd: Ymd, species
   return species.length > 0 && !species.some((s) => isOpen(speciesStatus(s, ymd, place.center)));
 }
 
-export type Reminder = 'none' | 'night_before' | 'hour_before';
+export type Reminder = 'none' | 'night_before_8pm' | 'hour_before_legal';
 export const reminderLabel: Record<Reminder, string> = {
   none: 'None',
-  night_before: 'Night before at 8 PM',
-  hour_before: '1 hr before legal hours',
+  night_before_8pm: 'Night before at 8 PM',
+  hour_before_legal: '1 hr before legal hours',
 };
 
 /** When a reminder should fire, or null for none / no hours row. */
 export function reminderAt(reminder: Reminder, ymd: Ymd, center: LngLat): Date | null {
   if (reminder === 'none') return null;
   // 8 PM ET the night before = 4 h before the date's ET midnight.
-  if (reminder === 'night_before') return new Date(midnightET(ymd).getTime() - 4 * 3600_000);
+  if (reminder === 'night_before_8pm') return new Date(midnightET(ymd).getTime() - 4 * 3600_000);
   const h = legalHours('smallGame', ymd, center.lng);
   return h ? new Date(h.start.getTime() - 3600_000) : null;
 }
 
 /** Directions target: the parking point when we have one, else the place point (nearest access). */
-export function directionsTarget(place: Place & { parking?: LngLat | null }): LngLat {
+export function directionsTarget(place: Pick<SpotLike, 'center' | 'parking'>): LngLat {
   return place.parking ?? place.center;
 }
 

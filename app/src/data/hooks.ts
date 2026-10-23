@@ -5,6 +5,7 @@ import { AppState, Platform } from 'react-native';
 import type { Session } from './backend';
 import { onReconnect as onConnectivityBack, startConnectivity } from '@/lib/connectivity';
 import { journalEntries, onJournalChange, startJournalSync, syncJournal } from './journal';
+import { setPlansSyncKick, syncPlans } from '@/lib/plans';
 import { backend } from './index';
 import { cachedSafetyPlaces, saveSafetyPlaces } from '@/offline/safetyCache';
 
@@ -122,6 +123,23 @@ function startJournalSyncOnce() {
       return () => sessionListeners.delete(l);
     },
   });
+}
+
+// Hunt plans: push the queue on any change, foreground, reconnect and sign-in (offline queue kept on failure).
+let plansSyncStarted = false;
+export function startPlansSyncOnce() {
+  if (plansSyncStarted) return;
+  plansSyncStarted = true;
+  startSession();
+  const run = () => {
+    if (session?.userId) syncPlans(backend, session.userId).catch(() => undefined);
+  };
+  setPlansSyncKick(run);
+  AppState.addEventListener('change', (s) => s === 'active' && run());
+  startConnectivity();
+  onConnectivityBack(run);
+  sessionListeners.add(run);
+  run();
 }
 
 /** Private hunt log entries with live sync status. */

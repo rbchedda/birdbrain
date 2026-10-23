@@ -558,6 +558,34 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
       check(await sb.from('hunt_log_entries').delete().eq('client_id', clientId));
     },
 
+    async upsertPlan(p) {
+      const userId = await me();
+      const cols = {
+        place_id: p.placeId,
+        place_name: p.placeName.slice(0, 200),
+        plan_date: p.planDate,
+        species: p.species.slice(0, 20),
+        notes: p.notes ? p.notes.slice(0, 500) : null,
+        reminder: p.reminder,
+      };
+      // Insert-or-ignore keeps replays of the offline queue idempotent (unique user_id, client_id).
+      check(await sb.from('plans').upsert({ user_id: userId, client_id: p.clientId, ...cols, crew_id: null }, { onConflict: 'user_id,client_id', ignoreDuplicates: true }));
+      // Then apply edits; only the granted update columns are sent. Unsharing (crew_id null) is always allowed.
+      const own = () => sb.from('plans').update(cols).eq('user_id', userId).eq('client_id', p.clientId);
+      if (!p.crewId) {
+        check(await sb.from('plans').update({ ...cols, crew_id: null }).eq('user_id', userId).eq('client_id', p.clientId));
+        return { shared: false };
+      }
+      check(await own());
+      const share = await sb.from('plans').update({ crew_id: p.crewId }).eq('user_id', userId).eq('client_id', p.clientId);
+      return { shared: !share.error };
+    },
+
+    async deletePlan(clientId) {
+      const userId = await me();
+      check(await sb.from('plans').delete().eq('user_id', userId).eq('client_id', clientId));
+    },
+
     async uploadDiaryPhoto(clientId, photo) {
       const userId = await me();
       const path = `${userId}/${clientId}/${photo.id}.jpg`;

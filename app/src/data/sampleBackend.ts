@@ -386,6 +386,12 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
       await writeJson(HUNT_LOG_KEY, rows);
     },
 
+    // Sample mode: plans already live on the phone; the push is a no-op.
+    async upsertPlan(p) {
+      return { shared: !!p.crewId };
+    },
+    async deletePlan() {},
+
     // Offline: photos stay on the device; the path mirrors the private bucket layout.
     async uploadDiaryPhoto(clientId, photo) {
       return `${sampleMe.id}/${clientId}/${photo.id}.jpg`;
