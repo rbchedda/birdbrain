@@ -71,6 +71,8 @@ export interface TermsAcceptance {
 export interface NoticeDismissal {
   noticeVersion: string;
   appVersion: string;
+  /** How it was dismissed (spec Option A): the banner close button or "Got it". */
+  method?: 'close' | 'got_it';
 }
 
 export interface HuntLogUpsertResult {

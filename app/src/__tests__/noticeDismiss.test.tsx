@@ -4,7 +4,7 @@ import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testi
 import { backend } from '@/data';
 import type { Session } from '@/data/backend';
 import { MAP_BANNER, MAP_BANNER_SHORT, NOTICE_VERSION, PEEK_SURVEY_LINE } from '@/data/mapNotice';
-import { NOTICE_DISMISS_KEY, dismissNoticeFor, isNoticeDismissed } from '@/lib/noticeDismiss';
+import { NOTICE_DISMISS_KEY, dismissNoticeFor, isNoticeDismissed, restoreNoticeFor } from '@/lib/noticeDismiss';
 
 const metrics = { frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } };
 jest.mock('react-native-safe-area-context', () => {
@@ -93,10 +93,14 @@ describe('flag ON: lawyer conditions', () => {
 
     await fireEvent.press(closeBtn);
     await waitFor(() => expect(screen.queryByTestId('map-banner')).toBeNull());
-    expect(record).toHaveBeenCalledWith({ noticeVersion: NOTICE_VERSION, appVersion: expect.any(String) });
+    expect(record).toHaveBeenCalledWith({ noticeVersion: NOTICE_VERSION, appVersion: expect.any(String), method: 'close' });
     expect(JSON.parse((await AsyncStorage.getItem(NOTICE_DISMISS_KEY))!)).toEqual({ u1: NOTICE_VERSION });
     await fireEvent.press(screen.getByTestId('map-notice-info'));
     expect(screen.getByTestId('map-full-notice')).toHaveTextContent(MAP_BANNER, { exact: false });
+    // "Show on map" brings the banner back and clears the dismissal.
+    await fireEvent.press(screen.getByText('Show on map'));
+    await waitFor(() => expect(screen.getByTestId('map-banner')).toBeTruthy());
+    expect(screen.getByTestId('map-notice-info')).toBeTruthy();
     await setSession(null);
     // Signing out brings the banner back.
     await waitFor(() => expect(screen.getByTestId('map-banner')).toBeTruthy());
@@ -109,6 +113,7 @@ describe('flag ON: lawyer conditions', () => {
     await fireEvent.press(screen.getByText('Got it'));
     await waitFor(() => expect(screen.queryByTestId('map-banner')).toBeNull());
     expect(record).toHaveBeenCalledTimes(1);
+    expect(record).toHaveBeenCalledWith(expect.objectContaining({ method: 'got_it' }));
     await setSession(null);
   });
 
@@ -125,6 +130,21 @@ describe('flag ON: lawyer conditions', () => {
     expect(await isNoticeDismissed('u1', 'v-new')).toBe(false);
     expect(await isNoticeDismissed('u2', 'v-old')).toBe(false);
     expect(await isNoticeDismissed(null, 'v-old')).toBe(false);
+  });
+
+  it('"Show on map" clears the stored dismissal', async () => {
+    expect(await dismissNoticeFor('u1')).toBe(true);
+    await restoreNoticeFor('u1');
+    expect(await isNoticeDismissed('u1')).toBe(false);
+  });
+
+  it('(5) after a version bump the banner returns labeled "UPDATED NOTICE"', async () => {
+    await AsyncStorage.setItem(NOTICE_DISMISS_KEY, JSON.stringify({ u1: 'v-old' }));
+    await open();
+    await setSession(me);
+    await waitFor(() => expect(screen.getByTestId('map-notice-updated')).toHaveTextContent('UPDATED NOTICE'));
+    expect(screen.getByTestId('map-banner')).toHaveTextContent(MAP_BANNER_SHORT, { exact: false });
+    await setSession(null);
   });
 
   it('(6)(7) place sheet keeps the full notice; the "Check before you hunt" line carries the survey line', async () => {

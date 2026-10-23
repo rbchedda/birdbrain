@@ -46,7 +46,7 @@ import {
   STOCKING_PIN_NOTE,
 } from '@/data/mapNotice';
 import { legal } from '@/lib/env';
-import { dismissNoticeFor, isNoticeDismissed, noticeDismissEnabled } from '@/lib/noticeDismiss';
+import { dismissNoticeFor, isNoticeDismissed, noticeDismissEnabled, noticeUpdatedFor, restoreNoticeFor, type DismissMethod } from '@/lib/noticeDismiss';
 import { useEntitlements } from '@/entitlements';
 import { useOfflineMapSource, withOfflineOutline } from '@/offline';
 import { STOCKING_SOURCE, stockingCountyOf, windowsForCounty } from '@/data/places';
@@ -105,19 +105,36 @@ export default function MapScreen() {
   const dismissFlag = noticeDismissEnabled();
   const noticeUser = dismissFlag && session && !session.anonymous ? session.userId : null;
   const [noticeDismissed, setNoticeDismissed] = useState(false);
+  const [noticeUpdated, setNoticeUpdated] = useState(false);
   useEffect(() => {
     let live = true;
     setNoticeDismissed(false);
-    if (noticeUser) isNoticeDismissed(noticeUser).then((d) => live && setNoticeDismissed(d), () => {});
+    setNoticeUpdated(false);
+    if (noticeUser) {
+      isNoticeDismissed(noticeUser).then((d) => live && setNoticeDismissed(d), () => {});
+      noticeUpdatedFor(noticeUser).then((u) => live && setNoticeUpdated(u), () => {});
+    }
     return () => {
       live = false;
     };
   }, [noticeUser]);
   /** Only "Got it" and the close button call this. Signed out: it just collapses the full notice. */
-  const dismissNotice = useCallback(() => {
+  const dismissNotice = useCallback(
+    (method: DismissMethod) => {
+      setFullNotice(false);
+      if (!noticeUser) return;
+      dismissNoticeFor(noticeUser, undefined, method).then(
+        (ok) => ok && (setNoticeDismissed(true), setNoticeUpdated(false)),
+        () => {},
+      );
+    },
+    [noticeUser],
+  );
+  /** "Show on map": the banner comes back and the dismissal is cleared. */
+  const restoreNotice = useCallback(() => {
     setFullNotice(false);
-    if (!noticeUser) return;
-    dismissNoticeFor(noticeUser).then((ok) => ok && setNoticeDismissed(true), () => {});
+    setNoticeDismissed(false);
+    restoreNoticeFor(noticeUser).catch(() => {});
   }, [noticeUser]);
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const refreshSaved = useCallback(() => {
@@ -302,13 +319,18 @@ export default function MapScreen() {
               style={[styles.banner, { flex: 1 }]}
               testID="map-banner"
             >
+              {noticeUpdated && (
+                <Text style={styles.noticeUpdated} testID="map-notice-updated">
+                  UPDATED NOTICE
+                </Text>
+              )}
               <Text style={styles.bannerText}>{MAP_BANNER_SHORT}</Text>
             </Pressable>
           )}
           {dismissFlag && (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Map notice"
+              accessibilityLabel="Boundary notice"
               accessibilityState={{ expanded: fullNotice }}
               onPress={() => setFullNotice((v) => !v)}
               hitSlop={8}
@@ -321,8 +343,8 @@ export default function MapScreen() {
           {noticeUser && !noticeDismissed && (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Dismiss map notice"
-              onPress={dismissNotice}
+              accessibilityLabel="Hide boundary notice"
+              onPress={() => dismissNotice('close')}
               hitSlop={8}
               style={styles.bannerClose}
               testID="map-banner-dismiss"
@@ -337,7 +359,14 @@ export default function MapScreen() {
             <Text accessibilityRole="link" style={styles.link} onPress={() => router.push('/data-sources')}>
               View data sources ›
             </Text>
-            <Button label="Got it" variant="primary" onPress={noticeUser ? dismissNotice : () => setFullNotice(false)} />
+            {noticeUser && noticeDismissed && (
+              <Button label="Show on map" variant="secondary" onPress={restoreNotice} />
+            )}
+            <Button
+              label="Got it"
+              variant="primary"
+              onPress={noticeUser ? () => dismissNotice('got_it') : () => setFullNotice(false)}
+            />
           </View>
         )}
       </View>
@@ -793,6 +822,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  noticeUpdated: { color: colors.accent, fontFamily: fonts.bodySemi, fontSize: 12, letterSpacing: 0.5 },
   noticeInfo: {
     alignSelf: 'flex-end',
     width: touchTarget,

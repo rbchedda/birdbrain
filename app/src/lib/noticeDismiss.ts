@@ -33,14 +33,36 @@ export async function isNoticeDismissed(userId: string | null | undefined, versi
  * on the device. Returns false (banner stays) when signed out, the flag is off, or
  * the log write fails.
  */
-export async function dismissNoticeFor(userId: string | null | undefined, version = NOTICE_VERSION): Promise<boolean> {
+export type DismissMethod = 'close' | 'got_it';
+
+export async function dismissNoticeFor(
+  userId: string | null | undefined,
+  version = NOTICE_VERSION,
+  method: DismissMethod = 'close',
+): Promise<boolean> {
   if (!noticeDismissEnabled() || !userId) return false;
   try {
-    await backend.recordNoticeDismissal({ noticeVersion: version, appVersion: appVersion() });
+    await backend.recordNoticeDismissal({ noticeVersion: version, appVersion: appVersion(), method });
   } catch {
     return false;
   }
   const all = (await readJson<Dismissals>(NOTICE_DISMISS_KEY, {})) ?? {};
   await writeJson(NOTICE_DISMISS_KEY, { ...all, [userId]: version });
   return true;
+}
+
+/** True when this account dismissed an OLDER notice version: the banner returns labeled "UPDATED NOTICE". */
+export async function noticeUpdatedFor(userId: string | null | undefined, version = NOTICE_VERSION): Promise<boolean> {
+  if (!noticeDismissEnabled() || !userId) return false;
+  const prev = (await readJson<Dismissals>(NOTICE_DISMISS_KEY, {}))?.[userId];
+  return !!prev && prev !== version;
+}
+
+/** "Show on map" in the full-notice modal: bring the banner back and clear this account's dismissal. */
+export async function restoreNoticeFor(userId: string | null | undefined): Promise<void> {
+  if (!userId) return;
+  const all = (await readJson<Dismissals>(NOTICE_DISMISS_KEY, {})) ?? {};
+  if (!(userId in all)) return;
+  const { [userId]: _gone, ...rest } = all;
+  await writeJson(NOTICE_DISMISS_KEY, rest);
 }

@@ -120,14 +120,13 @@ describe('map and sheet notices', () => {
     expect(await screen.findByText('Map notice & data sources')).toBeTruthy();
   });
 
-  it('banner has no dismiss path: no close control, and it is still shown after collapsing, a remount and a second view', async () => {
+  it('banner renders unless dismissed for the current version: collapsing, layers, a place, a second view and a remount never hide it', async () => {
     await open('/');
     await screen.findByText('6 spots nearby');
     const banner = screen.getByTestId('map-banner');
     expect(banner).toHaveTextContent(MAP_BANNER_SHORT);
-    // No dismiss/close control anywhere in or next to the banner.
-    expect(screen.queryByLabelText(/dismiss|close (notice|banner)|hide banner/i)).toBeNull();
-    expect(within(banner).queryByRole('button')).toBeNull();
+    // Option A (counsel, Oct 23 2026): only the close button / "Got it" may hide it (noticeDismiss.test).
+    // Nothing incidental does, and nothing is dismissed for this version.
 
     // Opening and closing the full notice never removes the one-liner.
     await fireEvent.press(banner);
