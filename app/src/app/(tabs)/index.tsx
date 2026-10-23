@@ -1,7 +1,7 @@
 import { PENDING_CHIP_HEIGHT, PendingChip, usePendingChipShown } from '@/components/FieldSync';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { type ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
+import { type ComponentProps, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   Keyboard,
@@ -28,7 +28,10 @@ import { Tag } from '@/components/Tag';
 import { Button, Chip, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { accessLabel } from '@/data/access';
-import { pointInGeometry } from '@/lib/geo';
+import { distanceKm, pointInGeometry } from '@/lib/geo';
+import { miles, SpotTiles } from '@/components/spot/SpotActions';
+import { openSpecies, openTags, todayRow } from '@/lib/spotPlan';
+import type { AccessType } from '@/data/access';
 import { needsAccount } from '@/lib/gate';
 import { openLocationSettings, useMyLocation } from '@/lib/location';
 import { loadPlaces, useAsync, useDataSources, usePlaces, useSession } from '@/data/hooks';
@@ -53,7 +56,7 @@ import { STOCKING_SOURCE, stockingCountyOf, windowsForCounty } from '@/data/plac
 import { PGC_DIGEST_URL } from '@/data/regs';
 import { STATE_PARKS } from '@/data/stateParks';
 import { describeStatus, placeToday, SEASON_YEAR, type PlaceToday } from '@/data/seasons';
-import { migratory, placeTypeLabel, speciesLabel, type Place, type PlaceType } from '@/data/types';
+import { migratory, placeTypeLabel, speciesLabel, type LngLat, type Place, type PlaceType } from '@/data/types';
 import { formatDay, formatTime, todayET } from '@/lib/time';
 import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
 
@@ -64,8 +67,8 @@ const filters: { key: PlaceType | 'all'; label: string }[] = [
   { key: 'dove_field', label: 'Dove Fields' },
 ];
 
-/** Spec (Oct 23): PEEK 200 pt with a place shown. */
-const PEEK = 200;
+/** Spot detail spec (Oct 23): PEEK 256 pt with a place shown (name, tags, 3 tiles, check line). */
+const PEEK = 256;
 /** Nothing selected: just the handle and the spot count. */
 const PEEK_EMPTY = 84;
 /** FULL stops this far below the map notice banner (spec: 8 pt). */
@@ -391,7 +394,15 @@ export default function MapScreen() {
         {park && !selected ? (
           <StateParkSheet park={park} onClose={() => setParkId(undefined)} />
         ) : selected ? (
-          <PlaceDetails place={selected} expanded={expanded} onClose={() => setSelectedId(undefined)} onSavedChange={refreshSaved} />
+          <PlaceDetails
+            place={selected}
+            expanded={expanded}
+            onClose={() => setSelectedId(undefined)}
+            onSavedChange={refreshSaved}
+            onOpenNotice={() => setFullNotice(true)}
+            onExpand={() => setExpanded(true)}
+            me={me}
+          />
         ) : planner ? (
           <StockingList places={all} savedIds={savedIds} onPick={pick} />
         ) : (
@@ -491,10 +502,21 @@ export function fullSheetHeight(screenH: number, topH: number, _windowH?: number
 
 /** HALF: 50% of the space above the tab bar, never over the banner block. */
 export function sheetHeight(screenH: number, topH: number, _windowH?: number) {
-  return Math.max(PEEK, Math.min(screenH * 0.5, screenH - topH - FULL_GAP));
+  // PEEK floor, but the banner wins on very short screens (never cover search or the notice).
+  return Math.min(screenH - topH - FULL_GAP, Math.max(PEEK, screenH * 0.5));
 }
 
 /** "Pheasant open" when exactly one species is in season here today, else "Season open today". */
+/** Bold head of the required peek line (spot-detail spec, exact). */
+export const CHECK_LINE_HEAD = 'Check before you hunt';
+
+/** One-sentence permission box at half height. Enrolled land uses ENROLLED_PRIVATE_LINE verbatim. */
+export function permissionLine(access: AccessType): string {
+  if (access === 'enrolled_private') return ENROLLED_PRIVATE_LINE;
+  if (access === 'state_game_land') return 'Permission: Public land. No permission needed inside the boundary.';
+  return 'Permission: Public land. Follow the posted rules for this property.';
+}
+
 export function openTag(today: PlaceToday): string | null {
   if (!today.open) return null;
   const open = today.statuses.filter((s) => s.status.kind === 'open' && !s.status.season.youth);
@@ -506,8 +528,16 @@ function PlaceDetails({
   expanded,
   onClose,
   onSavedChange,
+  onOpenNotice,
+  onExpand,
+  me,
 }: {
   place: Place;
+  /** Tapping the required check line opens the full-notice modal. */
+  onOpenNotice?: () => void;
+  /** "More about this spot ›": expand the sheet and scroll to the full detail. */
+  onExpand?: () => void;
+  me?: LngLat | null;
   /** The release card only shows on the expanded sheet. */
   expanded: boolean;
   onClose: () => void;
@@ -515,6 +545,12 @@ function PlaceDetails({
 }) {
   const session = useSession();
   const sheetScroll = useBottomSheetScroll();
+  const scrollRef = useRef<ScrollView>(null);
+  const moreY = useRef(0);
+  const onMore = () => {
+    onExpand?.();
+    setTimeout(() => scrollRef.current?.scrollTo?.({ y: moreY.current, animated: true }), 250);
+  };
   // County release weeks from the PGC allocation seed; PGC doesn't publish per-property dates.
   const stockingCounty = stockingCountyOf(place);
   const stocking = place.type === 'stocking' ? windowsForCounty(stockingCounty) : [];
@@ -548,28 +584,20 @@ function PlaceDetails({
     }
   };
 
-  const directions = () => {
-    const { lat, lng } = place.center;
-    const url =
-      Platform.OS === 'ios'
-        ? `http://maps.apple.com/?daddr=${lat},${lng}`
-        : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-    Linking.openURL(url).catch(() => {});
-  };
-
   const nextRelease = stocking.find((w) => w.windowEnd >= today.date);
-  const speciesHours = knownHours(today);
 
   return (
-    <ScrollView contentContainerStyle={{ gap: space.md, paddingBottom: space.xl }} {...sheetScroll}>
-      {/* Peek: identity, access, two stats, actions and the full legal notice. */}
+    <ScrollView ref={scrollRef} contentContainerStyle={{ gap: space.md, paddingBottom: space.xl }} {...sheetScroll}>
+      {/* Peek (spot-detail spec, 256 pt): name + distance, tags, three tiles, the required check line. */}
       <View style={styles.headerRow}>
         <View style={{ flex: 1, gap: 2 }}>
-          <Text style={styles.sheetTitle}>{place.name}</Text>
-          <Text style={ui.muted}>
-            {placeTypeLabel[place.type]}
-            {place.county ? ` · ${place.county} County` : ''}
-            {place.acres ? ` · ${Math.round(place.acres).toLocaleString('en-US')} acres` : ''}
+          <Text style={styles.sheetTitle} numberOfLines={1}>
+            {place.name}
+          </Text>
+          <Text style={ui.muted} testID="place-subtitle">
+            {[me ? miles(distanceKm(me, place.center)) : null, placeTypeLabel[place.type], place.county ? `${place.county} County` : null]
+              .filter(Boolean)
+              .join(' · ')}
           </Text>
         </View>
         <Pressable accessibilityRole="button" accessibilityLabel="Back to list" onPress={onClose} style={styles.close}>
@@ -583,55 +611,61 @@ function PlaceDetails({
             {place.type === 'stocking' ? ` · ${STOCKING_PIN_NOTE}` : ''}
           </Text>
         </View>
-        {openTag(today) && <Tag label={openTag(today)!} tone="accent" />}
+        {openTags(openSpecies(place, today.date)).map((t) => (
+          <Tag key={t} label={t} tone="accent" />
+        ))}
       </View>
+      <SpotTiles place={place} me={me ?? null} />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${CHECK_LINE_HEAD} · ${PEEK_SURVEY_LINE}`}
+        accessibilityHint="Opens the full boundary notice"
+        onPress={onOpenNotice}
+        style={styles.checkLine}
+        testID="place-check-line"
+      >
+        <Text style={styles.checkLineText}>
+          <Text style={{ fontFamily: fonts.bodySemi }}>{CHECK_LINE_HEAD}</Text> · {PEEK_SURVEY_LINE}
+        </Text>
+      </Pressable>
 
-      <View style={styles.stats}>
-        <View style={styles.stat}>
-          {speciesHours.length ? (
-            speciesHours.map((h) => (
-              <Text key={h.species} style={styles.hoursRow} testID={`hours-${h.species}`}>
-                {`${speciesLabel[h.species]} ${formatTime(h.start)}–${formatTime(h.end)}`}
-              </Text>
-            ))
-          ) : (
-            <Text style={styles.statValue}>Check digest</Text>
-          )}
-          <Text style={styles.fine}>Legal hours today</Text>
+      {/* Half: today, permission, Save / Log a hunt here, More about this spot. */}
+      <View style={styles.todayRow} testID="today-row">
+        <Text style={styles.calloutTitle}>{todayRow(place, today.date).title}</Text>
+        {!!todayRow(place, today.date).detail && <Text style={ui.muted}>{todayRow(place, today.date).detail}</Text>}
+      </View>
+      <View style={styles.permission} testID="permission-box">
+        <Text style={ui.body} testID={place.access === 'enrolled_private' ? 'enrolled-line' : undefined}>
+          {permissionLine(place.access)}
+        </Text>
+      </View>
+      {place.type === 'stocking' && expanded && (
+        <View style={styles.stat} testID="release-card">
+          <Text style={[styles.statValue, { color: colors.dove }]}>{nextRelease ? formatDay(nextRelease.windowStart) : 'None listed'}</Text>
+          <Text style={styles.fine}>Next county release wk</Text>
         </View>
-        {place.type === 'stocking' && expanded && (
-          <View style={[styles.stat, styles.statDivider]} testID="release-card">
-            <Text style={[styles.statValue, { color: colors.dove }]}>{nextRelease ? formatDay(nextRelease.windowStart) : 'None listed'}</Text>
-            <Text style={styles.fine}>Next county release wk</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.actions}>
-        <Button
-          label="Log hunt here"
-          icon="create-outline"
-          variant="primary"
+      )}
+      <View style={[ui.row, { gap: space.lg, flexWrap: 'wrap' }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={saved ? 'Saved' : 'Save privately'} onPress={toggleSave} style={styles.linkTap}>
+          <Text style={styles.link}>{saved ? '★ Saved' : '☆ Save'}</Text>
+        </Pressable>
+        <Text style={ui.muted}>·</Text>
+        <Pressable
+          accessibilityRole="link"
           onPress={() => router.push({ pathname: '/new/log', params: { placeId: place.id } })}
-          style={{ flex: 2 }}
-        />
-        <Button
-          label={saved ? 'Saved' : 'Save'}
-          a11y={saved ? 'Saved' : 'Save privately'}
-          icon={saved ? 'bookmark' : 'bookmark-outline'}
-          onPress={toggleSave}
-          style={{ flex: 1 }}
-        />
+          style={styles.linkTap}
+          testID="log-hunt-link"
+        >
+          <Text style={styles.link}>Log a hunt here ›</Text>
+        </Pressable>
       </View>
       {saveError && <Notice tone="error">{saveError}</Notice>}
+      <Pressable accessibilityRole="link" onPress={onMore} style={styles.linkTap} testID="more-about-spot">
+        <Text style={styles.link}>More about this spot ›</Text>
+      </Pressable>
 
-      {/* Legal text stays in full (no truncation) right under the actions. */}
-      <View style={styles.notice} testID="place-notice">
-        {place.access === 'enrolled_private' && (
-          <Text style={ui.body} testID="enrolled-line">
-            {ENROLLED_PRIVATE_LINE}
-          </Text>
-        )}
+      {/* Full height: the notice in full text (spot-detail spec). */}
+      <View style={styles.notice} testID="place-notice" onLayout={(e) => (moreY.current = e.nativeEvent.layout.y)}>
         <Text style={styles.noticeText} testID="place-map-banner">
           {MAP_BANNER}
         </Text>
@@ -712,9 +746,6 @@ function PlaceDetails({
         </View>
       )}
 
-      <View style={styles.secondary}>
-        <Button label="Directions" icon="navigate" onPress={directions} style={{ flex: 1 }} />
-      </View>
       <View style={[ui.row, { gap: space.lg, flexWrap: 'wrap' }]}>
         <Text accessibilityRole="link" style={styles.link} onPress={reportError}>
           Report a map error
@@ -859,6 +890,11 @@ const styles = StyleSheet.create({
     padding: space.lg,
   },
   modalText: { fontFamily: fonts.body, fontSize: 17, lineHeight: 25, color: colors.text },
+  checkLine: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, padding: space.sm },
+  checkLineText: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.text },
+  todayRow: { gap: 2 },
+  permission: { backgroundColor: colors.surfaceRaised, borderRadius: radius.sm, padding: space.md },
+  linkTap: { minHeight: touchTarget, justifyContent: 'center' },
   fullNotice: {
     gap: space.sm,
     backgroundColor: colors.surface,

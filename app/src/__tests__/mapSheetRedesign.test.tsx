@@ -88,12 +88,12 @@ describe('map screen', () => {
     expect(screen.getByTestId('release-card')).toBeTruthy();
   });
 
-  it('hours use the neutral "Legal hours today" label', async () => {
+  it('half shows the spec "Today: N species open" row (legal hours inline), not the old small-game label', async () => {
     await go();
     await screen.findByText('6 spots nearby');
     await fireEvent.press(screen.getByLabelText('Expand details'));
     await fireEvent.press(screen.getByLabelText('Managed dove field (sample C)'));
-    expect(await screen.findByText('Legal hours today')).toBeTruthy();
+    expect(await screen.findByTestId('today-row')).toHaveTextContent(/^Today: (\d+ species open|nothing open)/);
     expect(screen.queryByText(/Small-game legal hours/)).toBeNull();
   });
 
