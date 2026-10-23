@@ -1,10 +1,10 @@
-import { legalHours, placeSpecies, seasons, speciesStatus, type SpeciesStatus } from '@/data/seasons';
+import { legalHours, seasons, speciesStatus, type SpeciesStatus } from '@/data/seasons';
 import { speciesLabel, type LngLat, type Place, type Species } from '@/data/types';
 import { officialDay } from '@/lib/sun';
 import { addDays, formatDay, formatTime, midnightET, todayET, weekdayOf, type Ymd } from '@/lib/time';
 
 /** The bits of a place these helpers need (a Place or a saved plan's snapshot). */
-export type SpotLike = Pick<Place, 'id' | 'name' | 'type' | 'species' | 'center' | 'access'> & { parking?: LngLat | null };
+export type SpotLike = Pick<Place, 'id' | 'name' | 'type' | 'species' | 'center' | 'access'> & { note?: string; parking?: LngLat | null };
 
 /**
  * Pure helpers for the spot detail redesign (spot-detail/spec.md): open-species
@@ -18,11 +18,50 @@ export const PLAN_NOTES_MAX = 500;
 export const FORECAST_DAYS = 7;
 export const SEASON_FOOTER = 'Season dates: PGC 2026-27 digest. Check WMU rules before you hunt.';
 
+/** Approved upland/dove species shown in What to hunt (waterfowl is out of scope for v1). */
+export const HUNT_SPECIES: Species[] = ['pheasant', 'grouse', 'woodcock', 'dove', 'turkey'];
+
+/**
+ * Species legal to hunt at a spot. `place.species` comes from the source layer
+ * (the PGC stocking layer only ever lists pheasant, dove fields only dove), so it
+ * says what a spot is managed/stocked for, NOT everything you may hunt there.
+ * All spots in the app are public or enrolled hunting land, so every approved
+ * species is huntable; `place.species` only drives "Good fit".
+ */
+export const huntSpecies = (_place: SpotLike): Species[] => HUNT_SPECIES;
+
+const FOREST = /forest|wood|hardwood|ridge|aspen|thicket|laurel|oak|timber|cover|plateau|mountain/i;
+const FIELD = /field|grass|corn|hedgerow|crop|meadow|sunflower|wheat|farm|bottom/i;
+const WET = /creek|stream|marsh|wet|alder|bottom/i;
+
+/** Habitat-based good fit for species the source layer doesn't list. */
+function habitatFit(place: SpotLike & { note?: string }, sp: Species): string | null {
+  const note = place.note ?? '';
+  switch (sp) {
+    case 'grouse':
+      if (place.type === 'game_land' || FOREST.test(note)) return 'Forest and young-growth cover suits grouse';
+      return null;
+    case 'turkey':
+      if (place.type === 'game_land' || FOREST.test(note)) return 'Mixed woods and edges hold fall flocks';
+      return null;
+    case 'woodcock':
+      if (WET.test(note) || /aspen|alder|young|thicket/i.test(note)) return 'Moist thickets and young growth draw woodcock';
+      return null;
+    case 'dove':
+      if (FIELD.test(note) && /sunflower|wheat|crop|corn|cut/i.test(note)) return 'Crop fields draw doves';
+      return null;
+    case 'pheasant':
+      if (place.type !== 'game_land' && FIELD.test(note)) return 'Grass and field edges suit pheasant';
+      return null;
+  }
+  return null;
+}
+
 const isOpen = (s: SpeciesStatus) => s.kind === 'open' && !s.season.youth;
 
 /** Species open (general season) at a place on a date, in place order. */
 export function openSpecies(place: SpotLike, ymd: Ymd): Species[] {
-  return placeSpecies(place).filter((sp) => isOpen(speciesStatus(sp, ymd, place.center)));
+  return huntSpecies(place).filter((sp) => isOpen(speciesStatus(sp, ymd, place.center)));
 }
 
 /** Peek tags: at most two open species, then "+n". */
@@ -116,12 +155,17 @@ const seasonNote = (species: Species) => {
   return kept || undefined;
 };
 
-const UPLAND: Species[] = ['pheasant', 'grouse', 'turkey', 'woodcock'];
-const reasonFor = (place: SpotLike, species: Species, good: boolean): string => {
+const possibleReason = (place: SpotLike, species: Species): string => {
+  if (place.type === 'stocking') return species === 'pheasant' ? 'Allowed here; not stocked' : 'Not stocked; wild birds possible in nearby cover';
+  if (place.type === 'dove_field') return 'Allowed here; field is managed for doves';
+  return 'Allowed on game lands; habitat varies';
+};
+/** Good-fit reason, or null when the species is only "Possible" here. */
+const goodReason = (place: SpotLike, species: Species): string | null => {
   if (place.type === 'stocking' && place.species.includes(species)) return 'PGC stocks this property';
   if (place.type === 'dove_field' && species === 'dove') return 'Managed dove field';
-  if (place.type === 'game_land') return good ? 'Game land habitat; common target here' : 'Allowed on game lands; habitat varies';
-  return good ? 'Listed for this spot' : 'Allowed here; not what this spot is managed for';
+  if (place.species.includes(species)) return 'Listed for this spot';
+  return habitatFit(place, species);
 };
 
 export interface HuntRow {
@@ -134,11 +178,12 @@ export interface HuntRow {
 
 /** "Good fit here" / "Possible" groups for What you can hunt here. No bag limits by design. */
 export function whatToHunt(place: SpotLike, ymd: Ymd): { good: HuntRow[]; possible: HuntRow[] } {
-  const all = placeSpecies(place);
-  const goodSet = new Set<Species>(place.species.length ? place.species : UPLAND.filter((s) => all.includes(s)));
+  const all = huntSpecies(place);
+  const reasons = new Map(all.map((sp) => [sp, goodReason(place, sp)] as const));
+  const goodSet = new Set<Species>(all.filter((sp) => reasons.get(sp)));
   const row = (sp: Species, good: boolean): HuntRow => ({
     species: sp,
-    reason: reasonFor(place, sp, good),
+    reason: good ? reasons.get(sp)! : possibleReason(place, sp),
     dates: seasonDates(sp),
     tag: statusTag(sp, place, ymd),
     note: seasonNote(sp),
@@ -165,7 +210,7 @@ export interface SpeciesChoice {
 
 /** Species chips for a plan date: only species fitting this spot; closed ones carry their open date. */
 export function speciesChoices(place: SpotLike, ymd: Ymd): SpeciesChoice[] {
-  return placeSpecies(place).map((species) => {
+  return huntSpecies(place).map((species) => {
     const st = speciesStatus(species, ymd, place.center);
     if (isOpen(st)) return { species, open: true };
     const next = st.kind === 'closed' ? nextGeneralOpen(species, ymd) : null;

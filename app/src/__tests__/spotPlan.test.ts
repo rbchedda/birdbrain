@@ -41,9 +41,9 @@ describe('spot detail helpers', () => {
 
   it('today row counts open species with legal hours', () => {
     const row = todayRow(stocked, '2026-10-24');
-    expect(row.title).toBe('Today: 1 species open');
-    expect(row.detail).toMatch(/^Pheasant · legal hours \d+:\d\d AM – \d+:\d\d PM$/);
-    expect(todayRow(stocked, '2026-10-20').title).toBe('Today: nothing open');
+    expect(row.title).toMatch(/^Today: [2-5] species open$/);
+    expect(row.detail).toMatch(/^Pheasant, .* · legal hours \d+:\d\d AM – \d+:\d\d PM$/);
+    expect(todayRow(stocked, '2026-07-15').title).toBe('Today: nothing open');
   });
 
   it('status tags: Open, Opens Sat, Closes Nov 8 style, Closed', () => {
@@ -62,10 +62,30 @@ describe('spot detail helpers', () => {
     const g = whatToHunt(stocked, '2026-10-24');
     expect(g.good.map((r) => r.species)).toEqual(['pheasant']);
     expect(g.good[0].reason).toBe('PGC stocks this property');
-    expect(g.possible).toEqual([]);
+    expect(g.possible.map((r) => r.species).sort()).toEqual(['dove', 'grouse', 'turkey', 'woodcock']);
     const s = whatToHunt(sgl, '2026-10-24');
-    expect(s.good.length + s.possible.length).toBe(6);
+    expect(s.good.length + s.possible.length).toBe(5);
     expect(JSON.stringify(s)).not.toMatch(/bag|daily limit/i);
+  });
+
+  it('regression: stocking-only source data does not hide other species (beta-3.4 bug)', () => {
+    const five = ['dove', 'grouse', 'pheasant', 'turkey', 'woodcock'];
+    const bigWoods: Place = { ...stocked, name: 'French Creek · Big Woods', note: 'Hardwood ridges with field edges along the creek bottom.' };
+    for (const p of [stocked, bigWoods, sgl, { ...sgl, type: 'dove_field' as const, species: ['dove' as const] }]) {
+      const g = whatToHunt(p, '2026-10-24');
+      const rows = [...g.good, ...g.possible];
+      expect(rows.map((r) => r.species).sort()).toEqual(five);
+      for (const r of rows) {
+        expect(r.reason).toBeTruthy();
+        expect(r.dates).toBeTruthy();
+        expect(r.tag.text).toMatch(/^(Open|Opens .+|Closes .+|Closed.*|Check digest)$/);
+      }
+    }
+    const bw = whatToHunt(bigWoods, '2026-10-24');
+    expect(bw.good.map((r) => r.species)).toEqual(expect.arrayContaining(['pheasant', 'grouse', 'turkey', 'woodcock']));
+    const gl = whatToHunt(sgl, '2026-10-24');
+    expect(gl.good.map((r) => r.species)).toEqual(expect.arrayContaining(['grouse', 'turkey']));
+    expect(JSON.stringify(gl)).not.toMatch(/waterfowl/);
   });
 
   it('plan days, chip labels and forecast window', () => {
@@ -79,8 +99,9 @@ describe('spot detail helpers', () => {
 
   it('species choices disable closed species with their open date', () => {
     const c = speciesChoices(stocked, '2026-10-21');
-    expect(c).toEqual([{ species: 'pheasant', open: false, hint: 'Opens Oct 24' }]);
-    expect(nextOpenDate(stocked, '2026-10-21')).toBe('2026-10-24');
+    expect(c[0]).toEqual({ species: 'pheasant', open: false, hint: 'Opens Oct 24' });
+    expect(c.map((x) => x.species)).toEqual(['pheasant', 'grouse', 'woodcock', 'dove', 'turkey']);
+    expect(nextOpenDate(stocked, '2026-07-01')).toBe('2026-09-01');
     expect(planSeasonClosed(stocked, '2027-03-15', ['pheasant'])).toBe(true);
     expect(planSeasonClosed(stocked, '2026-11-02', ['pheasant'])).toBe(false);
   });
