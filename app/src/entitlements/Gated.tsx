@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { type ReactNode, useState } from 'react';
 import { Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { BrandMark } from '@/components/BrandMark';
 import { Button, ui } from '@/components/ui';
 import { colors, fonts, radius, space } from '@/theme/tokens';
 
@@ -63,7 +64,10 @@ export function UpgradeSheet() {
     <Modal visible={upgradeFor !== null} transparent animationType="slide" onRequestClose={() => showUpgrade(null)}>
       <View style={styles.backdrop}>
         <ScrollView style={styles.sheetScroll} contentContainerStyle={styles.sheet} testID="upgrade-sheet">
-          <Text style={styles.title}>Upgrade BirdBrain</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <BrandMark size={40} />
+            <Text style={styles.title}>Upgrade BirdBrain</Text>
+          </View>
           {upgradeFor && <Text style={ui.muted}>{FEATURE_LABEL[upgradeFor]} needs a pass.</Text>}
           <Text style={ui.body}>Safety info (boundaries, access, hours, regs) is always free.</Text>
           {provider.name === 'unavailable' ? (

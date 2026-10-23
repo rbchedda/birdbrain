@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { BrandMark } from '@/components/BrandMark';
 import { TermsContent } from '@/components/TermsContent';
 import { Button, Notice, ui } from '@/components/ui';
 import { DATA_SOURCES_TEXT, MAP_BANNER } from '@/data/mapNotice';
@@ -43,6 +44,7 @@ export function OnboardingConsent() {
   return (
     <View style={[styles.root, { paddingTop: insets.top + space.lg }]} testID="onboarding-consent">
       <ScrollView contentContainerStyle={styles.body}>
+        <BrandMark size={88} />
         <Text style={styles.title} accessibilityRole="header">
           {consentTitle}
         </Text>
