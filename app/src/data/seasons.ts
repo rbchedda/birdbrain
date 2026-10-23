@@ -173,7 +173,7 @@ export function speciesStatus(
 }
 
 /** Species a place is managed for. Game lands carry none in the data and allow all. */
-export const placeSpecies = (place: Place): Species[] => (place.species.length ? place.species : allSpecies);
+export const placeSpecies = (place: Pick<Place, 'species'>): Species[] => (place.species.length ? place.species : allSpecies);
 
 export interface PlaceToday {
   date: Ymd;

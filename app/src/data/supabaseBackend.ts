@@ -5,7 +5,7 @@ import { parseGeometry, parsePoint, toEwkt } from '@/lib/geo';
 import { removeAllUnder, type StorageBucketApi } from '@/lib/storageCleanup';
 
 import { classifyAccess, type AccessType } from './access';
-import { crewError, NotSignedInError, postKind, type Backend, type LeaveCrewResult, type Session } from './backend';
+import { crewError, NotSignedInError, postKind, type Backend, type LeaveCrewResult, type PlanReminder, type Session } from './backend';
 import placeDetailQuery from './placeDetailQuery.json';
 import type { Author, BirdCounts, Crew, Comment, Place, PlaceType, Post, Profile, Species, StockingEvent } from './types';
 
@@ -587,6 +587,68 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
       // Photos first (all nested files; a failure keeps the tombstone for retry), then the row; diary_entries cascades. RLS limits both to the owner.
       await removeAllUnder(sb.storage.from('diary-photos') as unknown as StorageBucketApi, `${userId}/${clientId}`);
       check(await sb.from('hunt_log_entries').delete().eq('client_id', clientId));
+    },
+
+    async upsertPlan(p) {
+      const userId = await me();
+      const cols = {
+        place_id: p.placeId,
+        place_name: p.placeName.slice(0, 200),
+        plan_date: p.planDate,
+        species: p.species.slice(0, 20),
+        notes: p.notes ? p.notes.slice(0, 500) : null,
+        reminder: p.reminder,
+      };
+      // Insert-or-ignore keeps replays of the offline queue idempotent (unique user_id, client_id).
+      check(await sb.from('plans').upsert({ user_id: userId, client_id: p.clientId, ...cols, crew_id: null }, { onConflict: 'user_id,client_id', ignoreDuplicates: true }));
+      // Then apply edits; only the granted update columns are sent. Unsharing (crew_id null) is always allowed.
+      const own = () => sb.from('plans').update(cols).eq('user_id', userId).eq('client_id', p.clientId);
+      if (!p.crewId) {
+        check(await sb.from('plans').update({ ...cols, crew_id: null }).eq('user_id', userId).eq('client_id', p.clientId));
+        return { shared: false };
+      }
+      check(await own());
+      const share = await sb.from('plans').update({ crew_id: p.crewId }).eq('user_id', userId).eq('client_id', p.clientId);
+      return { shared: !share.error };
+    },
+
+    async deletePlan(clientId) {
+      const userId = await me();
+      check(await sb.from('plans').delete().eq('user_id', userId).eq('client_id', clientId));
+    },
+
+    async listServerPlans() {
+      await me();
+      const res = await sb
+        .from('plans')
+        .select('user_id, client_id, place_id, place_name, plan_date, species, notes, reminder, crew_id, created_at, updated_at')
+        .limit(1000);
+      check(res);
+      const rows = (res.data ?? []) as {
+        user_id: string; client_id: string; place_id: string; place_name: string; plan_date: string; species: string[] | null;
+        notes: string | null; reminder: PlanReminder; crew_id: string | null; created_at: string; updated_at: string;
+      }[];
+      // Crew names are a nicety; if groups can't be read the plan still shows as "crew".
+      const ids = [...new Set(rows.map((r) => r.crew_id).filter((x): x is string => !!x))];
+      const names = new Map<string, string>();
+      if (ids.length) {
+        const g = await sb.from('groups').select('id, name').in('id', ids);
+        for (const r of (g.data ?? []) as { id: string; name: string }[]) names.set(r.id, r.name);
+      }
+      return rows.map((r) => ({
+        userId: r.user_id,
+        clientId: r.client_id,
+        placeId: r.place_id,
+        placeName: r.place_name,
+        planDate: r.plan_date,
+        species: r.species ?? [],
+        notes: r.notes ?? '',
+        reminder: r.reminder,
+        crewId: r.crew_id,
+        crewName: r.crew_id ? (names.get(r.crew_id) ?? null) : null,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      }));
     },
 
     async uploadDiaryPhoto(clientId, photo) {

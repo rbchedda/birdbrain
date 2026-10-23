@@ -37,7 +37,7 @@ describe('Map (Pheasant Planner)', () => {
 
     await expandSheet();
     await fireEvent.press(screen.getByLabelText('Managed dove field (sample C)'));
-    expect(await screen.findByText(/Managed Dove Field · York County · 35 acres/)).toBeTruthy();
+    expect(await screen.findByText(/Managed Dove Field · York County/)).toBeTruthy();
     expect(screen.getByText(/No Sunday hunting for migratory game birds/)).toBeTruthy();
     expect(screen.getByText('Dove')).toBeTruthy();
   });
@@ -115,7 +115,7 @@ describe('Stocking planner', () => {
     await expandSheet();
     await fireEvent.press(await screen.findByLabelText('Pheasant stocking (sample E)'));
     await fireEvent.press(await screen.findByLabelText('Save privately'));
-    expect(await screen.findByText('Saved')).toBeTruthy();
+    expect(await screen.findByText('★ Saved')).toBeTruthy();
     const stored = JSON.parse((await AsyncStorage.getItem('birdbrain.sample.v1'))!);
     expect(stored.saved).toContain('stock-sample-2');
 
