@@ -1,7 +1,7 @@
 import { PENDING_CHIP_HEIGHT, PendingChip, usePendingChipShown } from '@/components/FieldSync';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { type ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
+import { type ComponentProps, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import {
   FlatList,
   Keyboard,
@@ -23,6 +23,21 @@ import { PlanTripHint } from '@/components/guide/PlanTripHint';
 import { LocateButton } from '@/components/map/LocateButton';
 import { PlaceMap } from '@/components/map/PlaceMap';
 import { StateParkSheet } from '@/components/StateParkSheet';
+import { BirdSuggestions, SpeciesResults, UnknownBird } from '@/components/SpeciesSearch';
+import {
+  birdChips,
+  birdForQuery,
+  emptyReason,
+  rankMap,
+  resultBounds,
+  isUncoveredBird,
+  matchBirds,
+  rankSpots,
+  seasonTag,
+  type BirdOption,
+  type SearchFilters,
+} from '@/data/speciesSearch';
+import { getSignal, onSignal } from '@/lib/connectivity';
 import { StockingList, windowText } from '@/components/StockingList';
 import { pinColor, visibleBasemaps, type Basemap } from '@/components/map/types';
 import { Tag } from '@/components/Tag';
@@ -81,6 +96,8 @@ const PEEK_EMPTY = 84;
 /** FULL stops this far below the map notice banner (spec: 8 pt). */
 const FULL_GAP = 8;
 const LIST_LIMIT = 60;
+/** Species search origin when location is off: roughly the middle of Pennsylvania. */
+const PA_CENTER = { lng: -77.6, lat: 40.9 };
 
 const BASEMAP_KEY = 'birdbrain.basemap.v1';
 
@@ -92,6 +109,14 @@ export default function MapScreen() {
   const [filter, setFilter] = useState<PlaceType | 'all'>('all');
   const [openOnly, setOpenOnly] = useState(false);
   const [query, setQuery] = useState('');
+  // Species search (spec species-search, final Oct 23).
+  const [bird, setBird] = useState<BirdOption | null>(null);
+  const [unknownTerm, setUnknownTerm] = useState<string | null>(null);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [mapCenter, setMapCenter] = useState<Place['center']>();
+  const [searchCenter, setSearchCenter] = useState<Place['center']>();
+  const [fit, setFit] = useState<{ bounds: [[number, number], [number, number]]; key: number }>();
+  const [speciesFilters, setSpeciesFilters] = useState<SearchFilters>({ openNow: true, publicOnly: false, radiusMi: 25 });
   const [basemap, setBasemapState] = useState<Basemap>('topo');
   // Persisted (spec §5); defaults to Standard. Unknown or hidden values fall back to Standard.
   useEffect(() => {
@@ -226,6 +251,50 @@ export default function MapScreen() {
       if (!me) setFocus({ center: { lng: fix.lng, lat: fix.lat }, key: Date.now(), zoom: 14 });
     } else setLocMessage(true);
   };
+  const signal = useSyncExternalStore(onSignal, getSignal, getSignal);
+  const savedOnly = !signal.online || !!error;
+  // No GPS: rank from the map center at the moment of the search (PA center before the map reports one).
+  const speciesOrigin = me ? { lng: me.lng, lat: me.lat } : (searchCenter ?? PA_CENTER);
+  const speciesResults = useMemo(
+    () => (bird ? rankSpots(bird.key, all, speciesOrigin, speciesFilters, today) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [bird, all, speciesOrigin.lng, speciesOrigin.lat, speciesFilters, today],
+  );
+  const speciesRanks = useMemo(() => rankMap(speciesResults), [speciesResults]);
+  const chips = useMemo(() => birdChips(today, speciesOrigin), [today, speciesOrigin.lng, speciesOrigin.lat]);
+  const runSpecies = (b: BirdOption, filters = speciesFilters) => {
+    Keyboard.dismiss();
+    const open = seasonTag(b.key, today, speciesOrigin).kind !== 'closed';
+    const f = { ...filters, openNow: open };
+    const origin = me ? { lng: me.lng, lat: me.lat } : (mapCenter ?? PA_CENTER);
+    setSearchCenter(mapCenter);
+    setBird(b);
+    setUnknownTerm(null);
+    setQuery(b.label);
+    setSearchFocused(false);
+    setSpeciesFilters(f);
+    setSelectedId(undefined);
+    setPlanner(false);
+    setExpanded(true);
+    // Ask for location once; without it we rank from the map center and say so.
+    if (!me && locStatus === 'idle') void startLocation();
+    const top = rankSpots(b.key, all, origin, f, today);
+    if (top.length) setFit({ bounds: resultBounds(origin, top), key: Date.now() });
+  };
+  const clearSearch = () => {
+    setQuery('');
+    setBird(null);
+    setUnknownTerm(null);
+  };
+  const submitSearch = () => {
+    const b = birdForQuery(query);
+    if (b) return runSpecies(b);
+    if (isUncoveredBird(query)) {
+      setBird(null);
+      setUnknownTerm(query);
+      setExpanded(true);
+    }
+  };
   // Only the selected place's boundary is loaded, so that's the one we can test against.
   const outline = detail.data?.outline;
   const hereLabel =
@@ -234,7 +303,10 @@ export default function MapScreen() {
   return (
     <View style={styles.root} onLayout={(e) => setScreenH(e.nativeEvent.layout.height)}>
       <PlaceMap
-        places={places}
+        places={bird ? speciesResults.map((r) => r.place) : places}
+        ranks={bird ? speciesRanks : undefined}
+        fit={fit}
+        onCenterChange={setMapCenter}
         selectedId={selectedId}
         outline={detail.data?.outline}
         basemap={basemap}
@@ -272,15 +344,26 @@ export default function MapScreen() {
             value={query}
             onChangeText={(t) => {
               setQuery(t);
+              setBird(null);
+              setUnknownTerm(null);
               setSelectedId(undefined);
               setPlanner(false);
               setExpanded(true);
             }}
-            placeholder="Search game lands, counties"
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
+            onSubmitEditing={submitSearch}
+            returnKeyType="search"
+            placeholder="Search places or a bird…"
             placeholderTextColor={colors.muted}
             style={styles.search}
             accessibilityLabel="Search places"
           />
+          {(query.length > 0 || bird) && (
+            <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={clearSearch} hitSlop={8} style={styles.layerButton} testID="search-clear">
+              <Ionicons name="close" size={20} color={colors.text} />
+            </Pressable>
+          )}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Map layers"
@@ -292,6 +375,9 @@ export default function MapScreen() {
             <Ionicons name="layers-outline" size={20} color={colors.text} />
           </Pressable>
         </View>
+        {!bird && (searchFocused || query.trim().length >= 2) && (
+          <BirdSuggestions query={query} matches={matchBirds(query)} chips={chips} onPick={(b) => runSpecies(b)} />
+        )}
         {layersOpen && (
           <View style={styles.layers} testID="layers-panel">
             <Text style={styles.layersTitle}>Map</Text>
@@ -412,6 +498,24 @@ export default function MapScreen() {
           <StateParkSheet park={park} onClose={() => setParkId(undefined)} />
         ) : selected ? (
           <PlaceDetails place={selected} expanded={expanded} onClose={() => setSelectedId(undefined)} onSavedChange={refreshSaved} />
+        ) : bird ? (
+          <SpeciesResults
+            bird={bird}
+            seasonLabel={seasonTag(bird.key, today, speciesOrigin).label}
+            results={speciesResults}
+            filters={speciesFilters}
+            onFilters={setSpeciesFilters}
+            originKind={me ? 'gps' : 'center'}
+            savedOnly={savedOnly}
+            emptyWhy={emptyReason(bird.key, today, speciesOrigin, speciesFilters)}
+            onPick={(r) => {
+              setSelectedId(r.place.id);
+              setFocus({ center: r.place.center, key: Date.now() });
+              setExpanded(false);
+            }}
+          />
+        ) : unknownTerm ? (
+          <UnknownBird term={unknownTerm} chips={chips} onPick={(b) => runSpecies(b)} />
         ) : planner ? (
           <StockingList places={all} savedIds={savedIds} onPick={pick} />
         ) : (
