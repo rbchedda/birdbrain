@@ -34,13 +34,15 @@ export function PhotoSlot({
   return (
     <View style={styles.slotWrap}>
       {source ? (
-        <Image
-          source={source}
-          resizeMode="cover"
-          accessibilityLabel={`${label} photo`}
-          testID={`photo-${file}`}
-          style={styles.slot}
-        />
+        <View style={styles.slot}>
+          <Image
+            source={source}
+            resizeMode="cover"
+            accessibilityLabel={`${label} photo`}
+            testID={`photo-${file}`}
+            style={styles.photo}
+          />
+        </View>
       ) : (
         <View
           style={styles.slot}
@@ -138,6 +140,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  /** Fills the 4:3 frame exactly; explicit size so web and native agree. */
+  photo: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%" },
   slotText: {
     fontFamily: fonts.bodySemi,
     fontSize: 12,

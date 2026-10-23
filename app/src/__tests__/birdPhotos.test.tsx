@@ -31,10 +31,13 @@ describe('bird photos (beta-3.4 crop bug)', () => {
     await render(<BirdCard bird={bird} variant="full" />);
     for (const p of bird.photos) {
       const img = screen.getByTestId(`photo-${p.file}`);
+      const frame = StyleSheet.flatten(img.parent!.props.style);
+      expect(frame.aspectRatio).toBeCloseTo(4 / 3);
+      expect(frame.width).toBe('100%');
+      expect(frame.height).toBeUndefined();
+      expect(frame.overflow).toBe('hidden');
       const st = StyleSheet.flatten(img.props.style);
-      expect(st.aspectRatio).toBeCloseTo(4 / 3);
-      expect(st.width).toBe('100%');
-      expect(st.height).toBeUndefined();
+      expect([st.width, st.height]).toEqual(['100%', '100%']);
       if (img.props.resizeMode) expect(img.props.resizeMode).toBe('cover');
     }
   });
