@@ -12,7 +12,7 @@ const accept = (user, terms = '2026-10-22', fields = {}) =>
     tx.query(
       `insert into public.accepted_terms (user_id, accepted_at, app_version, terms_version)
        values (coalesce($1, auth.uid()), coalesce($2::timestamptz, now()), $3, $4)
-       on conflict (user_id, terms_version) do nothing`,
+       on conflict do nothing`,
       [fields.userId ?? null, fields.acceptedAt ?? null, fields.appVersion ?? '1.0.0', terms],
     ),
   );

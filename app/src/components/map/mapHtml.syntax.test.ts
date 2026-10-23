@@ -14,3 +14,11 @@ it('topo layer starts hidden and waits for a basemap choice', () => {
   expect(mapHtml).toContain('if (basemapChosen) showBasemap(current);');
   expect(mapHtml).toContain('if (!basemapChosen) showBasemap(current);');
 });
+
+it('has the species-search rank layer, numbered markers and fit/center messages', () => {
+  expect(mapHtml).toContain("id: 'places-rank'");
+  expect(mapHtml).toContain("layers: ['places-rank', 'places-circle']");
+  expect(mapHtml).toContain('bb-rank');
+  expect(mapHtml).toContain("m.type === 'fit'");
+  expect(mapHtml).toContain("type: 'center'");
+});
