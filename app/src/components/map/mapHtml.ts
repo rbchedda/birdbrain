@@ -62,6 +62,9 @@ export function buildMapHtml(opts: { terrain?: boolean; assets?: MapAssets | nul
 <style>${maplibreCss}</style>
 <style>
   html, body, #map { margin: 0; height: 100%; background: ${colors.ground}; }
+  .bb-rank { width: 26px; height: 26px; border-radius: 13px; background: ${colors.accent}; color: ${colors.onAccent};
+    font: 700 13px system-ui, sans-serif; display: flex; align-items: center; justify-content: center;
+    border: 2px solid ${colors.ground}; pointer-events: none; }
   .maplibregl-ctrl-attrib { font: 11px system-ui, sans-serif; }
 </style>
 </head>
@@ -245,7 +248,26 @@ ${terrain ? `<script>${pmtilesJs}</script>\n<script>${contourJs}</script>` : ''}
         { type: 'Feature', properties: { kind: 'dot' }, geometry: { type: 'Point', coordinates: m.center } }
       ] } : empty);
     }
+    if (m.type === 'fit' && Array.isArray(m.bounds) && m.bounds.length === 2) {
+      map.fitBounds(m.bounds, { padding: m.padding || { top: 140, bottom: 200, left: 40, right: 40 }, maxZoom: 14, duration: 600 });
+    }
+    if (m.type === 'places') drawRanks(m.data);
     if (m.type === 'focus') map.easeTo({ center: m.center, zoom: Math.max(map.getZoom(), m.zoom || 11), duration: 600 });
+  }
+  // Species search: numbered pins (rank 1-10) as DOM markers, so they need no glyphs and work offline.
+  var rankMarkers = [];
+  function drawRanks(fc) {
+    rankMarkers.forEach(function (mk) { mk.remove(); });
+    rankMarkers = [];
+    (fc.features || []).forEach(function (f) {
+      var r = f.properties.rank;
+      if (!(r >= 1 && r <= 10)) return;
+      var el = document.createElement('div');
+      el.className = 'bb-rank';
+      el.textContent = String(r);
+      el.setAttribute('data-rank', String(r));
+      rankMarkers.push(new maplibregl.Marker({ element: el }).setLngLat(f.geometry.coordinates).addTo(map));
+    });
   }
   // Accuracy ring as a 64-point polygon, meters to degrees on a sphere.
   function circle(c, meters) {
@@ -291,6 +313,10 @@ ${terrain ? `<script>${pmtilesJs}</script>\n<script>${contourJs}</script>` : ''}
         'stocking', '${pinColor.stocking}', 'dove_field', '${pinColor.dove_field}', '${pinColor.game_land}'],
       'circle-opacity': ['case', ['get', 'open'], 1, 0.55],
       'circle-stroke-width': 2, 'circle-stroke-color': '${colors.ground}' } });
+    // Species search: results ranked 11-20 stay small dots; ranked pins get a bigger orange tap target.
+    map.addLayer({ id: 'places-rank', type: 'circle', source: 'places',
+      filter: ['all', ['>=', ['get', 'rank'], 1], ['<=', ['get', 'rank'], 10]],
+      paint: { 'circle-radius': 13, 'circle-color': '${colors.accent}', 'circle-opacity': 0 } });
     map.addSource('me', { type: 'geojson', data: empty });
     map.addLayer({ id: 'me-accuracy', type: 'fill', source: 'me', filter: ['==', ['get', 'kind'], 'accuracy'],
       paint: { 'fill-color': '#2F80ED', 'fill-opacity': 0.15, 'fill-outline-color': '#2F80ED' } });
@@ -299,7 +325,7 @@ ${terrain ? `<script>${pmtilesJs}</script>\n<script>${contourJs}</script>` : ''}
     // Generous hit box so pins are easy to tap with a glove on.
     map.on('click', function (e) {
       var p = e.point;
-      var hits = map.queryRenderedFeatures([[p.x - 16, p.y - 16], [p.x + 16, p.y + 16]], { layers: ['places-circle'] });
+      var hits = map.queryRenderedFeatures([[p.x - 16, p.y - 16], [p.x + 16, p.y + 16]], { layers: ['places-rank', 'places-circle'] });
       if (hits.length) return send({ type: 'select', id: hits[0].properties.id });
       var parks = map.queryRenderedFeatures(p, { layers: ['parks-fill'] });
       if (parks.length) return send({ type: 'selectPark', id: parks[0].properties.id });
@@ -311,6 +337,10 @@ ${terrain ? `<script>${pmtilesJs}</script>\n<script>${contourJs}</script>` : ''}
     map.on('mousemove', function (e) {
       var hits = map.queryRenderedFeatures(e.point, { layers: ['places-circle'] });
       map.getCanvas().style.cursor = hits.length ? 'pointer' : '';
+    });
+    map.on('moveend', function () {
+      var c = map.getCenter();
+      send({ type: 'center', center: [c.lng, c.lat] });
     });
     loaded = true;
     queue.splice(0).forEach(apply);

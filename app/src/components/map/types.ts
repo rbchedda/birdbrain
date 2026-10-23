@@ -43,6 +43,12 @@ export interface PlaceMapProps {
   onSelectPark?: (id: string) => void;
   /** Tap on the map that hit no pin or boundary (drags/pans never fire it). Defaults to onSelect(null). */
   onEmptyTap?: () => void;
+  /** Species search: place id -> rank (1-based). Ranks 1-10 draw as numbered pins. */
+  ranks?: Record<string, number>;
+  /** Bump to fit the camera to these bounds exactly ([[west, south], [east, north]]). */
+  fit?: { bounds: [[number, number], [number, number]]; key: number };
+  /** Map center after each pan/zoom. */
+  onCenterChange?: (center: LngLat) => void;
 }
 
 export const pinColor: Record<PlaceType, string> = {

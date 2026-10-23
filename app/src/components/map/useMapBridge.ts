@@ -12,6 +12,7 @@ type Inbound =
   | { type: 'select'; id: string | null }
   | { type: 'selectPark'; id: string }
   | { type: 'emptyTap'; lngLat?: unknown }
+  | { type: 'center'; center?: unknown }
   | { type: 'error'; message: string }
   | { type: 'tile'; id: number; url: string };
 
@@ -20,7 +21,7 @@ type Inbound =
  * page; the returned `receive` handles messages coming back.
  */
 export function useMapBridge(post: (m: Outbound) => void, props: PlaceMapProps) {
-  const { places, selectedId, outline, basemap, focus, onSelect, onSelectPark, onEmptyTap, me, offline } = props;
+  const { places, selectedId, outline, basemap, focus, onSelect, onSelectPark, onEmptyTap, me, offline, ranks, fit, onCenterChange } = props;
   const offlineKey = (offline?.basemaps ?? []).join(',');
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string>();
@@ -34,12 +35,16 @@ export function useMapBridge(post: (m: Outbound) => void, props: PlaceMapProps) 
         type: 'FeatureCollection',
         features: places.map((p) => ({
           type: 'Feature',
-          properties: { id: p.id, type: p.type, open: placeToday(p, now).open },
+          properties: { id: p.id, type: p.type, open: placeToday(p, now).open, rank: ranks?.[p.id] ?? 0 },
           geometry: { type: 'Point', coordinates: [p.center.lng, p.center.lat] },
         })),
       },
     });
-  }, [ready, places, post]);
+  }, [ready, places, ranks, post]);
+
+  useEffect(() => {
+    if (ready && fit) post({ type: 'fit', bounds: fit.bounds });
+  }, [ready, fit, post]);
 
   useEffect(() => {
     if (ready) post({ type: 'parks', data: stateParksGeoJSON() });
@@ -88,6 +93,10 @@ export function useMapBridge(post: (m: Outbound) => void, props: PlaceMapProps) 
         if (onEmptyTap) onEmptyTap();
         else onSelect(null);
       }
+      if (m.type === 'center') {
+        const c = isLngLat(m.center) ? m.center : null;
+        if (c) onCenterChange?.({ lng: c[0], lat: c[1] });
+      }
       if (m.type === 'error') setError(m.message);
       if (m.type === 'tile') {
         const get = offline?.getTile ?? (async () => null);
@@ -97,11 +106,19 @@ export function useMapBridge(post: (m: Outbound) => void, props: PlaceMapProps) 
         );
       }
     },
-    [onSelect, onSelectPark, onEmptyTap, outline, offline, post],
+    [onSelect, onSelectPark, onEmptyTap, onCenterChange, outline, offline, post],
   );
 
   return { receive, error, ready };
 }
+
+/** A finite [lng, lat] pair inside the world's bounds. */
+export const isLngLat = (v: unknown): v is [number, number] =>
+  Array.isArray(v) &&
+  v.length === 2 &&
+  v.every((n) => typeof n === 'number' && Number.isFinite(n)) &&
+  Math.abs(v[0] as number) <= 180 &&
+  Math.abs(v[1] as number) <= 90;
 
 /** Bridge message for the user's position; accuracy is meters (0 when unknown). */
 export function meMessage(me: PlaceMapProps['me']) {
