@@ -1,196 +1,100 @@
-import { router, useNavigation } from 'expo-router';
+import { router, useNavigation, type Href } from 'expo-router';
 import { useLayoutEffect } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { DigestLink } from '@/components/guide/DigestLink';
-import { useGuideZone } from '@/components/guide/useGuideZone';
 import { ScreenHeader } from '@/components/Screen';
-import { Tag } from '@/components/Tag';
-import { SectionTitle, ui } from '@/components/ui';
-import { birds } from '@/data/birds';
-import { comingUp, inSeasonNow, inSeasonRows, shootingTimes, todayHoursSummary, type Badge } from '@/data/guide';
+import { BEFORE_YOU_GO, BIRD_ROWS, GUIDE_PURPOSE, LEARN, type GuideRow } from '@/data/guideMenu';
 import { PGC_DIGEST_URL } from '@/data/regs';
-import type { Species } from '@/data/types';
-import { todayET } from '@/lib/time';
 import { colors, fonts, radius, space } from '@/theme/tokens';
 
-const badgeTone: Record<Badge, 'accent' | 'dove' | 'neutral'> = { OPEN: 'accent', SOON: 'dove', CLOSED: 'neutral', CHECK: 'neutral' };
-const badgeText: Record<Badge, string> = { OPEN: 'Open', SOON: 'Soon', CLOSED: 'Closed', CHECK: 'Check digest' };
-
-type Tile = { key: string; glyph: string; title: string; sub: string; href: '/guide/birds' | '/guide/regs' | '/guide/gear' };
-const tiles: Tile[] = [
-  { key: 'birds', glyph: '❦', title: 'Bird ID', sub: `${birds.length} upland species`, href: '/guide/birds' },
-  { key: 'regs', glyph: '§', title: 'Regulations', sub: 'Orange, Sunday, SGL', href: '/guide/regs' },
-  { key: 'gear', glyph: '☑', title: 'Gear checklist', sub: 'By species', href: '/guide/gear' },
-  { key: 'licenses', glyph: '⌂', title: 'Licenses', sub: 'Licenses and permits', href: '/guide/regs' },
-];
-
-/** Guide (mockup 04): Today hero, In season now, then a 2×2 Explore grid. Values come from the bundled PGC data. */
+/** Guide (birdbrain-polish/guide, 01-guide): purpose line, then grouped rows. No bag limits here. */
 export default function GuideScreen() {
   const navigation = useNavigation();
   useLayoutEffect(() => navigation.setOptions({ title: 'Guide' }), [navigation]);
-
-  const now = new Date();
-  const ymd = todayET(now);
-  // The PGC hours zone is picked on the PGC table screen; until then nothing is shown as the user's zone.
-  const [zone, , zonePicked] = useGuideZone();
-  const today = shootingTimes(ymd, zone, 1)[0];
-  const all = inSeasonRows(ymd, zone, now);
-  const rows = inSeasonNow(all);
-  const upcoming = comingUp(ymd, zone, now, 3);
-  const hours = todayHoursSummary(all, today);
 
   return (
     <View style={styles.root}>
       <ScreenHeader title="Guide" />
       <ScrollView contentContainerStyle={styles.body}>
-        <View style={styles.meta}>
-          {zonePicked ? (
-            <Text style={ui.muted} testID="guide-zone">PGC hours zone {zone} · today · </Text>
-          ) : (
-            <Text style={[ui.muted, styles.link]} accessibilityRole="link" testID="guide-zone" onPress={() => router.push('/guide/hours')}>
-              Pick your hours zone ›{' '}
-            </Text>
-          )}
-          <DigestLink testID="guide-digest-top" />
-        </View>
+        <Text style={styles.purpose} testID="guide-purpose">
+          {GUIDE_PURPOSE}
+        </Text>
+        <Group title="Before you go" id="before" rows={BEFORE_YOU_GO} />
+        <Group title="Birds" id="birds" rows={BIRD_ROWS} />
+        <Group title="Learn" id="learn" rows={LEARN} />
 
-        <View style={[ui.card, styles.hero]} testID="guide-today">
-          <View style={styles.heroHead}>
-            <Text style={styles.name}>Today</Text>
-            <Text accessibilityRole="link" style={styles.link} onPress={() => router.push('/guide/hours')}>
-              PGC table ›
-            </Text>
-          </View>
-          <Text style={ui.muted} testID="guide-today-label">
-            {hours.label}
-          </Text>
-          {!zonePicked && (
-            <Text style={ui.muted} testID="guide-today-default-zone">
-              Showing PGC hours zone {zone} (default), pick yours on the PGC table
-            </Text>
-          )}
-          {today?.smallGame ? (
-            <View style={styles.times}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.time}>{today.smallGame.start}</Text>
-                <Text style={ui.muted}>Shooting starts</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.time}>{today.smallGame.end}</Text>
-                <Text style={ui.muted}>Shooting ends</Text>
-              </View>
-            </View>
-          ) : (
-            <Text style={ui.body}>Check the digest for today's hours.</Text>
-          )}
-          {hours.migratoryDiffers && (
-            <Text accessibilityRole="link" style={styles.link} testID="guide-today-dove" onPress={() => router.push('/guide/hours')}>
-              Dove hours differ ›
-            </Text>
-          )}
-        </View>
-
-        <View style={styles.section} testID="guide-season">
-          <SectionTitle>In season now</SectionTitle>
-          {rows.length === 0 && <Text style={ui.muted}>Nothing open today. See the PGC table for all seasons.</Text>}
-          {rows.map((r) => (
-            <SpeciesRow key={r.species} species={r.species} testID={`in-season-${r.species}`}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.rowName}>{r.label}</Text>
-                <Text style={ui.muted}>{r.detail}</Text>
-              </View>
-              <Tag label={badgeText[r.badge]} tone={badgeTone[r.badge]} />
-            </SpeciesRow>
-          ))}
-          {upcoming.length > 0 && (
-            <View style={styles.section} testID="guide-coming-up">
-              <SectionTitle>Coming up</SectionTitle>
-              {upcoming.map((r) => (
-                <SpeciesRow key={r.species} species={r.species} testID={`coming-up-${r.species}`}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.rowName}>{r.label}</Text>
-                    <Text style={ui.muted}>{r.status}</Text>
-                  </View>
-                </SpeciesRow>
-              ))}
-            </View>
-          )}
-          <Text style={styles.disclaimer} testID="guide-disclaimer">
-            Unofficial summary, always verify with the PGC Hunting & Trapping Digest
-          </Text>
+        <Text style={styles.disclaimer} testID="guide-disclaimer">
+          Unofficial summary, always verify with the PGC Hunting & Trapping Digest
+        </Text>
+        <DigestLink testID="guide-digest-top" />
+        <View style={styles.footer}>
           <Text
             accessibilityRole="link"
             accessibilityLabel="Open the PGC Hunting & Trapping Digest"
-            style={styles.link}
+            style={styles.small}
             onPress={() => Linking.openURL(PGC_DIGEST_URL)}
           >
             PGC Hunting & Trapping Digest ↗
           </Text>
-        </View>
-
-        <View style={styles.section}>
-          <SectionTitle>Explore</SectionTitle>
-          <View style={styles.grid}>
-            {tiles.map((t) => (
-              <Pressable
-                key={t.key}
-                accessibilityRole="button"
-                accessibilityLabel={t.title}
-                testID={`guide-tile-${t.key}`}
-                onPress={() => router.push(t.href)}
-                style={[ui.card, styles.tile]}
-              >
-                <Text style={styles.glyph}>{t.glyph}</Text>
-                <Text style={styles.rowName}>{t.title}</Text>
-                <Text style={ui.muted}>{t.sub}</Text>
-              </Pressable>
-            ))}
-          </View>
+          <Text accessibilityRole="link" style={styles.small} testID="guide-data-sources" onPress={() => router.push('/data-sources')}>
+            Data sources
+          </Text>
+          <Text accessibilityRole="link" style={styles.small} testID="guide-credits" onPress={() => router.push('/guide/credits')}>
+            Credits
+          </Text>
         </View>
       </ScrollView>
     </View>
   );
 }
 
-/** A species list row; opens the species detail (dates, limits) when there is one. */
-function SpeciesRow({ species, testID, children }: { species: Species; testID: string; children: React.ReactNode }) {
-  const bird = birds.find((b) => b.species === species);
-  if (!bird) {
-    return (
-      <View style={[ui.card, styles.rowCard]} testID={testID}>
-        {children}
-      </View>
-    );
-  }
+function Group({ title, id, rows }: { title: string; id: string; rows: GuideRow[] }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${bird.name} details`}
-      testID={testID}
-      onPress={() => router.push(`/guide/bird/${bird.key}`)}
-      style={[ui.card, styles.rowCard]}
-    >
-      {children}
-    </Pressable>
+    <View testID={`guide-group-${id}`}>
+      <Text style={styles.label} accessibilityRole="header">
+        {title.toUpperCase()}
+      </Text>
+      {rows.map((r, i) => (
+        <Pressable
+          key={r.key}
+          accessibilityRole="button"
+          accessibilityLabel={`${r.title}. ${r.desc}`}
+          testID={`guide-row-${r.key}`}
+          onPress={() => router.push(r.href as Href)}
+          style={({ pressed }) => [styles.row, i < rows.length - 1 && styles.divider, pressed && styles.pressed]}
+        >
+          <View style={styles.icon}>
+            <Text style={styles.iconText}>{r.icon}</Text>
+          </View>
+          <View style={styles.text}>
+            <Text style={styles.title}>{r.title}</Text>
+            <Text style={styles.desc}>{r.desc}</Text>
+          </View>
+          <Text style={styles.chev}>›</Text>
+        </Pressable>
+      ))}
+    </View>
   );
 }
+
+export const GUIDE_ROW_MIN_HEIGHT = 64;
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
   body: { paddingHorizontal: space.lg, paddingBottom: space.xxl, gap: space.md },
-  meta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
-  hero: { gap: space.xs },
-  heroHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  times: { flexDirection: 'row', gap: space.md, paddingVertical: space.xs },
-  time: { fontFamily: fonts.headingSemi, fontSize: 28, color: colors.text },
-  section: { gap: space.sm },
-  rowCard: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  name: { fontFamily: fonts.headingSemi, fontSize: 18, color: colors.text },
-  rowName: { fontFamily: fonts.bodySemi, fontSize: 16, color: colors.text },
-  link: { color: colors.accent, fontFamily: fonts.bodySemi, paddingVertical: space.xs },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  tile: { width: '48%', flexGrow: 1, gap: 2, minHeight: 96, borderRadius: radius.md },
-  disclaimer: { color: colors.dove, fontFamily: fonts.bodySemi, fontSize: 14 },
-  glyph: { fontSize: 20, color: colors.dove },
+  purpose: { fontFamily: fonts.body, fontSize: 15, lineHeight: 21, color: colors.muted },
+  label: { fontFamily: fonts.bodySemi, fontSize: 13, letterSpacing: 0.8, color: colors.muted, marginBottom: space.xs },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: GUIDE_ROW_MIN_HEIGHT, paddingVertical: space.sm },
+  divider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  pressed: { opacity: 0.6 },
+  icon: { width: 40, height: 40, borderRadius: radius.md, backgroundColor: colors.surfaceRaised, alignItems: 'center', justifyContent: 'center' },
+  iconText: { fontFamily: fonts.headingSemi, fontSize: 18, color: colors.dove },
+  text: { flex: 1, gap: 2 },
+  title: { fontFamily: fonts.bodySemi, fontSize: 16, color: colors.text },
+  desc: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.muted },
+  chev: { fontSize: 20, color: colors.muted },
+  disclaimer: { color: colors.dove, fontFamily: fonts.bodySemi, fontSize: 13 },
+  footer: { flexDirection: 'row', flexWrap: 'wrap', gap: space.lg },
+  small: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, paddingVertical: space.xs },
 });
