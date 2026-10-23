@@ -1,10 +1,10 @@
-import { router } from 'expo-router';
-import { useEffect } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PlanRow } from '@/components/spot/PlanParts';
 import { Button, SectionTitle } from '@/components/ui';
-import { startPlansSyncOnce } from '@/data/hooks';
+import { refreshPlans, startPlansSyncOnce } from '@/data/hooks';
 import { splitPlans, usePlans } from '@/lib/plans';
 import { colors, fonts, space } from '@/theme/tokens';
 
@@ -12,7 +12,12 @@ export const PLANS_EMPTY = 'No hunts planned. Open a spot on the map and tap Pla
 
 /** Profile › Plans (spec 07): the only home for plans. Signed-in only (render it only with a session). */
 export function PlansSection({ owner }: { owner: string }) {
-  useEffect(startPlansSyncOnce, []);
+  useFocusEffect(
+    useCallback(() => {
+      startPlansSyncOnce();
+      void refreshPlans();
+    }, []),
+  );
   const plans = usePlans(owner);
   if (!plans) return null;
   const { upcoming, past } = splitPlans(plans);

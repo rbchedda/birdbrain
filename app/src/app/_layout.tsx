@@ -5,10 +5,12 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ConsentGate } from '@/components/ConsentGate';
 import { FieldToasts } from '@/components/FieldSync';
+import { startPlansSyncOnce } from '@/data/hooks';
 import { colors } from '@/theme/tokens';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -21,6 +23,9 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
   });
+
+  // Plans: push the offline queue and pull own + crew-shared plans (no-op while signed out).
+  useEffect(startPlansSyncOnce, []);
 
   useEffect(() => {
     if (loaded || error) SplashScreen.hideAsync().catch(() => {});

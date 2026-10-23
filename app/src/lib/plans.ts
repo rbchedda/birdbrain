@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import type { AccessType } from '@/data/access';
-import { NotSignedInError, type Backend, type PlanUpload } from '@/data/backend';
+import { NotSignedInError, type Backend, type PlanUpload, type ServerPlan } from '@/data/backend';
 import type { LngLat, PlaceType, Species } from '@/data/types';
 import { flags } from '@/lib/flags';
 import { newClientId, readJson, updateJson } from '@/lib/localStore';
@@ -29,7 +29,12 @@ export interface PlanPlace {
 
 export interface Plan {
   id: string;
+  /** Who made the plan (server user_id). */
   owner: string;
+  /** Whose phone list this row belongs to; defaults to owner. Differs only for crew-shared plans from others. */
+  account?: string;
+  /** Crew-shared plan made by someone else: view only, never pushed. */
+  readOnly?: boolean;
   place: PlanPlace;
   date: Ymd;
   species: Species[];
@@ -66,6 +71,7 @@ export function onPlansChange(cb: () => void) {
   };
 }
 
+const accountOf = (p: Plan) => p.account ?? p.owner;
 const raw = () => readJson<Plan[]>(PLANS_KEY, []);
 const all = async () => (await raw()).filter((p) => !p.deleted);
 
@@ -76,7 +82,7 @@ export const setPlansSyncKick = (k: () => void) => {
 };
 
 export async function listPlans(owner: string): Promise<Plan[]> {
-  return (await all()).filter((p) => p.owner === owner).sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
+  return (await all()).filter((p) => accountOf(p) === owner).sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
 }
 
 /** Upcoming = today or later (plans move to Past the day after their date). */
@@ -115,7 +121,7 @@ export async function updatePlan(id: string, patch: Partial<PlanDraft>, now = ne
   let out: Plan | null = null;
   await updateJson<Plan[]>(PLANS_KEY, [], (list) =>
     list.map((p) => {
-      if (p.id !== id) return p;
+      if (p.id !== id || p.readOnly) return p;
       out = { ...p, ...patch, shareFailed: false, notes: (patch.notes ?? p.notes).trim().slice(0, 500), updatedAt: now.toISOString(), sync: flags.plans ? 'pending' : p.sync };
       return out;
     }),
@@ -136,6 +142,7 @@ export async function deletePlan(id: string, now = new Date()) {
   await updateJson<Plan[]>(PLANS_KEY, [], (list) =>
     list.flatMap((p) => {
       if (p.id !== id) return [p];
+      if (p.readOnly) return [p];
       if (!flags.plans) return [];
       return [{ ...p, deleted: true, sync: 'pending' as const, updatedAt: now.toISOString() }];
     }),
@@ -160,10 +167,18 @@ export interface PlansSyncReport {
   failed: number;
 }
 
+// Push and pull never overlap: a push landing between a pull's fetch and merge would look "deleted on server".
+let lock: Promise<unknown> = Promise.resolve();
+function serial<T>(fn: () => Promise<T>): Promise<T> {
+  const run = lock.then(fn, fn);
+  lock = run.catch(() => undefined);
+  return run;
+}
+
 let inFlight: Promise<PlansSyncReport> | null = null;
 /** Push this owner's queued plans (one run at a time). Failures stay queued for the next trigger. */
 export function syncPlans(backend: Backend, owner: string): Promise<PlansSyncReport> {
-  inFlight ??= runSync(backend, owner).finally(() => {
+  inFlight ??= serial(() => runSync(backend, owner)).finally(() => {
     inFlight = null;
   });
   return inFlight;
@@ -173,7 +188,7 @@ async function runSync(backend: Backend, owner: string): Promise<PlansSyncReport
   const report = { pushed: 0, failed: 0 };
   if (!flags.plans) return report;
   // Plans saved while sync was off ('local') join the queue too.
-  const queue = (await raw()).filter((p) => p.owner === owner && p.sync !== 'synced');
+  const queue = (await raw()).filter((p) => accountOf(p) === owner && !p.readOnly && p.sync !== 'synced');
   for (const p of queue) {
     try {
       if (p.deleted) {
@@ -196,6 +211,89 @@ async function runSync(backend: Backend, owner: string): Promise<PlansSyncReport
   return report;
 }
 
+export interface PlansPullReport {
+  added: number;
+  updated: number;
+  removed: number;
+  /** Server rows whose spot isn't in the loaded places yet; picked up on a later pull. */
+  unresolved: number;
+}
+
+/**
+ * Pull the account's own plans plus crew-shared ones and merge by client_id:
+ * - a local row with a pending change (edit, delete tombstone, unsynced) wins until it's pushed;
+ * - a synced local row takes the server copy, or is removed when the server no longer has it;
+ * - server rows unknown here are added (synced; read-only when someone else made them).
+ * Throws on network/auth failure, leaving the local store untouched.
+ */
+export async function pullPlans(
+  backend: Backend,
+  account: string,
+  resolvePlace: (id: string) => PlanPlace | null,
+): Promise<PlansPullReport> {
+  return serial(() => runPull(backend, account, resolvePlace));
+}
+
+async function runPull(backend: Backend, account: string, resolvePlace: (id: string) => PlanPlace | null): Promise<PlansPullReport> {
+  const report: PlansPullReport = { added: 0, updated: 0, removed: 0, unresolved: 0 };
+  if (!flags.plans) return report;
+  const rows = await backend.listServerPlans();
+  const byId = new Map(rows.map((r) => [r.clientId, r]));
+  await updateJson<Plan[]>(PLANS_KEY, [], (list) => {
+    const out: Plan[] = [];
+    const seen = new Set<string>();
+    for (const p of list) {
+      if (accountOf(p) !== account) {
+        out.push(p);
+        continue;
+      }
+      seen.add(p.id);
+      const r = byId.get(p.id);
+      if (!p.readOnly && p.sync !== 'synced') {
+        out.push(p); // pending local change wins
+      } else if (!r) {
+        report.removed++; // deleted or unshared on the server
+      } else {
+        const next = fromServer(r, account, p.place.id === r.placeId ? p.place : resolvePlace(r.placeId) ?? p.place, p);
+        if (next.updatedAt !== p.updatedAt || next.crew?.name !== p.crew?.name) report.updated++;
+        out.push(next);
+      }
+    }
+    for (const r of rows) {
+      if (seen.has(r.clientId)) continue;
+      const place = resolvePlace(r.placeId);
+      if (!place) {
+        report.unresolved++;
+        continue;
+      }
+      out.push(fromServer(r, account, place));
+      report.added++;
+    }
+    return out;
+  });
+  if (report.added || report.updated || report.removed) changed();
+  return report;
+}
+
+function fromServer(r: ServerPlan, account: string, place: PlanPlace, prev?: Plan): Plan {
+  const mine = r.userId === account;
+  return {
+    id: r.clientId,
+    owner: r.userId,
+    ...(mine ? {} : { account, readOnly: true }),
+    place: { ...place, name: r.placeName || place.name },
+    date: r.planDate as Ymd,
+    species: r.species as Species[],
+    notes: r.notes,
+    reminder: r.reminder,
+    reminderScheduled: mine ? (prev?.reminderScheduled ?? false) : false,
+    crew: r.crewId ? { id: r.crewId, name: r.crewName ?? prev?.crew?.name ?? 'crew' } : null,
+    sync: 'synced',
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
+  };
+}
+
 /** Live list of the owner's plans (null while loading, [] when signed out). */
 export function usePlans(owner: string | null | undefined): Plan[] | null {
   const [plans, setPlans] = useState<Plan[] | null>(null);
@@ -214,6 +312,16 @@ export function usePlans(owner: string | null | undefined): Plan[] | null {
   }, [owner]);
   return plans;
 }
+
+export const toPlanPlace = (p: PlanPlace): PlanPlace => ({
+  id: p.id,
+  name: p.name,
+  type: p.type,
+  access: p.access,
+  center: p.center,
+  species: p.species,
+  parking: p.parking ?? null,
+});
 
 /** Place snapshot cache so pushed screens (hunt, plan) can open a spot by id, offline too. */
 const placeCache = new Map<string, PlanPlace>();

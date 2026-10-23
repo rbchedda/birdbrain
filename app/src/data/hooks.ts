@@ -5,7 +5,7 @@ import { AppState, Platform } from 'react-native';
 import type { Session } from './backend';
 import { onReconnect as onConnectivityBack, startConnectivity } from '@/lib/connectivity';
 import { journalEntries, onJournalChange, startJournalSync, syncJournal } from './journal';
-import { setPlansSyncKick, syncPlans } from '@/lib/plans';
+import { cachedPlace, pullPlans, setPlansSyncKick, syncPlans, toPlanPlace, type PlansPullReport } from '@/lib/plans';
 import { backend } from './index';
 import { cachedSafetyPlaces, saveSafetyPlaces } from '@/offline/safetyCache';
 
@@ -125,6 +125,23 @@ function startJournalSyncOnce() {
   });
 }
 
+/**
+ * Push the queue, then pull own + crew-shared plans and merge (signed in only).
+ * Failures keep the local store as is. Profile › Plans calls this on focus.
+ */
+export async function refreshPlans(): Promise<PlansPullReport | null> {
+  const userId = session?.userId;
+  if (!userId) return null;
+  try {
+    await syncPlans(backend, userId);
+    await loadPlaces();
+    const byId = new Map(places.places.map((p) => [p.id, p]));
+    return await pullPlans(backend, userId, (id) => cachedPlace(id) ?? (byId.get(id) ? toPlanPlace(byId.get(id)!) : null));
+  } catch {
+    return null;
+  }
+}
+
 // Hunt plans: push the queue on any change, foreground, reconnect and sign-in (offline queue kept on failure).
 let plansSyncStarted = false;
 export function startPlansSyncOnce() {
@@ -135,6 +152,9 @@ export function startPlansSyncOnce() {
     if (session?.userId) syncPlans(backend, session.userId).catch(() => undefined);
   };
   setPlansSyncKick(run);
+  // App start and sign-in also pull (cross-device + crew-shared plans).
+  sessionListeners.add(() => void refreshPlans());
+  void refreshPlans();
   AppState.addEventListener('change', (s) => s === 'active' && run());
   startConnectivity();
   onConnectivityBack(run);

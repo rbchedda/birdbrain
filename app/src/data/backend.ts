@@ -157,6 +157,15 @@ export interface Backend {
   upsertPlan(plan: PlanUpload): Promise<{ shared: boolean }>;
   /** Delete a hunt plan by client UUID. Idempotent; owner-only. */
   deletePlan(clientId: string): Promise<void>;
+  /** The signed-in user's own plans plus plans shared to their crews (RLS decides; §2-3). */
+  listServerPlans(): Promise<ServerPlan[]>;
+}
+
+export interface ServerPlan extends PlanUpload {
+  userId: string;
+  crewName: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type PlanReminder = 'none' | 'night_before_8pm' | 'hour_before_legal';

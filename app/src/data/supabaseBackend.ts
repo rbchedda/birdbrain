@@ -5,7 +5,7 @@ import { parseGeometry, parsePoint, toEwkt } from '@/lib/geo';
 import { removeAllUnder, type StorageBucketApi } from '@/lib/storageCleanup';
 
 import { classifyAccess, type AccessType } from './access';
-import { crewError, NotSignedInError, postKind, type Backend, type LeaveCrewResult, type Session } from './backend';
+import { crewError, NotSignedInError, postKind, type Backend, type LeaveCrewResult, type PlanReminder, type Session } from './backend';
 import placeDetailQuery from './placeDetailQuery.json';
 import type { Author, BirdCounts, Crew, Comment, Place, PlaceType, Post, Profile, Species, StockingEvent } from './types';
 
@@ -584,6 +584,40 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
     async deletePlan(clientId) {
       const userId = await me();
       check(await sb.from('plans').delete().eq('user_id', userId).eq('client_id', clientId));
+    },
+
+    async listServerPlans() {
+      await me();
+      const res = await sb
+        .from('plans')
+        .select('user_id, client_id, place_id, place_name, plan_date, species, notes, reminder, crew_id, created_at, updated_at')
+        .limit(1000);
+      check(res);
+      const rows = (res.data ?? []) as {
+        user_id: string; client_id: string; place_id: string; place_name: string; plan_date: string; species: string[] | null;
+        notes: string | null; reminder: PlanReminder; crew_id: string | null; created_at: string; updated_at: string;
+      }[];
+      // Crew names are a nicety; if groups can't be read the plan still shows as "crew".
+      const ids = [...new Set(rows.map((r) => r.crew_id).filter((x): x is string => !!x))];
+      const names = new Map<string, string>();
+      if (ids.length) {
+        const g = await sb.from('groups').select('id, name').in('id', ids);
+        for (const r of (g.data ?? []) as { id: string; name: string }[]) names.set(r.id, r.name);
+      }
+      return rows.map((r) => ({
+        userId: r.user_id,
+        clientId: r.client_id,
+        placeId: r.place_id,
+        placeName: r.place_name,
+        planDate: r.plan_date,
+        species: r.species ?? [],
+        notes: r.notes ?? '',
+        reminder: r.reminder,
+        crewId: r.crew_id,
+        crewName: r.crew_id ? (names.get(r.crew_id) ?? null) : null,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      }));
     },
 
     async uploadDiaryPhoto(clientId, photo) {

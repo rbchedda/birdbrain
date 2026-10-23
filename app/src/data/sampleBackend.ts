@@ -1,7 +1,7 @@
 import { readJson, writeJson } from '@/lib/localStore';
 import { publicAfterET } from '@/lib/time';
 
-import { blurPoint, crewError, postKind, sumCounts, type Backend, type FeedPage, type HuntLogUpload, type LeaveCrewResult, type Session } from './backend';
+import { blurPoint, crewError, postKind, sumCounts, type Backend, type FeedPage, type HuntLogUpload, type LeaveCrewResult, type ServerPlan, type Session } from './backend';
 import { samplePlaces, sampleStocking } from './places';
 import { sampleAuthors, sampleComments, sampleMe, samplePosts } from './posts';
 import { containsObjectionable, OBJECTIONABLE_MESSAGE } from './moderation';
@@ -58,6 +58,8 @@ const sampleGroups: Omit<Group, 'member'>[] = [
   { id: 'g-waterfowl', slug: 'pa-waterfowl', name: 'PA Waterfowl', description: 'Ducks and geese: zones, stamps and blinds.', species: 'waterfowl' },
 ];
 
+/** Sample-mode stand-in for hosted public.plans. */
+export const samplePlans = new Map<string, ServerPlan>();
 const session: Session = { userId: sampleMe.id, email: null };
 
 /**
@@ -386,11 +388,19 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
       await writeJson(HUNT_LOG_KEY, rows);
     },
 
-    // Sample mode: plans already live on the phone; the push is a no-op.
+    // Sample mode: an in-memory "server" so push → pull round-trips behave like hosted (per app run).
     async upsertPlan(p) {
+      const now = new Date().toISOString();
+      const prev = samplePlans.get(p.clientId);
+      samplePlans.set(p.clientId, { ...p, userId: session.userId, crewName: null, createdAt: prev?.createdAt ?? now, updatedAt: now });
       return { shared: !!p.crewId };
     },
-    async deletePlan() {},
+    async deletePlan(clientId) {
+      samplePlans.delete(clientId);
+    },
+    async listServerPlans() {
+      return [...samplePlans.values()];
+    },
 
     // Offline: photos stay on the device; the path mirrors the private bucket layout.
     async uploadDiaryPhoto(clientId, photo) {
