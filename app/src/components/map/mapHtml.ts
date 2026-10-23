@@ -128,7 +128,8 @@ export const mapHtml = `<!doctype html>
       ]
     }
   });
-  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
+  // No +/- control: bottom-right sits under the sheet and the header owns the top.
+  // Pinch (touch) and scroll/double-click (web) zoom; 'center on me' handles recentering.
 
   var loaded = false, queue = [], selected = null;
   function apply(m) {
@@ -150,7 +151,22 @@ export const mapHtml = `<!doctype html>
       map.setFilter('places-selected', ['==', ['get', 'id'], m.id || '']);
       if (m.id === null) map.getSource('outline').setData(empty);
     }
-    if (m.type === 'focus') map.easeTo({ center: m.center, zoom: Math.max(map.getZoom(), 11), duration: 600 });
+    if (m.type === 'me') {
+      map.getSource('me').setData(m.center ? { type: 'FeatureCollection', features: [
+        { type: 'Feature', properties: { kind: 'accuracy' }, geometry: circle(m.center, m.accuracy) },
+        { type: 'Feature', properties: { kind: 'dot' }, geometry: { type: 'Point', coordinates: m.center } }
+      ] } : empty);
+    }
+    if (m.type === 'focus') map.easeTo({ center: m.center, zoom: Math.max(map.getZoom(), m.zoom || 11), duration: 600 });
+  }
+  // Accuracy ring as a 64-point polygon, meters to degrees on a sphere.
+  function circle(c, meters) {
+    var pts = [], r = Math.max(meters, 1) / 6371008.8, lat = c[1] * Math.PI / 180;
+    for (var i = 0; i <= 64; i++) {
+      var a = (i / 64) * 2 * Math.PI;
+      pts.push([c[0] + (r * Math.sin(a) / Math.cos(lat)) * 180 / Math.PI, c[1] + (r * Math.cos(a)) * 180 / Math.PI]);
+    }
+    return { type: 'Polygon', coordinates: [pts] };
   }
   window.bbReceive = function (m) {
     // Tile replies can't wait for 'load': the style's own tiles are requested before it.
@@ -185,6 +201,11 @@ export const mapHtml = `<!doctype html>
         'stocking', '${pinColor.stocking}', 'dove_field', '${pinColor.dove_field}', '${pinColor.game_land}'],
       'circle-opacity': ['case', ['get', 'open'], 1, 0.55],
       'circle-stroke-width': 2, 'circle-stroke-color': '${colors.ground}' } });
+    map.addSource('me', { type: 'geojson', data: empty });
+    map.addLayer({ id: 'me-accuracy', type: 'fill', source: 'me', filter: ['==', ['get', 'kind'], 'accuracy'],
+      paint: { 'fill-color': '#2F80ED', 'fill-opacity': 0.15, 'fill-outline-color': '#2F80ED' } });
+    map.addLayer({ id: 'me-dot', type: 'circle', source: 'me', filter: ['==', ['get', 'kind'], 'dot'],
+      paint: { 'circle-radius': 7, 'circle-color': '#2F80ED', 'circle-stroke-width': 3, 'circle-stroke-color': '#FFFFFF' } });
     // Generous hit box so pins are easy to tap with a glove on.
     map.on('click', function (e) {
       var p = e.point;

@@ -46,7 +46,7 @@ Owner: RBChedda. Tick these off in order. Anything that creates an Expo or Apple
 
 ## To add later: permission strings
 
-No usage strings ship today because nothing in the app reads location, the camera or the photo library. Add each one in `app.config.ts` → `ios.infoPlist` (plus the expo plugin) in the same PR as the feature, worded plainly:
+Location ships (When In Use only) via the `expo-location` plugin in app.json: "BirdBrain shows where you are on the map so you can see which land you're on." No camera or photo-library strings yet. Add each one in `app.config.ts` → `ios.infoPlist` (plus the expo plugin) in the same PR as the feature, worded plainly:
 
 - `NSLocationWhenInUseUsageDescription`: when the map shows your position (e.g. "Shows where you are on the map. Your location isn't saved or shared.").
 - `NSCameraUsageDescription` / `NSPhotoLibraryUsageDescription`: when hunt-log photos ship.

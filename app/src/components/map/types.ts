@@ -29,8 +29,10 @@ export interface PlaceMapProps {
   outline?: GeoJSONGeometry | null;
   basemap: Basemap;
   /** Bump to recenter on the selected place (e.g. picked from the list). */
-  focus?: { center: LngLat; key: number };
+  focus?: { center: LngLat; key: number; zoom?: number };
   onSelect: (id: string | null) => void;
+  /** The user's position (blue dot + accuracy circle); null hides it. */
+  me?: { lng: number; lat: number; accuracy: number | null } | null;
   /**
    * Downloaded packs (premium). Basemaps listed here are drawn from bboffline://
    * tiles answered by getTile (base64, or null to fall back to the network).
