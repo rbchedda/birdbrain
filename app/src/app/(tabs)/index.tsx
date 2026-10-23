@@ -14,6 +14,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { readJson, writeJson } from '@/lib/localStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomSheet } from '@/components/BottomSheet';
@@ -67,6 +68,8 @@ const PEEK_EMPTY = 84;
 const MAP_GAP = 72;
 const LIST_LIMIT = 60;
 
+const BASEMAP_KEY = 'birdbrain.basemap.v1';
+
 export default function MapScreen() {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
@@ -74,7 +77,15 @@ export default function MapScreen() {
   const [filter, setFilter] = useState<PlaceType | 'all'>('all');
   const [openOnly, setOpenOnly] = useState(false);
   const [query, setQuery] = useState('');
-  const [basemap, setBasemap] = useState<Basemap>('topo');
+  const [basemap, setBasemapState] = useState<Basemap>('topo');
+  // Persisted (spec §5); defaults to Standard. Unknown or hidden values fall back to Standard.
+  useEffect(() => {
+    readJson<Basemap>(BASEMAP_KEY, 'topo').then((b) => setBasemapState(visibleBasemaps().some((o) => o.key === b) ? b : 'topo'), () => {});
+  }, []);
+  const setBasemap = (b: Basemap) => {
+    setBasemapState(b);
+    void writeJson(BASEMAP_KEY, b);
+  };
   const [selectedId, setSelectedId] = useState<string>();
   const [parkId, setParkId] = useState<string>();
   const [expanded, setExpanded] = useState(false);

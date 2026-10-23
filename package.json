@@ -6,11 +6,17 @@
     "db:test": "node --test --test-concurrency=2 'supabase/tests/*.test.mjs'",
     "ingest": "node ingest/arcgis.mjs",
     "ingest:describe": "node ingest/arcgis.mjs --describe",
-    "test": "npm run db:test && node --test --test-concurrency=2 'ingest/*.test.mjs' && npm --prefix app test"
+    "test": "npm run db:test && node --test --test-concurrency=2 'ingest/*.test.mjs' 'scripts/basemap/*.test.mjs' && npm --prefix app test",
+    "basemap:build": "bash scripts/basemap/build.sh",
+    "basemap:dem": "node scripts/basemap/fetch-dem.mjs",
+    "basemap:glyphs": "node scripts/basemap/build-glyphs.mjs",
+    "basemap:pmtiles": "bash scripts/basemap/build-pmtiles.sh",
+    "basemap:serve": "node scripts/basemap/serve.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.10",
-    "@electric-sql/pglite-postgis": "^0.2.10"
+    "@electric-sql/pglite-postgis": "^0.2.10",
+    "fontnik": "^0.7.7"
   },
   "dependencies": {
     "pg": "^8.23.1"

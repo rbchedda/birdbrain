@@ -4,10 +4,10 @@ import type { GeoJSONGeometry, LngLat, Place, PlaceType } from '@/data/types';
 export type Basemap = 'topo' | 'satellite' | 'terrain';
 
 /**
- * Brand terrain basemap (basemap PR 2). Off until its tiles exist; while off the
+ * Brand terrain basemap (basemap PR 2). On by default (French Creek tiles ship in the bundle); EXPO_PUBLIC_FLAG_TERRAIN_BASEMAP=0 turns it off. While off the
  * Terrain option is hidden and the map page treats 'terrain' as topo.
  */
-export const terrainBasemapEnabled = process.env.EXPO_PUBLIC_FLAG_TERRAIN_BASEMAP === '1';
+export const terrainBasemapEnabled = process.env.EXPO_PUBLIC_FLAG_TERRAIN_BASEMAP !== '0';
 
 export const basemapOptions: { key: Basemap; label: string; icon: 'map-outline' | 'earth-outline' | 'trail-sign-outline' }[] = [
   { key: 'topo', label: 'Standard', icon: 'map-outline' },

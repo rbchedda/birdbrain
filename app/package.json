@@ -31,6 +31,7 @@
     "react-native-webview": "13.16.1"
   },
   "devDependencies": {
+    "@maplibre/maplibre-gl-style-spec": "^24.10.0",
     "@react-native/jest-preset": "^0.86.3",
     "@testing-library/react-native": "^14.1.0",
     "@types/jest": "^29.5.14",
