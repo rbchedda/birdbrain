@@ -24,7 +24,7 @@ export function creditLine(file: string) {
 export function PhotoSlot({
   label,
   file,
-  size = "tile",
+
 }: {
   label: string;
   file: string;
@@ -39,11 +39,11 @@ export function PhotoSlot({
           resizeMode="cover"
           accessibilityLabel={`${label} photo`}
           testID={`photo-${file}`}
-          style={[styles.slot, size === "full" && styles.slotFull]}
+          style={styles.slot}
         />
       ) : (
         <View
-          style={[styles.slot, size === "full" && styles.slotFull]}
+          style={styles.slot}
           accessible
           accessibilityLabel={`${label} photo placeholder`}
           testID={`photo-${file}`}
@@ -96,7 +96,7 @@ export function BirdCard({
     <View style={[ui.card, { gap: space.sm }]} testID={`bird-${bird.key}`}>
       <View style={styles.photos}>
         {bird.photos.map((p) => (
-          <View key={p.file} style={{ flex: 1 }}>
+          <View key={p.file} style={{ gap: 2 }}>
             <Text style={ui.muted}>{p.label}</Text>
             <PhotoSlot label={p.label} file={p.file} size="full" />
           </View>
@@ -122,8 +122,15 @@ const styles = StyleSheet.create({
   tile: { width: 120, gap: space.xs },
   tileName: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.text },
   slotWrap: { gap: 2 },
+  /**
+   * Every bundled photo is pre-cropped to 4:3 around the bird (1200x900, see
+   * CREDITS.json "changes"), so a 4:3 frame with cover never cuts a bird off.
+   * Full width of the parent; tiles are 120 pt wide (90 pt tall).
+   */
   slot: {
-    height: 90,
+    width: "100%",
+    aspectRatio: 4 / 3,
+    overflow: "hidden",
     borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.border,
@@ -131,7 +138,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  slotFull: { height: 160 },
   slotText: {
     fontFamily: fonts.bodySemi,
     fontSize: 12,
@@ -139,7 +145,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   caption: { fontFamily: fonts.body, fontSize: 12, color: colors.muted },
-  photos: { flexDirection: "row", gap: space.sm },
+  photos: { gap: space.md },
   heading: {
     fontFamily: fonts.headingSemi,
     fontSize: 18,
