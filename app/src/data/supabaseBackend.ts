@@ -455,6 +455,16 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
       if (r.error && r.error.code !== '23505') check(r);
     },
 
+    async recordNoticeDismissal(a) {
+      const { data } = await sb.auth.getSession();
+      if (!data.session?.user.id || data.session.user.is_anonymous) throw new NotSignedInError();
+      check(
+        await sb
+          .from('notice_acknowledgements')
+          .insert({ kind: 'notice_dismiss', notice_version: a.noticeVersion, app_version: a.appVersion }),
+      );
+    },
+
     async groups() {
       const { data } = await sb.auth.getSession();
       const userId = data.session?.user.id;

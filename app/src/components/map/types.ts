@@ -41,6 +41,8 @@ export interface PlaceMapProps {
   offline?: { basemaps: Basemap[]; getTile: (url: string) => Promise<string | null> };
   /** Tap on a bundled state park outline (pins win when both are hit). */
   onSelectPark?: (id: string) => void;
+  /** Tap on the map that hit no pin or boundary (drags/pans never fire it). Defaults to onSelect(null). */
+  onEmptyTap?: () => void;
 }
 
 export const pinColor: Record<PlaceType, string> = {

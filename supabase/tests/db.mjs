@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { PGlite } from '@electric-sql/pglite';
+import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto';
 import { postgis } from '@electric-sql/pglite-postgis';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -10,7 +11,7 @@ const migrationsDir = join(here, '..', 'migrations');
 
 /** Fresh in-memory database with the Supabase stub and every migration applied. */
 export async function createTestDb() {
-  const db = await PGlite.create({ extensions: { postgis } });
+  const db = await PGlite.create({ extensions: { postgis, pgcrypto } });
   await db.exec(readFileSync(join(here, 'supabase-stub.sql'), 'utf8'));
   for (const file of readdirSync(migrationsDir).filter((f) => f.endsWith('.sql')).sort()) {
     await db.exec(readFileSync(join(migrationsDir, file), 'utf8'));
