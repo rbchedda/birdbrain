@@ -66,7 +66,8 @@ export const mapHtml = `<!doctype html>
     return out.buffer;
   }
   function networkTile(url) {
-    var m = /^bboffline:\/\/([a-z]+)\/(\d+)\/(\d+)\/(\d+)$/.exec(url);
+    // No backslashes here: this runs inside a template literal, which would strip them.
+    var m = /^bboffline:[/][/]([a-z]+)[/]([0-9]+)[/]([0-9]+)[/]([0-9]+)$/.exec(url);
     if (!m || !OFFLINE[m[1]]) return null;
     return OFFLINE[m[1]].network.replace('{z}', m[2]).replace('{x}', m[3]).replace('{y}', m[4]);
   }
