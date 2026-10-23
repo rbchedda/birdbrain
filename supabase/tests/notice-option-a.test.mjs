@@ -59,6 +59,7 @@ describe('notice Option A columns (20261029000000)', () => {
   });
   it('rollback restores the previous shape', async () => {
     await db.query(`delete from public.accepted_terms where notice_version = 'n2'`);
+    await db.exec('create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key, name text);');
     await db.exec(readFileSync(new URL('../rollbacks/20261029000000_notice_option_a.down.sql', import.meta.url), 'utf8'));
     const { rows } = await db.query(
       `select column_name from information_schema.columns where table_name in ('accepted_terms','notice_acknowledgements') and column_name in ('method','platform','notice_version','client_id','dismissed_at')`);
