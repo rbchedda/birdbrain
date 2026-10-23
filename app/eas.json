@@ -1,13 +1,48 @@
 {
-  "cli": { "version": ">= 16.0.0", "appVersionSource": "remote" },
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
   "build": {
-    "base": { "node": "22.12.0", "env": { "EXPO_PUBLIC_FLAG_APPLE_SIGN_IN": "0" } },
-    "development": { "extends": "base", "env": { "EXPO_PUBLIC_FLAG_APPLE_SIGN_IN": "0", "EXPO_PUBLIC_PURCHASES_PROVIDER": "mock" }, "developmentClient": true, "distribution": "internal", "ios": { "simulator": true } },
-    "preview": { "extends": "base", "env": { "EXPO_PUBLIC_FLAG_APPLE_SIGN_IN": "0", "EXPO_PUBLIC_PURCHASES_PROVIDER": "mock" }, "distribution": "internal", "android": { "buildType": "apk" } },
+    "base": {
+      "node": "22.12.0",
+      "env": {
+        "EXPO_PUBLIC_FLAG_APPLE_SIGN_IN": "0"
+      },
+      "channel": "base"
+    },
+    "development": {
+      "extends": "base",
+      "env": {
+        "EXPO_PUBLIC_FLAG_APPLE_SIGN_IN": "0",
+        "EXPO_PUBLIC_PURCHASES_PROVIDER": "mock"
+      },
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "channel": "development"
+    },
+    "preview": {
+      "extends": "base",
+      "env": {
+        "EXPO_PUBLIC_FLAG_APPLE_SIGN_IN": "0",
+        "EXPO_PUBLIC_PURCHASES_PROVIDER": "mock"
+      },
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "channel": "preview"
+    },
     "production": {
       "extends": "base",
-      "autoIncrement": true
+      "autoIncrement": true,
+      "channel": "production"
     }
   },
-  "submit": { "production": {} }
+  "submit": {
+    "production": {}
+  }
 }

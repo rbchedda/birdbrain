@@ -1,8 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { SignInPrompt } from '@/components/SignInPrompt';
+import { UsernameForm } from '@/components/UsernameForm';
 import { Button } from '@/components/ui';
 import { HuntLogList, SectionRow, StatTiles, badgesSummary, dogsSummary, lifeSummary, useProfileData } from '@/components/profile';
 import { backend } from '@/data';
@@ -33,6 +35,7 @@ export default function ProfileScreen() {
   const signedOut = backend.mode === 'supabase' && !session;
   const name = profile.data ? displayName(profile.data) : 'Profile';
   const county = homeCountyLabel(profile.data);
+  const [editingUsername, setEditingUsername] = useState(false);
 
   return (
     <View style={styles.root}>
@@ -44,6 +47,11 @@ export default function ProfileScreen() {
           <Text style={styles.name} accessibilityRole="header" numberOfLines={1}>
             {name}
           </Text>
+          {session && profile.data && (
+            <Pressable accessibilityRole="button" onPress={() => setEditingUsername((v) => !v)}>
+              <Text style={styles.link}>{profile.data.username ? `@${profile.data.username} · Edit username` : 'Choose a username'}</Text>
+            </Pressable>
+          )}
           {county && (
             <Text style={styles.sub} testID="home-county">
               {county}
@@ -57,7 +65,18 @@ export default function ProfileScreen() {
           <Ionicons name="settings-outline" size={24} color={colors.text} />
         </Pressable>
       </View>
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+        {editingUsername && profile.data && (
+          <UsernameForm
+            initial={profile.data.username ?? ''}
+            onSaved={() => {
+              setEditingUsername(false);
+              profile.reload();
+            }}
+            onSkip={() => setEditingUsername(false)}
+            skipLabel="Cancel"
+          />
+        )}
         {session === null && <SignInPrompt why="Save your hunts so they’re never lost if you switch phones. Sign in to keep your private Hunt Log backed up to your account." />}
         <Pressable accessibilityRole="button" accessibilityHint="Opens season stats" onPress={() => router.push('/profile/stats')}>
           <StatTiles

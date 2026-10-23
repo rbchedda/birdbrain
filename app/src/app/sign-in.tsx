@@ -10,6 +10,7 @@ import { backend } from '@/data';
 import { reportSignal } from '@/lib/connectivity';
 import { copy, isNetworkError, pendingHunts, setFlags, signInDidNotFinish } from '@/lib/fieldDraft';
 import { syncConsentOnSignIn } from '@/lib/termsConsent';
+import { needsUsername } from '@/lib/username';
 import { colors, space } from '@/theme/tokens';
 
 export default function SignInScreen() {
@@ -30,10 +31,16 @@ export default function SignInScreen() {
     },
     [],
   );
-  const done = () => {
+  const done = (chooseUsername = false) => {
     finished.current = true;
     void setFlags({ signInFailed: false, confirmPending: false }).catch(() => undefined);
+    // Replace (not push) so leaving the username step returns to any pending first-save flow.
+    if (chooseUsername) return router.replace('/username');
     return router.canGoBack() ? router.back() : router.replace('/feed');
+  };
+  const checkUsername = async () => {
+    const s = await backend.getSession().catch(() => null);
+    return needsUsername(s?.userId);
   };
 
   const submit = async () => {
@@ -43,7 +50,10 @@ export default function SignInScreen() {
       if (mode === 'in') {
         await backend.signIn(email.trim(), password);
         await syncConsentOnSignIn().catch(() => undefined);
-        done();
+        // Show that it worked before leaving, so sign-in never looks like 'nothing happened'.
+        setMessage({ tone: 'success', text: `Signed in as ${email.trim()}. Saved hunts will sync.` });
+        const choose = await checkUsername();
+        setTimeout(() => done(choose), 1200);
       } else {
         const { needsConfirmation } = await backend.signUp(email.trim(), password);
         if (needsConfirmation) {
@@ -55,7 +65,7 @@ export default function SignInScreen() {
         }
         else {
           await syncConsentOnSignIn().catch(() => undefined);
-          done();
+          done(await checkUsername());
         }
       }
     } catch (e) {
@@ -64,7 +74,7 @@ export default function SignInScreen() {
         // Spec 03: no error state; the hunt waits and the chip turns orange when signal returns.
         reportSignal(false);
         setMessage({ tone: 'info', text: pending ? copy.savedOffline : 'No signal. Try again when you have service.' });
-      } else setMessage({ tone: 'error', text: (e as Error).message });
+      } else setMessage({ tone: 'error', text: (e as Error)?.message || 'Sign-in didn’t work. Please try again.' });
       if (pending) await setFlags({ signInFailed: true }).catch(() => undefined);
     } finally {
       setBusy(null);

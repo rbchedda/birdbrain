@@ -46,7 +46,14 @@ function checkCrew<T>(res: { data: T; error: { message: string } | null }): T {
 }
 
 function checkAuth(res: { error: { message: string } | null }) {
-  if (res.error) throw new Error(res.error.message);
+  if (res.error) throw new Error(friendlyAuthError(res.error.message));
+}
+
+export function friendlyAuthError(msg: string): string {
+  if (/email not confirmed/i.test(msg)) return 'Your email isn’t confirmed yet. Tap the link in the confirmation email, then sign in here.';
+  if (/invalid login credentials/i.test(msg)) return 'That email and password don’t match. Check them and try again.';
+  if (/already registered/i.test(msg)) return 'You already have an account with that email. Sign in instead.';
+  return msg || 'Sign-in didn’t work. Please try again.';
 }
 
 function toCounts(v: unknown): BirdCounts | null {

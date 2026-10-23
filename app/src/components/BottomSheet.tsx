@@ -1,57 +1,66 @@
-import { type ReactNode, useEffect, useMemo, useRef } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, PanResponder, Pressable, StyleSheet, View } from 'react-native';
 
 import { colors, radius, touchTarget } from '@/theme/tokens';
 
 /**
- * Minimal two-stop bottom sheet (peek / expanded). Drag the handle or tap it to
- * toggle. Kept dependency-free for now; swap for @gorhom/bottom-sheet if we
- * need nested scrolling or more snap points.
+ * Dependency-free bottom sheet with up to three stops: peek, mid (`expanded`) and
+ * optional full (`fullHeight`). Drag the handle or tap it (tap toggles peek/mid).
+ * The parent owns peek vs. open; the sheet owns mid vs. full.
  */
 export function BottomSheet({
   expanded,
   onExpandedChange,
   peekHeight,
   expandedHeight,
+  fullHeight,
   children,
 }: {
   expanded: boolean;
   onExpandedChange: (expanded: boolean) => void;
   peekHeight: number;
   expandedHeight: number;
+  fullHeight?: number;
   children: ReactNode;
 }) {
-  const travel = expandedHeight - peekHeight;
-  const offset = useRef(new Animated.Value(expanded ? 0 : travel)).current;
+  const fullH = Math.max(expandedHeight, fullHeight ?? expandedHeight);
+  const hasFull = fullH > expandedHeight + 1;
+  const [full, setFull] = useState(false);
+  useEffect(() => {
+    if (!expanded) setFull(false);
+  }, [expanded]);
+  const stop = !expanded ? fullH - peekHeight : full && hasFull ? 0 : fullH - expandedHeight;
+  const maxOffset = fullH - peekHeight;
+  const offset = useRef(new Animated.Value(stop)).current;
 
   useEffect(() => {
-    Animated.spring(offset, { toValue: expanded ? 0 : travel, useNativeDriver: true, bounciness: 2 }).start();
-  }, [expanded, travel, offset]);
+    Animated.spring(offset, { toValue: stop, useNativeDriver: true, bounciness: 2 }).start();
+  }, [stop, offset]);
 
   const pan = useMemo(
     () =>
       PanResponder.create({
         onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 6,
         onPanResponderMove: (_, g) => {
-          const base = expanded ? 0 : travel;
-          offset.setValue(Math.min(travel, Math.max(0, base + g.dy)));
+          offset.setValue(Math.min(maxOffset, Math.max(0, stop + g.dy)));
         },
         onPanResponderRelease: (_, g) => {
-          const next = g.dy < -40 || g.vy < -0.5 ? true : g.dy > 40 || g.vy > 0.5 ? false : expanded;
-          if (next === expanded) {
-            Animated.spring(offset, { toValue: expanded ? 0 : travel, useNativeDriver: true }).start();
-          } else {
-            onExpandedChange(next);
-          }
+          const up = g.dy < -40 || g.vy < -0.5;
+          const down = g.dy > 40 || g.vy > 0.5;
+          if (up && !expanded) onExpandedChange(true);
+          else if (up && expanded && hasFull && !full) setFull(true);
+          else if (down && full) setFull(false);
+          else if (down && expanded) onExpandedChange(false);
+          else Animated.spring(offset, { toValue: stop, useNativeDriver: true }).start();
         },
       }),
-    [expanded, travel, offset, onExpandedChange],
+    [expanded, full, hasFull, stop, maxOffset, offset, onExpandedChange],
   );
 
   return (
     <Animated.View
       testID="bottom-sheet"
-      style={[styles.sheet, { height: expandedHeight, transform: [{ translateY: offset }] }]}
+      style={[styles.sheet, { height: fullH, transform: [{ translateY: offset }] }]}
     >
       <View {...pan.panHandlers}>
         <Pressable

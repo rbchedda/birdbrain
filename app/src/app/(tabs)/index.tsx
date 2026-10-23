@@ -287,6 +287,7 @@ export default function MapScreen() {
         onExpandedChange={setExpanded}
         peekHeight={selected || planner || park ? PEEK : PEEK_EMPTY}
         expandedHeight={sheetHeight(screenH, topH, height)}
+        fullHeight={fullSheetHeight(screenH, topH, height)}
       >
         {park && !selected ? (
           <StateParkSheet park={park} onClose={() => setParkId(undefined)} />
@@ -376,6 +377,11 @@ export function knownHours(today: PlaceToday) {
 /** Locate button's bottom: above the sheet peek, or stacked above the pending chip when it shows. */
 export function locateBottom(peek: number, chipShown: boolean) {
   return chipShown ? peek + space.sm + PENDING_CHIP_HEIGHT + space.sm : peek + space.lg;
+}
+
+/** Top stop: 75% of the window, but never over the search bar and trespass banner. */
+export function fullSheetHeight(screenH: number, topH: number, windowH: number) {
+  return Math.max(sheetHeight(screenH, topH, windowH), Math.min(windowH * 0.75, screenH - topH));
 }
 
 export function sheetHeight(screenH: number, topH: number, windowH: number) {
