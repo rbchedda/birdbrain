@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { SignInPrompt } from '@/components/SignInPrompt';
+import { PlansSection } from '@/components/spot/PlansSection';
 import { UsernameForm } from '@/components/UsernameForm';
 import { Button } from '@/components/ui';
 import { HuntLogList, SectionRow, StatTiles, badgesSummary, dogsSummary, lifeSummary, useProfileData } from '@/components/profile';
@@ -99,6 +100,8 @@ export default function ProfileScreen() {
         </View>
         <HuntLogList entries={p.entries} signedOut={signedOut} limit={2} />
         {p.entries.length === 0 && <Button label="Log a hunt" icon="add" variant="primary" onPress={() => router.push('/new/log')} />}
+
+        {session && <PlansSection owner={session.userId} />}
 
         <View style={{ gap: space.sm, marginTop: space.md }}>
           <SectionRow title="🏅 Trophies & badges" summary={badgesSummary(p.badges)} href="/profile/trophies" />
