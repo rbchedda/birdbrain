@@ -20,7 +20,7 @@ create function auth.jwt() returns jsonb language sql stable as $$
   select coalesce(nullif(current_setting('request.jwt.claims', true), '')::jsonb, '{}'::jsonb)
 $$;
 
-create table storage.buckets (id text primary key, name text not null, public boolean default false);
+create table storage.buckets (id text primary key, name text not null, public boolean default false, file_size_limit bigint, allowed_mime_types text[]);
 create table storage.objects (
   id uuid primary key default gen_random_uuid(),
   bucket_id text references storage.buckets (id),
@@ -38,3 +38,7 @@ $$;
 alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
 alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
 alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+
+
+-- Hosted Supabase has pgcrypto in schema extensions (gen_random_bytes, hmac).
+create extension if not exists pgcrypto with schema extensions;

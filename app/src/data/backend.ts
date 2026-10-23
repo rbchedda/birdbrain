@@ -67,6 +67,14 @@ export interface TermsAcceptance {
   termsVersion: string;
 }
 
+/** One map-notice dismissal, as logged to notice_acknowledgements (kind 'notice_dismiss'). */
+export interface NoticeDismissal {
+  noticeVersion: string;
+  appVersion: string;
+  /** How it was dismissed (spec Option A): the banner close button or "Got it". */
+  method?: 'close' | 'got_it';
+}
+
 export interface HuntLogUpsertResult {
   version: number;
   /** The server copy changed since baseVersion; nothing was written. */
@@ -115,6 +123,8 @@ export interface Backend {
   acceptRules(): Promise<void>;
   /** Log a ToS/onboarding acceptance to accepted_terms (owner-only). Re-sending the same terms version is a no-op. */
   recordTermsAcceptance(a: TermsAcceptance): Promise<void>;
+  /** Log a deliberate map-notice dismissal for the signed-in account (notice_acknowledgements). */
+  recordNoticeDismissal(a: NoticeDismissal): Promise<void>;
 
   groups(): Promise<Group[]>;
   setMember(groupId: string, member: boolean): Promise<void>;

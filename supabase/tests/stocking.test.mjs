@@ -37,13 +37,13 @@ describe('stocking allocation tables', () => {
       as(db, 'authenticated', alice, (tx) =>
         tx.query(`insert into public.stocking_properties (season, region, county, name, source)
                   values ('2026-27', 'Northcentral', 'Centre', 'My secret spot', 'x')`)),
-      /row-level security/,
+      /row-level security|permission denied/,
     );
-    const updated = await as(db, 'authenticated', alice, (tx) =>
-      tx.query(`update public.stocking_events set cocks = 9999 returning id`));
-    assert.equal(updated.rows.length, 0);
-    const deleted = await as(db, 'anon', null, (tx) => tx.query('delete from public.stocking_events returning id'));
-    assert.equal(deleted.rows.length, 0);
+    // Either RLS filters every row or the grant is revoked outright; both mean no write.
+    const noRows = (p) => p.then((r) => r.rows.length, (e) => (/permission denied/.test(e.message) ? 0 : Promise.reject(e)));
+    assert.equal(await noRows(as(db, 'authenticated', alice, (tx) =>
+      tx.query(`update public.stocking_events set cocks = 9999 returning id`))), 0);
+    assert.equal(await noRows(as(db, 'anon', null, (tx) => tx.query('delete from public.stocking_events returning id'))), 0);
   });
 
   it('rejects malformed rows', async () => {

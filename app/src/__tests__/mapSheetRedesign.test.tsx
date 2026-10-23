@@ -46,9 +46,10 @@ describe('legal hours', () => {
 
 describe('sheet never covers the banner block', () => {
   it('caps the expanded height to leave map below the banner', () => {
-    expect(sheetHeight(844, 200, 844)).toBeCloseTo(557.04);
-    expect(sheetHeight(844, 420, 844)).toBe(844 - 420 - 72);
-    expect(sheetHeight(1200, 100, 1200)).toBe(560);
+    // Spec (Oct 23): HALF = 50% of the space above the tab bar, never over the banner block.
+    expect(sheetHeight(844, 200)).toBe(422);
+    expect(sheetHeight(844, 520)).toBe(844 - 520 - 8);
+    expect(sheetHeight(1200, 100)).toBe(600);
   });
 });
 
@@ -62,6 +63,8 @@ describe('map screen', () => {
     expect(screen.queryByLabelText('State Game Lands (sample A)')).toBeNull();
     await fireEvent.press(screen.getByLabelText('Expand details'));
     expect(screen.getByLabelText('State Game Lands (sample A)')).toBeTruthy();
+    // Handle tap cycles PEEK -> HALF -> FULL -> PEEK (spec, Oct 23).
+    await fireEvent.press(screen.getByLabelText('Expand details'));
     await fireEvent.press(screen.getByLabelText('Collapse details'));
     expect(screen.queryByLabelText('State Game Lands (sample A)')).toBeNull();
     await fireEvent.changeText(screen.getByLabelText('Search places'), 'sample C');
@@ -77,11 +80,9 @@ describe('map screen', () => {
     await fireEvent.press(screen.getByLabelText('Expand details'));
     await fireEvent.press(screen.getByLabelText('Pheasant stocking (sample B)'));
     await screen.findByLabelText('Back to list');
-    const toggle = screen.queryByLabelText('Collapse details');
-    if (toggle) {
-      expect(screen.getByTestId('release-card')).toBeTruthy();
-      await fireEvent.press(toggle);
-    }
+    expect(screen.getByTestId('release-card')).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText('Expand details'));
+    await fireEvent.press(screen.getByLabelText('Collapse details'));
     expect(screen.queryByTestId('release-card')).toBeNull();
     await fireEvent.press(screen.getByLabelText('Expand details'));
     expect(screen.getByTestId('release-card')).toBeTruthy();

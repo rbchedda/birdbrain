@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { placeToday } from '@/data/seasons';
+import { pointInGeometry } from '@/lib/geo';
 import { stateParksGeoJSON } from '@/data/stateParks';
 
 import type { PlaceMapProps } from './types';
@@ -10,6 +11,7 @@ type Inbound =
   | { type: 'ready' }
   | { type: 'select'; id: string | null }
   | { type: 'selectPark'; id: string }
+  | { type: 'emptyTap'; lngLat?: unknown }
   | { type: 'error'; message: string }
   | { type: 'tile'; id: number; url: string };
 
@@ -18,7 +20,7 @@ type Inbound =
  * page; the returned `receive` handles messages coming back.
  */
 export function useMapBridge(post: (m: Outbound) => void, props: PlaceMapProps) {
-  const { places, selectedId, outline, basemap, focus, onSelect, onSelectPark, me, offline } = props;
+  const { places, selectedId, outline, basemap, focus, onSelect, onSelectPark, onEmptyTap, me, offline } = props;
   const offlineKey = (offline?.basemaps ?? []).join(',');
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string>();
@@ -75,9 +77,17 @@ export function useMapBridge(post: (m: Outbound) => void, props: PlaceMapProps) 
       } catch {
         return;
       }
+      if (!m || typeof m !== 'object' || typeof m.type !== 'string') return;
       if (m.type === 'ready') setReady(true);
       if (m.type === 'select') onSelect(m.id);
       if (m.type === 'selectPark') onSelectPark?.(m.id);
+      if (m.type === 'emptyTap') {
+        // Inside the selected land's boundary counts as a boundary tap, not empty map.
+        const ll = Array.isArray(m.lngLat) && m.lngLat.length === 2 && m.lngLat.every((n) => typeof n === 'number' && Number.isFinite(n)) ? (m.lngLat as [number, number]) : null;
+        if (ll && outline && pointInGeometry(ll[0], ll[1], outline)) return;
+        if (onEmptyTap) onEmptyTap();
+        else onSelect(null);
+      }
       if (m.type === 'error') setError(m.message);
       if (m.type === 'tile') {
         const get = offline?.getTile ?? (async () => null);
@@ -87,7 +97,7 @@ export function useMapBridge(post: (m: Outbound) => void, props: PlaceMapProps) 
         );
       }
     },
-    [onSelect, onSelectPark, offline, post],
+    [onSelect, onSelectPark, onEmptyTap, outline, offline, post],
   );
 
   return { receive, error, ready };

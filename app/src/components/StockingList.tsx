@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { useBottomSheetScroll } from '@/components/BottomSheet';
 import { Tag } from '@/components/Tag';
 import { Gated, useEntitlements } from '@/entitlements';
 import { Chip, ui } from '@/components/ui';
@@ -44,6 +45,7 @@ export function StockingList({
   now?: Date;
   onPick: (place: Place) => void;
 }) {
+  const sheetScroll = useBottomSheetScroll();
   const today = todayET(now);
   const { canUse } = useEntitlements();
   const fullCalendar = canUse('stockingCalendar');
@@ -60,7 +62,7 @@ export function StockingList({
   const doves = useMemo(() => doveFields(places, origin), [places, origin]);
 
   return (
-    <ScrollView contentContainerStyle={{ gap: space.sm, paddingBottom: space.xl }} testID="stocking-list">
+    <ScrollView contentContainerStyle={{ gap: space.sm, paddingBottom: space.xl }} testID="stocking-list" {...sheetScroll}>
       <Text style={styles.disclaimer} testID="stocking-disclaimer">
         Unofficial summary. PGC publishes a shipping week per county, not exact days or spots. Always verify with PGC.
       </Text>

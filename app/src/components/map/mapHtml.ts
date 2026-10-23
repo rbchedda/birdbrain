@@ -303,7 +303,10 @@ ${terrain ? `<script>${pmtilesJs}</script>\n<script>${contourJs}</script>` : ''}
       if (hits.length) return send({ type: 'select', id: hits[0].properties.id });
       var parks = map.queryRenderedFeatures(p, { layers: ['parks-fill'] });
       if (parks.length) return send({ type: 'selectPark', id: parks[0].properties.id });
-      send({ type: 'select', id: null });
+      // Any other boundary (selected outline) also counts as a hit; only truly empty map closes things.
+      var lines = map.getStyle().layers.filter(function (l) { return l.id.indexOf('outline') === 0; }).map(function (l) { return l.id; });
+      if (lines.length && map.queryRenderedFeatures(p, { layers: lines }).length) return;
+      send({ type: 'emptyTap', lngLat: [e.lngLat.lng, e.lngLat.lat] });
     });
     map.on('mousemove', function (e) {
       var hits = map.queryRenderedFeatures(e.point, { layers: ['places-circle'] });

@@ -1,9 +1,10 @@
 import { PENDING_CHIP_HEIGHT, PendingChip, usePendingChipShown } from '@/components/FieldSync';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
+  Keyboard,
   Linking,
   Platform,
   Pressable,
@@ -17,7 +18,7 @@ import {
 import { readJson, writeJson } from '@/lib/localStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { BottomSheet } from '@/components/BottomSheet';
+import { BottomSheet, useBottomSheetScroll } from '@/components/BottomSheet';
 import { LocateButton } from '@/components/map/LocateButton';
 import { PlaceMap } from '@/components/map/PlaceMap';
 import { StateParkSheet } from '@/components/StateParkSheet';
@@ -37,6 +38,7 @@ import {
   layerDateFor,
   MAP_BANNER,
   MAP_BANNER_SHORT,
+  PEEK_SURVEY_LINE,
   SEASON_ONLY_NOTE,
   SHEET_HEADING,
   sheetText,
@@ -44,6 +46,7 @@ import {
   STOCKING_PIN_NOTE,
 } from '@/data/mapNotice';
 import { legal } from '@/lib/env';
+import { dismissNoticeFor, isNoticeDismissed, noticeDismissEnabled, noticeUpdatedFor, restoreNoticeFor, type DismissMethod } from '@/lib/noticeDismiss';
 import { useEntitlements } from '@/entitlements';
 import { useOfflineMapSource, withOfflineOutline } from '@/offline';
 import { STOCKING_SOURCE, stockingCountyOf, windowsForCounty } from '@/data/places';
@@ -61,11 +64,12 @@ const filters: { key: PlaceType | 'all'; label: string }[] = [
   { key: 'dove_field', label: 'Dove Fields' },
 ];
 
-const PEEK = 150;
+/** Spec (Oct 23): PEEK 200 pt with a place shown. */
+const PEEK = 200;
 /** Nothing selected: just the handle and the spot count. */
 const PEEK_EMPTY = 84;
-/** Map left visible between the banner block and the expanded sheet. */
-const MAP_GAP = 72;
+/** FULL stops this far below the map notice banner (spec: 8 pt). */
+const FULL_GAP = 8;
 const LIST_LIMIT = 60;
 
 const BASEMAP_KEY = 'birdbrain.basemap.v1';
@@ -97,6 +101,41 @@ export default function MapScreen() {
   const [screenH, setScreenH] = useState(height);
   const [topH, setTopH] = useState(0);
   const session = useSession();
+  // Dismissible notice: flag on AND a real signed-in account (legal conditions 1–5).
+  const dismissFlag = noticeDismissEnabled();
+  const noticeUser = dismissFlag && session && !session.anonymous ? session.userId : null;
+  const [noticeDismissed, setNoticeDismissed] = useState(false);
+  const [noticeUpdated, setNoticeUpdated] = useState(false);
+  useEffect(() => {
+    let live = true;
+    setNoticeDismissed(false);
+    setNoticeUpdated(false);
+    if (noticeUser) {
+      isNoticeDismissed(noticeUser).then((d) => live && setNoticeDismissed(d), () => {});
+      noticeUpdatedFor(noticeUser).then((u) => live && setNoticeUpdated(u), () => {});
+    }
+    return () => {
+      live = false;
+    };
+  }, [noticeUser]);
+  /** Only "Got it" and the close button call this. Signed out: it just collapses the full notice. */
+  const dismissNotice = useCallback(
+    (method: DismissMethod) => {
+      setFullNotice(false);
+      if (!noticeUser) return;
+      dismissNoticeFor(noticeUser, undefined, method).then(
+        (ok) => ok && (setNoticeDismissed(true), setNoticeUpdated(false)),
+        () => {},
+      );
+    },
+    [noticeUser],
+  );
+  /** "Show on map": the banner comes back and the dismissal is cleared. */
+  const restoreNotice = useCallback(() => {
+    setFullNotice(false);
+    setNoticeDismissed(false);
+    restoreNoticeFor(noticeUser).catch(() => {});
+  }, [noticeUser]);
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const refreshSaved = useCallback(() => {
     backend.savedPlaceIds().then(setSavedIds, () => {});
@@ -124,7 +163,16 @@ export default function MapScreen() {
   const onMapSelect = useCallback((id: string | null) => {
     setSelectedId(id ?? undefined);
     setParkId(undefined);
-    if (id) setExpanded(true);
+    // Spec: opening a place shows PEEK; another place keeps the current detent.
+  }, []);
+  /** Tap on empty map: close every open menu/popup and the keyboard, collapse the sheet to peek. */
+  const onEmptyTap = useCallback(() => {
+    Keyboard.dismiss();
+    setSelectedId(undefined);
+    setParkId(undefined);
+    setPlanner(false);
+    setLayersOpen(false);
+    setExpanded(false);
   }, []);
   const onSelectPark = useCallback((id: string) => {
     setSelectedId(undefined);
@@ -176,6 +224,7 @@ export default function MapScreen() {
         onSelect={onMapSelect}
         offline={offline}
         onSelectPark={onSelectPark}
+        onEmptyTap={onEmptyTap}
         me={me}
       />
 
@@ -254,28 +303,70 @@ export default function MapScreen() {
           </View>
         )}
         {/*
-          Legal banner (lawyer-approved one-liner): always rendered, no close control,
-          no "seen" state, no font cap or line clamp. The whole banner (>= 44 pt) toggles
-          the full notice inline; its a11y label is the exact full notice text.
+          Legal banner: the one-liner toggles the full notice inline (a11y label = full text).
+          Flag off (default): always visible, "Got it" only collapses the full notice.
+          Flag on: a permanent (i) button always opens the full notice; signed-in accounts can
+          dismiss the one-liner with the close button or "Got it" (logged, per NOTICE_VERSION).
         */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={MAP_BANNER}
-          accessibilityHint="Double-tap to expand."
-          accessibilityState={{ expanded: fullNotice }}
-          onPress={() => setFullNotice((v) => !v)}
-          style={styles.banner}
-          testID="map-banner"
-        >
-          <Text style={styles.bannerText}>{MAP_BANNER_SHORT}</Text>
-        </Pressable>
+        <View style={styles.bannerRow}>
+          {!noticeDismissed && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={MAP_BANNER}
+              accessibilityHint="Double-tap to expand."
+              accessibilityState={{ expanded: fullNotice }}
+              onPress={() => setFullNotice((v) => !v)}
+              style={[styles.banner, { flex: 1 }]}
+              testID="map-banner"
+            >
+              {noticeUpdated && (
+                <Text style={styles.noticeUpdated} testID="map-notice-updated">
+                  UPDATED NOTICE
+                </Text>
+              )}
+              <Text style={styles.bannerText}>{MAP_BANNER_SHORT}</Text>
+            </Pressable>
+          )}
+          {dismissFlag && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Boundary notice"
+              accessibilityState={{ expanded: fullNotice }}
+              onPress={() => setFullNotice((v) => !v)}
+              hitSlop={8}
+              style={styles.noticeInfo}
+              testID="map-notice-info"
+            >
+              <Ionicons name="information-circle-outline" size={20} color={colors.text} />
+            </Pressable>
+          )}
+          {noticeUser && !noticeDismissed && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Hide boundary notice"
+              onPress={() => dismissNotice('close')}
+              hitSlop={8}
+              style={styles.bannerClose}
+              testID="map-banner-dismiss"
+            >
+              <Ionicons name="close" size={20} color={colors.text} />
+            </Pressable>
+          )}
+        </View>
         {fullNotice && (
           <View style={styles.fullNotice} testID="map-full-notice">
             <Text style={styles.bannerText}>{MAP_BANNER}</Text>
             <Text accessibilityRole="link" style={styles.link} onPress={() => router.push('/data-sources')}>
               View data sources ›
             </Text>
-            <Button label="Got it" variant="primary" onPress={() => setFullNotice(false)} />
+            {noticeUser && noticeDismissed && (
+              <Button label="Show on map" variant="secondary" onPress={restoreNotice} />
+            )}
+            <Button
+              label="Got it"
+              variant="primary"
+              onPress={noticeUser ? () => dismissNotice('got_it') : () => setFullNotice(false)}
+            />
           </View>
         )}
       </View>
@@ -285,6 +376,14 @@ export default function MapScreen() {
       <BottomSheet
         expanded={expanded}
         onExpandedChange={setExpanded}
+        onClose={
+          selected || park
+            ? () => {
+                setSelectedId(undefined);
+                setParkId(undefined);
+              }
+            : undefined
+        }
         peekHeight={selected || planner || park ? PEEK : PEEK_EMPTY}
         expandedHeight={sheetHeight(screenH, topH, height)}
         fullHeight={fullSheetHeight(screenH, topH, height)}
@@ -319,7 +418,7 @@ export default function MapScreen() {
                   ? 'Not connected to a server. Set app/.env.'
                   : 'Data: Pennsylvania Game Commission.'}
             </Text>
-            <FlatList
+            <SheetList
               data={listed}
               keyExtractor={(p) => p.id}
               keyboardShouldPersistTaps="handled"
@@ -337,6 +436,12 @@ export default function MapScreen() {
       </BottomSheet>
     </View>
   );
+}
+
+/** The sheet's list, wired so a pull-down at its top drags the sheet instead of scrolling. */
+function SheetList<T>(props: ComponentProps<typeof FlatList<T>>) {
+  const scroll = useBottomSheetScroll();
+  return <FlatList {...props} {...scroll} />;
 }
 
 function PlaceRow({ place, open, onPress }: { place: Place; open: boolean; onPress: () => void }) {
@@ -379,14 +484,14 @@ export function locateBottom(peek: number, chipShown: boolean) {
   return chipShown ? peek + space.sm + PENDING_CHIP_HEIGHT + space.sm : peek + space.lg;
 }
 
-/** Top stop: 75% of the window, but never over the search bar and trespass banner. */
-export function fullSheetHeight(screenH: number, topH: number, windowH: number) {
-  return Math.max(sheetHeight(screenH, topH, windowH), Math.min(windowH * 0.75, screenH - topH));
+/** FULL: top edge 8 pt below the banner block, so it never covers search or the notice. */
+export function fullSheetHeight(screenH: number, topH: number, _windowH?: number) {
+  return Math.max(sheetHeight(screenH, topH), screenH - topH - FULL_GAP);
 }
 
-export function sheetHeight(screenH: number, topH: number, windowH: number) {
-  const room = screenH - topH - MAP_GAP;
-  return Math.max(PEEK, Math.min(560, windowH * 0.66, room));
+/** HALF: 50% of the space above the tab bar, never over the banner block. */
+export function sheetHeight(screenH: number, topH: number, _windowH?: number) {
+  return Math.max(PEEK, Math.min(screenH * 0.5, screenH - topH - FULL_GAP));
 }
 
 /** "Pheasant open" when exactly one species is in season here today, else "Season open today". */
@@ -409,6 +514,7 @@ function PlaceDetails({
   onSavedChange?: () => void;
 }) {
   const session = useSession();
+  const sheetScroll = useBottomSheetScroll();
   // County release weeks from the PGC allocation seed; PGC doesn't publish per-property dates.
   const stockingCounty = stockingCountyOf(place);
   const stocking = place.type === 'stocking' ? windowsForCounty(stockingCounty) : [];
@@ -455,7 +561,7 @@ function PlaceDetails({
   const speciesHours = knownHours(today);
 
   return (
-    <ScrollView contentContainerStyle={{ gap: space.md, paddingBottom: space.xl }}>
+    <ScrollView contentContainerStyle={{ gap: space.md, paddingBottom: space.xl }} {...sheetScroll}>
       {/* Peek: identity, access, two stats, actions and the full legal notice. */}
       <View style={styles.headerRow}>
         <View style={{ flex: 1, gap: 2 }}>
@@ -530,7 +636,8 @@ function PlaceDetails({
           {MAP_BANNER}
         </Text>
         <Text style={styles.noticeText}>
-          <Text style={{ fontFamily: fonts.bodySemi }}>{SHEET_HEADING}</Text> {sheetText(layerDate)}
+          <Text style={{ fontFamily: fonts.bodySemi }}>{SHEET_HEADING}</Text>
+          {noticeDismissEnabled() ? ` ${PEEK_SURVEY_LINE}` : ''} {sheetText(layerDate)}
           {place.type === 'stocking' ? ` ${STOCKING_LINE}` : ''}
           {place.type === 'dove_field' ? ` ${DOVE_LINE}` : ''}
         </Text>
@@ -704,6 +811,29 @@ const styles = StyleSheet.create({
   statusSpecies: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text, width: 76 },
   fine: { fontFamily: fonts.body, fontSize: 12, lineHeight: 17, color: colors.muted },
   actions: { flexDirection: 'row', gap: space.sm },
+  bannerRow: { flexDirection: 'row', gap: space.xs, alignItems: 'stretch' },
+  bannerClose: {
+    width: touchTarget,
+    minHeight: touchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  noticeUpdated: { color: colors.accent, fontFamily: fonts.bodySemi, fontSize: 12, letterSpacing: 0.5 },
+  noticeInfo: {
+    alignSelf: 'flex-end',
+    width: touchTarget,
+    height: touchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: touchTarget / 2,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   banner: {
     minHeight: touchTarget,
     flexDirection: 'row',

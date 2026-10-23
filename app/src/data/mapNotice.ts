@@ -6,7 +6,19 @@
 import hours from './huntingHours.json';
 import type { DataSource, PlaceType } from './types';
 
-/** §1: map banner. Always visible, not dismissible; tap opens the full notice. */
+/**
+ * Version of the map notice wording. Bump it whenever MAP_BANNER / MAP_BANNER_SHORT
+ * change: a dismissed banner comes back for every account (legal condition 5).
+ */
+export const NOTICE_VERSION = '2026-10-22';
+
+/**
+ * Line required in the same line as "Check before you hunt." when the notice is
+ * dismissible (legal condition 7, Oct 23 2026). Verbatim.
+ */
+export const PEEK_SURVEY_LINE = 'Boundaries approximate, not a survey. Permission required on private land.';
+
+/** §1: map banner. Always visible (dismissible only behind EXPO_PUBLIC_FLAG_NOTICE_DISMISS); tap opens the full notice. */
 export const MAP_BANNER =
   'Boundaries are approximate, not a survey. Shows public land (including state parks, where hunting is allowed only in designated areas) and PGC access-program land. Get permission before entering any other private land.';
 
