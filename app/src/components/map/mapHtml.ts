@@ -1,6 +1,10 @@
 import { colors } from '@/theme/tokens';
 
-import { pinColor } from './types';
+import { AWS_TERRARIUM, CONTOUR_THRESHOLDS_FT, DEM_ATTRIBUTION, DEM_MAXZOOM, mapAssets, type MapAssets } from '@/lib/mapConfig';
+
+import { selectedOutlineLayers, terrainLayers } from './terrainStyle';
+import { pinColor, terrainBasemapEnabled } from './types';
+import { contourJs, pmtilesJs } from './vendor/terrainLibs';
 // UMD build with an inline worker, bundled into the page (no CDN at runtime), so it
 // runs from an about:blank WebView/iframe. Regenerate with app/scripts/vendor-maplibre.mjs.
 import { maplibreCss, maplibreJs } from './vendor/maplibreGl';
@@ -30,7 +34,26 @@ export const offlineLayers = {
   satellite: { maxzoom: 15, network: `${USGS}/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}` },
 } as const;
 
-export const mapHtml = `<!doctype html>
+/**
+ * Terrain config for the page. Remote assets (EXPO_PUBLIC_MAP_ASSETS_URL) win; otherwise
+ * the bundled French Creek extract plus AWS DEM. Loaded lazily so tests that never build
+ * the page don't pay for the 7 MB bundle.
+ */
+function terrainConfig(enabled: boolean, assets: MapAssets | null) {
+  if (!enabled) return { terrain: null, bundle: null };
+  const base = { layers: terrainLayers(), thresholds: CONTOUR_THRESHOLDS_FT, demMaxzoom: DEM_MAXZOOM, demAttribution: DEM_ATTRIBUTION };
+  if (assets) return { terrain: { ...base, pmtiles: `pmtiles://${assets.pmtiles}`, dem: assets.dem, glyphs: assets.glyphs }, bundle: null };
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { frenchCreekTerrain } = require('./frenchCreekTerrain') as typeof import('./frenchCreekTerrain');
+  return {
+    terrain: { ...base, pmtiles: 'pmtiles://frenchcreek', dem: AWS_TERRARIUM, glyphs: 'bbglyph://{fontstack}/{range}' },
+    bundle: frenchCreekTerrain,
+  };
+}
+
+export function buildMapHtml(opts: { terrain?: boolean; assets?: MapAssets | null } = {}) {
+  const { terrain, bundle } = terrainConfig(opts.terrain ?? terrainBasemapEnabled, opts.assets === undefined ? mapAssets : opts.assets);
+  return `<!doctype html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -44,6 +67,7 @@ export const mapHtml = `<!doctype html>
 <body>
 <div id="map"></div>
 <script>${maplibreJs}</script>
+${terrain ? `<script>${pmtilesJs}</script>\n<script>${contourJs}</script>` : ''}
 <script>
 (function () {
   function send(m) {
@@ -87,6 +111,67 @@ export const mapHtml = `<!doctype html>
       send({ type: 'tile', id: id, url: params.url });
     });
   });
+  // Terrain (green/orange): Protomaps vectors + Terrarium DEM (tint, hillshade, maplibre-contour).
+  // No backslashes in this block: it runs inside a template literal.
+  var TERRAIN = ${JSON.stringify(terrain)};
+  var BUNDLE = ${JSON.stringify(bundle)};
+  var terrainOk = false, demSource = null;
+  try {
+    if (TERRAIN && window.pmtiles && window.mlcontour) {
+      var proto = new pmtiles.Protocol();
+      if (BUNDLE) {
+        // French Creek extract in memory: decoded on first read, served by byte range.
+        var pmBytes = null;
+        proto.add(new pmtiles.PMTiles({
+          getKey: function () { return 'frenchcreek'; },
+          getBytes: function (off, len) {
+            if (!pmBytes) pmBytes = new Uint8Array(b64ToBuffer(BUNDLE.pmtiles));
+            return Promise.resolve({ data: pmBytes.slice(off, off + len).buffer });
+          }
+        }));
+        // Bundled DEM tiles answer the AWS URL first (works offline); others go to the network.
+        var realFetch = window.fetch.bind(window);
+        var DEM_RE = /elevation-tiles-prod[/]terrarium[/]([0-9]+)[/]([0-9]+)[/]([0-9]+)[.]png$/;
+        window.fetch = function (input, init) {
+          var u = typeof input === 'string' ? input : (input && input.url) || '';
+          var m = DEM_RE.exec(u);
+          var hit = m && BUNDLE.dem[m[1] + '/' + m[2] + '/' + m[3]];
+          if (hit) return Promise.resolve(new Response(new Blob([b64ToBuffer(hit)], { type: 'image/png' })));
+          return realFetch(input, init);
+        };
+        maplibregl.addProtocol('bbglyph', function (params) {
+          var m = /^bbglyph:[/][/](.+)[/]([0-9]+-[0-9]+)$/.exec(params.url);
+          var g = m && BUNDLE.glyphs[decodeURIComponent(m[1]) + '/' + m[2]];
+          // Unknown ranges get an empty glyph set (valid PBF) rather than an error.
+          return Promise.resolve({ data: g ? b64ToBuffer(g) : new ArrayBuffer(0) });
+        });
+      }
+      maplibregl.addProtocol('pmtiles', proto.tile);
+      // worker: false so DEM fetches go through the page's fetch (bundled tiles above).
+      demSource = new mlcontour.DemSource({ url: TERRAIN.dem, encoding: 'terrarium', maxzoom: TERRAIN.demMaxzoom, worker: false });
+      demSource.setupMaplibre(maplibregl);
+      GROUPS.terrain = TERRAIN.layers.map(function (l) { return l.id; });
+      terrainOk = true;
+    }
+  } catch (e) {
+    terrainOk = false;
+  }
+  function addTerrain() {
+    if (!terrainOk) return;
+    try {
+      map.addSource('dem', { type: 'raster-dem', encoding: 'terrarium', tileSize: 256, maxzoom: TERRAIN.demMaxzoom,
+        tiles: [demSource.sharedDemProtocolUrl], attribution: TERRAIN.demAttribution });
+      map.addSource('contours', { type: 'vector', maxzoom: 15, tiles: [demSource.contourProtocolUrl({
+        multiplier: 3.28084, overzoom: 1, thresholds: TERRAIN.thresholds,
+        elevationKey: 'ele', levelKey: 'level', contourLayer: 'contours' })] });
+      map.addSource('protomaps', { type: 'vector', url: TERRAIN.pmtiles,
+        attribution: '\u00a9 OpenStreetMap contributors \u00b7 Protomaps' });
+      TERRAIN.layers.forEach(function (l) { map.addLayer(l); });
+    } catch (e) {
+      GROUPS.terrain = [];
+      terrainOk = false;
+    }
+  }
   function showBasemap(name) {
     current = name;
     Object.keys(GROUPS).forEach(function (g) {
@@ -107,6 +192,7 @@ export const mapHtml = `<!doctype html>
     attributionControl: { compact: true },
     style: {
       version: 8,
+      glyphs: TERRAIN ? TERRAIN.glyphs : undefined,
       sources: {
         topo: { type: 'raster', tileSize: 256, maxzoom: 16,
           tiles: ['${USGS}/USGSTopo/MapServer/tile/{z}/{y}/{x}'],
@@ -184,6 +270,8 @@ export const mapHtml = `<!doctype html>
   });
 
   map.on('load', function () {
+    // Terrain group first so every overlay draws above it. Hidden until chosen.
+    addTerrain();
     map.addSource('places', { type: 'geojson', data: empty });
     map.addSource('outline', { type: 'geojson', data: empty });
     // State parks (DCNR): own source and style. Blue dashed outline with a near-clear fill
@@ -192,8 +280,8 @@ export const mapHtml = `<!doctype html>
     map.addLayer({ id: 'parks-fill', type: 'fill', source: 'parks', paint: { 'fill-color': '${colors.park}', 'fill-opacity': 0.04 } });
     map.addLayer({ id: 'parks-line', type: 'line', source: 'parks',
       paint: { 'line-color': '${colors.park}', 'line-width': 2, 'line-dasharray': [3, 2] } });
-    map.addLayer({ id: 'outline-fill', type: 'fill', source: 'outline', paint: { 'fill-color': '${colors.accent}', 'fill-opacity': 0.15 } });
-    map.addLayer({ id: 'outline-line', type: 'line', source: 'outline', paint: { 'line-color': '${colors.accent}', 'line-width': 2 } });
+    // Selected place: orange line over a dark casing, no fill (RBChedda, Oct 22).
+    ${JSON.stringify(selectedOutlineLayers())}.forEach(function (l) { map.addLayer(l); });
     map.addLayer({ id: 'places-selected', type: 'circle', source: 'places', filter: ['==', ['get', 'id'], ''],
       paint: { 'circle-radius': 14, 'circle-color': 'rgba(0,0,0,0)', 'circle-stroke-width': 3, 'circle-stroke-color': '${colors.text}' } });
     map.addLayer({ id: 'places-circle', type: 'circle', source: 'places', paint: {
@@ -222,9 +310,12 @@ export const mapHtml = `<!doctype html>
     });
     loaded = true;
     queue.splice(0).forEach(apply);
-    send({ type: 'ready' });
+    send({ type: 'ready', terrain: terrainOk });
   });
 })();
 </script>
 </body>
 </html>`;
+}
+
+export const mapHtml = buildMapHtml();

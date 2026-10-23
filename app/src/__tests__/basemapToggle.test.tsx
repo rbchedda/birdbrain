@@ -7,16 +7,18 @@ jest.mock('react-native-safe-area-context', () => {
 });
 
 describe('Map screen layers panel', () => {
-  it('shows Standard and Satellite, not Terrain', async () => {
+  it('shows Standard, Satellite and Terrain', async () => {
     await renderRouter('./src/app', { initialUrl: '/' });
     await fireEvent.press(await screen.findByTestId('layers-button'));
     expect(await screen.findByText('Standard')).toBeTruthy();
     expect(screen.getByText('Satellite')).toBeTruthy();
-    expect(screen.queryByText('Terrain')).toBeNull();
+    expect(screen.getByText('Terrain')).toBeTruthy();
     expect(screen.queryByText('Topo')).toBeNull();
     expect(screen.getByRole('button', { name: /Standard/ })).toHaveProp('accessibilityState', { selected: true });
     await fireEvent.press(screen.getByRole('button', { name: /Satellite/ }));
     expect(screen.getByRole('button', { name: /Satellite/ })).toHaveProp('accessibilityState', { selected: true });
     expect(screen.getByRole('button', { name: /Standard/ })).toHaveProp('accessibilityState', { selected: false });
+    await fireEvent.press(screen.getByRole('button', { name: /Terrain/ }));
+    expect(screen.getByRole('button', { name: /Terrain/ })).toHaveProp('accessibilityState', { selected: true });
   });
 });

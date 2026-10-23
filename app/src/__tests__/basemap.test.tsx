@@ -32,9 +32,10 @@ describe('map page', () => {
 });
 
 describe('basemap options', () => {
-  it('Standard / Satellite / Terrain, with Terrain hidden until PR 2', () => {
+  it('Standard / Satellite / Terrain, Terrain on by default (bundled French Creek) and switchable off', () => {
     expect(basemapOptions.map((o) => o.label)).toEqual(['Standard', 'Satellite', 'Terrain']);
-    expect(visibleBasemaps().map((o) => o.key)).toEqual(['topo', 'satellite']);
+    expect(visibleBasemaps().map((o) => o.key)).toEqual(['topo', 'satellite', 'terrain']);
+    expect(visibleBasemaps(false).map((o) => o.key)).toEqual(['topo', 'satellite']);
     expect(visibleBasemaps(true).map((o) => o.key)).toEqual(['topo', 'satellite', 'terrain']);
   });
 });

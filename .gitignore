@@ -4,3 +4,7 @@ node_modules/
 !.env.example
 .DS_Store
 data/raw/
+
+# Terrain basemap build output (tiles, DEM, glyphs): never commit
+basemap-out/
+*.pmtiles
