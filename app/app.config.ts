@@ -7,7 +7,8 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
  *   EXPO_PUBLIC_PURCHASES_PROVIDER     'mock' (default) or 'revenuecat'
  * Only public (EXPO_PUBLIC_*) keys belong here; never the Supabase server-only key.
  */
-// PLACEHOLDER: no bundle id was set in the repo or spec. Confirm before the first App Store Connect record.
+// TO CONFIRM (RBChedda): com.rbchedda.birdbrain is a proposed placeholder for both the iOS bundle id and
+// the Android package. It becomes permanent once the App Store Connect record / first Play upload exists.
 export const IOS_BUNDLE_ID = process.env.BIRDBRAIN_IOS_BUNDLE_ID || 'com.rbchedda.birdbrain';
 
 // Location is foreground / When In Use only (app.json: expo-location plugin, no background).

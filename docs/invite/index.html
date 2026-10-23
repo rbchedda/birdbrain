@@ -1,0 +1,34 @@
+<!doctype html>
+<!-- DRAFT, not deployed. Replace the two placeholder links before publishing. -->
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<title>Join the BirdBrain beta</title>
+<style>
+body{margin:0;font:16px/1.5 system-ui,sans-serif;background:#0E1A13;color:#e8efe9}
+main{max-width:520px;margin:auto;padding:32px 20px}
+h1{font-size:28px;margin:0 0 8px}a.btn{display:block;text-align:center;background:#E07A2F;color:#0E1A13;
+font-weight:700;padding:14px;border-radius:12px;text-decoration:none;margin:16px 0}
+section{background:#16271c;border-radius:14px;padding:16px 18px;margin:16px 0}[hidden]{display:none}
+ol{padding-left:20px}small{color:#9fb3a5}
+</style></head><body><main>
+<h1>BirdBrain beta</h1><p>Thanks for testing. Pick your phone:</p>
+<section id="ios"><h2>iPhone</h2>
+<ol><li>Install <a href="https://apps.apple.com/app/testflight/id899247664">TestFlight</a> from the App Store.</li>
+<li>Tap the button below, then <b>Accept</b> and <b>Install</b>.</li>
+<li>Send feedback by taking a screenshot in the app and choosing <b>Share Beta Feedback</b>.</li></ol>
+<a class="btn" href="TESTFLIGHT_PUBLIC_LINK">Join on TestFlight</a></section>
+<section id="android"><h2>Android</h2>
+<ol><li>Tap the button below and download the APK.</li>
+<li>When asked, allow your browser to <b>install unknown apps</b>.</li>
+<li>Open the download and tap <b>Install</b>. New betas come with a new link.</li></ol>
+<a class="btn" href="EAS_APK_LINK">Download for Android</a></section>
+<p><small>Questions? Reply to your invite.</small></p>
+</main><script>
+var ua=navigator.userAgent||'';
+var ios=/iPhone|iPad|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+var android=/Android/.test(ua);
+if(ios)document.getElementById('android').hidden=true;
+else if(android)document.getElementById('ios').hidden=true;
+</script></body></html>
