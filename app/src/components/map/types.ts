@@ -1,7 +1,21 @@
 import { colors } from '@/theme/tokens';
 import type { GeoJSONGeometry, LngLat, Place, PlaceType } from '@/data/types';
 
-export type Basemap = 'topo' | 'imagery';
+export type Basemap = 'topo' | 'satellite' | 'terrain';
+
+/**
+ * Brand terrain basemap (basemap PR 2). Off until its tiles exist; while off the
+ * Terrain option is hidden and the map page treats 'terrain' as topo.
+ */
+export const terrainBasemapEnabled = process.env.EXPO_PUBLIC_FLAG_TERRAIN_BASEMAP === '1';
+
+export const basemapOptions: { key: Basemap; label: string; icon: 'map-outline' | 'earth-outline' | 'trail-sign-outline' }[] = [
+  { key: 'topo', label: 'Standard', icon: 'map-outline' },
+  { key: 'satellite', label: 'Satellite', icon: 'earth-outline' },
+  { key: 'terrain', label: 'Terrain', icon: 'trail-sign-outline' },
+];
+
+export const visibleBasemaps = (terrain = terrainBasemapEnabled) => basemapOptions.filter((o) => terrain || o.key !== 'terrain');
 
 /**
  * Contract for the map. Today it's MapLibre GL JS in a WebView (native) or an
