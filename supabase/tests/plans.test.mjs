@@ -4,9 +4,10 @@ import { before, describe, it } from 'node:test';
 
 import { as, createTestDb, createUser } from './db.mjs';
 
-// Mirrors the hosted plans schema in hosted-changes-needed.md §2-3 via test-only fixtures
-// (supabase/tests/fixtures), never supabase/migrations. Nothing here touches a hosted DB.
-const fixture = (name) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8');
+// Uses the official plans migrations (20261029000100_plans, 20261029000200_plans_crew_share, applied by
+// createTestDb) and their rollbacks. Local PGlite only; nothing here touches a hosted DB.
+const rollback = (name) => readFileSync(new URL(`../rollbacks/${name}.down.sql`, import.meta.url), 'utf8');
+const STUB_MIGRATIONS = 'create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key, name text);';
 
 const alice = '00000000-0000-4000-8000-0000000000a9'; // plan owner, crew admin
 const bob = '00000000-0000-4000-8000-0000000000b9'; // crew member
@@ -22,8 +23,9 @@ const save = (d, user, client, f = {}) =>
 
 async function freshDb({ crewShare }) {
   const d = await createTestDb();
-  await d.exec(fixture('plans.sql'));
-  if (crewShare) await d.exec(fixture('plans_crew_share.sql'));
+  await d.exec(STUB_MIGRATIONS);
+  // §2-only behavior: undo §3 with its official rollback.
+  if (!crewShare) await d.exec(rollback('20261029000200_plans_crew_share'));
   for (const [id, e] of [[alice, 'a9'], [bob, 'b9'], [eve, 'e9']]) await createUser(d, id, `${e}@example.test`);
   return d;
 }
@@ -87,7 +89,7 @@ describe('plans §2 (owner-only)', () => {
 
   it('rollback drops the table and trigger function', async () => {
     const d = await freshDb({ crewShare: false });
-    await d.exec(fixture('plans.down.sql'));
+    await d.exec(rollback('20261029000100_plans'));
     const r = await d.query(`select to_regclass('public.plans') t, to_regprocedure('public.plans_touch()') f`);
     assert.deepEqual(r.rows[0], { t: null, f: null });
   });
