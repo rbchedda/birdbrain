@@ -8,6 +8,13 @@ it('every inline script in mapHtml parses', () => {
   for (const code of scripts) expect(() => new vm.Script(code)).not.toThrow();
 });
 
+// Terrain must not fetch USGS tiles: topo starts hidden and is shown only once a basemap is chosen.
+it('topo layer starts hidden and waits for a basemap choice', () => {
+  expect(mapHtml).toContain("{ id: 'topo', type: 'raster', source: 'topo', layout: { visibility: 'none' } }");
+  expect(mapHtml).toContain('if (basemapChosen) showBasemap(current);');
+  expect(mapHtml).toContain('if (!basemapChosen) showBasemap(current);');
+});
+
 it('has the species-search rank layer, numbered markers and fit/center messages', () => {
   expect(mapHtml).toContain("id: 'places-rank'");
   expect(mapHtml).toContain("layers: ['places-rank', 'places-circle']");
