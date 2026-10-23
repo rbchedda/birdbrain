@@ -1,4 +1,6 @@
 import { StyleSheet } from 'react-native';
+import { PLAN_TRIP_HINT_KEY } from '@/components/guide/PlanTripHint';
+import { colors } from '@/theme/tokens';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 
@@ -281,12 +283,14 @@ describe('Guide tab', () => {
   it.each([
     ['hours', 'Seasons & legal hours', "What's open this week and today's shooting times"],
     ['rules', 'Rules & licenses', 'Licenses, orange requirements, shot and dog rules'],
-    ['trip', 'Plan a trip', 'Stocking release weeks and where they happen'],
+    ['trip', 'Plan a trip', "Pick a spot on the map, check the day's legal hours and weather, and save a plan."],
     ['pheasant', 'Ring-necked pheasant', 'Stocked on game lands · fields & hedgerows'],
     ['grouse', 'Ruffed grouse', 'Young forest and edges · native'],
     ['woodcock', 'American woodcock', 'Wet thickets · migratory, needs HIP'],
     ['dove', 'Mourning dove', 'Cut grain fields · split season'],
-    ['basics', 'Hunting basics', 'Safety, dogs, and field care for new hunters'],
+    ['basics', 'Hunting basics', 'What to bring, safety orange rules, and first-hunt tips.'],
+    ['turkey', 'Wild turkey', 'Where fall flocks feed and roost, which areas are open, and how the fall season works.'],
+    ['bobwhite', 'Northern bobwhite', 'Where you can hunt quail in PA, mostly release areas and preserves, plus season basics.'],
   ])('row %s has the 01-guide title and description, one tappable button', async (key, title, desc) => {
     await open('/guide');
     const row = await screen.findByTestId(`guide-row-${key}`);
@@ -308,6 +312,49 @@ describe('Guide tab', () => {
     await open('/guide');
     await fireEvent.press(await screen.findByTestId('guide-credits'));
     expect(await screen.findByText('Photo credits')).toBeTruthy();
+  });
+
+  it('disclaimer and Verify link are small muted text above Data sources and Credits, copy verbatim', async () => {
+    await open('/guide');
+    const disc = await screen.findByTestId('guide-disclaimer');
+    const verify = screen.getByTestId('guide-digest-top');
+    expect(disc).toHaveTextContent('Unofficial summary, always verify with the PGC Hunting & Trapping Digest');
+    expect(verify).toHaveTextContent(/^Verify with the PGC digest ↗ · regs v/);
+    for (const el of [disc, verify]) {
+      const st = StyleSheet.flatten(el.props.style);
+      expect(st.color).toBe(colors.muted);
+      expect(st.fontSize).toBeLessThanOrEqual(13);
+    }
+    const all = screen.getAllByText(/./).map((n) => n.props.testID);
+    expect(all.indexOf('guide-disclaimer')).toBeLessThan(all.indexOf('guide-data-sources'));
+    expect(all.indexOf('guide-digest-top')).toBeLessThan(all.indexOf('guide-credits'));
+  });
+
+  it('Plan a trip opens the Map with a one-time hint, persisted in AsyncStorage', async () => {
+    await AsyncStorage.removeItem(PLAN_TRIP_HINT_KEY);
+    await open('/guide');
+    await fireEvent.press(await screen.findByTestId('guide-row-trip'));
+    expect(await screen.findByTestId('plan-trip-hint')).toHaveTextContent('Pick a spot, then tap Plan a hunt.', { exact: false });
+    await waitFor(async () => expect(await AsyncStorage.getItem(PLAN_TRIP_HINT_KEY)).toBe('true'));
+    await fireEvent.press(screen.getByTestId('plan-trip-hint'));
+    await waitFor(() => expect(screen.queryByTestId('plan-trip-hint')).toBeNull());
+  });
+
+  it('the Plan a trip hint never shows on a plain Map open', async () => {
+    await AsyncStorage.removeItem(PLAN_TRIP_HINT_KEY);
+    await open('/');
+    expect(await screen.findByTestId('map-top')).toBeTruthy();
+    await act(async () => {});
+    expect(screen.queryByTestId('plan-trip-hint')).toBeNull();
+    expect(await AsyncStorage.getItem(PLAN_TRIP_HINT_KEY)).toBeNull();
+  });
+
+  it('the Plan a trip hint is not shown again once seen', async () => {
+    await AsyncStorage.setItem(PLAN_TRIP_HINT_KEY, 'true');
+    await open('/?hint=plan');
+    expect(await screen.findByTestId('map-top')).toBeTruthy();
+    await act(async () => {});
+    expect(screen.queryByTestId('plan-trip-hint')).toBeNull();
   });
 
   it('the Data sources link opens Data sources', async () => {
