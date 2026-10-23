@@ -1,8 +1,10 @@
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 import { useSyncExternalStore } from 'react';
 
 import type { TermsAcceptance } from '@/data/backend';
 import { backend } from '@/data';
+import { NOTICE_VERSION } from '@/data/mapNotice';
 import { TERMS_VERSION } from '@/data/terms';
 
 import { readJson, writeJson } from './localStore';
@@ -36,9 +38,18 @@ const set = (s: ConsentState) => {
   listeners.forEach((l) => l());
 };
 
-/** Accepted on this device for the current terms version? Older versions re-show onboarding. */
-export const needsConsent = (accepted: TermsAcceptance | null, current = TERMS_VERSION) =>
-  !accepted || accepted.termsVersion !== current;
+/** Option A (notice Option A, HANDOFF §2): consent also covers the map notice version. */
+const optionA = () => process.env.EXPO_PUBLIC_FLAG_NOTICE_DISMISS === '1';
+
+/**
+ * Accepted on this device for the current terms version? Older versions re-show onboarding.
+ * Flag on: a MAP notice version bump (NOTICE_VERSION) also asks again.
+ */
+export const needsConsent = (accepted: TermsAcceptance | null, current = TERMS_VERSION, notice = NOTICE_VERSION) =>
+  !accepted || accepted.termsVersion !== current || (optionA() && accepted.noticeVersion !== notice);
+
+const sameConsent = (a: TermsAcceptance, b: TermsAcceptance) =>
+  a.termsVersion === b.termsVersion && (a.noticeVersion ?? '') === (b.noticeVersion ?? '');
 
 export const readQueue = () => readJson<TermsAcceptance[]>(QUEUE_KEY, []);
 const readAccepted = () => readJson<TermsAcceptance | null>(ACCEPTED_KEY, null);
@@ -87,7 +98,7 @@ export async function syncConsentOnSignIn(): Promise<ConsentSyncResult> {
   const acceptance = await readAccepted();
   if (acceptance && !needsConsent(acceptance)) {
     const queue = await readQueue();
-    if (!queue.some((q) => q.termsVersion === acceptance.termsVersion)) {
+    if (!queue.some((q) => sameConsent(q, acceptance))) {
       await writeJson(QUEUE_KEY, [...queue, acceptance]);
     }
   }
@@ -95,7 +106,7 @@ export async function syncConsentOnSignIn(): Promise<ConsentSyncResult> {
   return { sent, pending: (await readQueue()).length };
 }
 
-const queueKey = (a: TermsAcceptance) => `${a.termsVersion}|${a.acceptedAt}`;
+const queueKey = (a: TermsAcceptance) => `${a.termsVersion}|${a.noticeVersion ?? ''}|${a.acceptedAt}`;
 let flushing: Promise<number> | null = null;
 /**
  * Internal: send queued acceptances to accepted_terms when signed in with a real account. Rows that fail stay
@@ -149,9 +160,10 @@ function start() {
  */
 export async function acceptTerms(now = new Date()) {
   const a: TermsAcceptance = { acceptedAt: now.toISOString(), appVersion: appVersion(), termsVersion: TERMS_VERSION };
+  if (optionA()) Object.assign(a, { noticeVersion: NOTICE_VERSION, platform: Platform.OS });
   await writeJson(ACCEPTED_KEY, a);
   const queue = await readQueue();
-  if (!queue.some((q) => q.termsVersion === a.termsVersion)) queue.push(a);
+  if (!queue.some((q) => sameConsent(q, a))) queue.push(a);
   await writeJson(QUEUE_KEY, queue);
   set('accepted');
   await flushTermsQueue();
