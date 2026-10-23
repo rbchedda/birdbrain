@@ -10,6 +10,7 @@ import { backend } from '@/data';
 import { reportSignal } from '@/lib/connectivity';
 import { copy, isNetworkError, pendingHunts, setFlags, signInDidNotFinish } from '@/lib/fieldDraft';
 import { syncConsentOnSignIn } from '@/lib/termsConsent';
+import { needsUsername } from '@/lib/username';
 import { colors, space } from '@/theme/tokens';
 
 export default function SignInScreen() {
@@ -30,10 +31,16 @@ export default function SignInScreen() {
     },
     [],
   );
-  const done = () => {
+  const done = (chooseUsername = false) => {
     finished.current = true;
     void setFlags({ signInFailed: false, confirmPending: false }).catch(() => undefined);
+    // Replace (not push) so leaving the username step returns to any pending first-save flow.
+    if (chooseUsername) return router.replace('/username');
     return router.canGoBack() ? router.back() : router.replace('/feed');
+  };
+  const checkUsername = async () => {
+    const s = await backend.getSession().catch(() => null);
+    return needsUsername(s?.userId);
   };
 
   const submit = async () => {
@@ -45,7 +52,8 @@ export default function SignInScreen() {
         await syncConsentOnSignIn().catch(() => undefined);
         // Show that it worked before leaving, so sign-in never looks like 'nothing happened'.
         setMessage({ tone: 'success', text: `Signed in as ${email.trim()}. Saved hunts will sync.` });
-        setTimeout(done, 1200);
+        const choose = await checkUsername();
+        setTimeout(() => done(choose), 1200);
       } else {
         const { needsConfirmation } = await backend.signUp(email.trim(), password);
         if (needsConfirmation) {
@@ -57,7 +65,7 @@ export default function SignInScreen() {
         }
         else {
           await syncConsentOnSignIn().catch(() => undefined);
-          done();
+          done(await checkUsername());
         }
       }
     } catch (e) {
