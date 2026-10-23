@@ -132,6 +132,8 @@ export default function MapScreen() {
   const [selectedId, setSelectedId] = useState<string>();
   const [parkId, setParkId] = useState<string>();
   const [expanded, setExpanded] = useState(false);
+  /** Search results open the sheet at HALF (even from FULL). */
+  const [sheetReq, setSheetReq] = useState<{ detent: 'half'; key: number }>();
   const [focus, setFocus] = useState<{ center: Place['center']; key: number; zoom?: number }>();
   const [planner, setPlanner] = useState(false);
   const [fullNotice, setFullNotice] = useState(false);
@@ -232,6 +234,7 @@ export default function MapScreen() {
     setSelectedId(place.id);
     setFocus({ center: place.center, key: Date.now() });
     setExpanded(true);
+    setSheetReq({ detent: 'half', key: Date.now() });
   };
 
   const { canUse } = useEntitlements();
@@ -496,6 +499,7 @@ export default function MapScreen() {
         peekHeight={selected || planner || park ? PEEK : PEEK_EMPTY}
         expandedHeight={sheetHeight(screenH, topH, height)}
         fullHeight={fullSheetHeight(screenH, topH, height)}
+        requestDetent={sheetReq}
       >
         {park && !selected ? (
           <StateParkSheet park={park} onClose={() => setParkId(undefined)} />
@@ -522,7 +526,8 @@ export default function MapScreen() {
             onPick={(r) => {
               setSelectedId(r.place.id);
               setFocus({ center: r.place.center, key: Date.now() });
-              setExpanded(false);
+              setExpanded(true);
+              setSheetReq({ detent: 'half', key: Date.now() });
             }}
           />
         ) : unknownTerm ? (

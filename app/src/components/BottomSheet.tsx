@@ -22,6 +22,10 @@ export const RETURN_DISTANCE = 24;
 export const PAN_SLOP = 10;
 /** From PEEK, dragging down this fraction of the peek height (or a fling) closes. */
 export const CLOSE_FRACTION = 0.6;
+/** The sheet header (top this many pt) drags the sheet at every detent, FULL included. */
+export const HEADER_DRAG_HEIGHT = 112;
+/** Backdrop opacity at FULL (fades in between HALF and FULL). */
+export const BACKDROP_OPACITY = 0.4;
 
 /**
  * Snap target for a release. `stops` are translateY offsets (0 = FULL, larger = lower);
@@ -42,6 +46,13 @@ export function shouldClose(atPeek: boolean, dy: number, vy: number, peekHeight:
   return atPeek && (vy >= FLING_VELOCITY || dy >= CLOSE_FRACTION * peekHeight);
 }
 
+/**
+ * Sheet translateY during a drag. `handoffDy` is the part of the gesture the inner list already
+ * used (scrolling back to its top) before the sheet took over, so the sheet doesn't jump.
+ */
+export const dragPosition = (stop: number, dy: number, handoffDy: number, lowest: number) =>
+  Math.min(lowest, Math.max(0, stop + dy - handoffDy));
+
 /** Vertical enough to be a sheet drag (horizontal chip/photo swipes never are). */
 export const isVerticalDrag = (g: Pick<PanResponderGestureState, 'dx' | 'dy'>) =>
   Math.abs(g.dy) > PAN_SLOP && Math.abs(g.dy) > 1.5 * Math.abs(g.dx);
@@ -51,9 +62,14 @@ export const isVerticalDrag = (g: Pick<PanResponderGestureState, 'dx' | 'dy'>) =
  * Below FULL: always (content doesn't scroll there). At FULL: up scrolls content; down
  * moves the sheet only once the list is at its top.
  */
-export function sheetTakesDrag(g: Pick<PanResponderGestureState, 'dx' | 'dy'>, scrollY: number, atFull: boolean) {
+export function sheetTakesDrag(
+  g: Pick<PanResponderGestureState, 'dx' | 'dy'>,
+  scrollY: number,
+  atFull: boolean,
+  onHeader = false,
+) {
   if (!isVerticalDrag(g)) return false;
-  if (!atFull) return true;
+  if (!atFull || onHeader) return true;
   return g.dy > 0 && scrollY <= 0;
 }
 
@@ -101,6 +117,7 @@ export function BottomSheet({
   peekHeight,
   expandedHeight,
   fullHeight,
+  requestDetent,
   children,
 }: {
   expanded: boolean;
@@ -109,6 +126,8 @@ export function BottomSheet({
   peekHeight: number;
   expandedHeight: number;
   fullHeight?: number;
+  /** Jump to a detent (e.g. a search result opens at HALF); a new `key` re-applies it. */
+  requestDetent?: { detent: Detent; key: number };
   children: ReactNode;
 }) {
   const fullH = Math.max(expandedHeight, fullHeight ?? expandedHeight);
@@ -124,6 +143,28 @@ export function BottomSheet({
   const offset = useRef(new Animated.Value(stop)).current;
   const scrollY = useRef(0);
   const reduceMotion = useReduceMotion();
+  /** Sheet top in its parent at FULL (offset 0), for the header-drag zone. */
+  const layoutY = useRef(0);
+  const startOnHeader = useRef(false);
+  /** dy already consumed by the inner list when the sheet took over mid-gesture. */
+  const handoffDy = useRef(0);
+  const handleRef = useRef<View>(null);
+
+  useEffect(() => {
+    if (!requestDetent) return;
+    setFull(requestDetent.detent === 'full');
+    onExpandedChange(requestDetent.detent !== 'peek');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestDetent?.key]);
+
+  // Accessibility: move focus to the sheet when it opens (PEEK -> HALF/FULL).
+  const wasExpanded = useRef(expanded);
+  useEffect(() => {
+    if (expanded && !wasExpanded.current) {
+      if (handleRef.current) AccessibilityInfo.sendAccessibilityEvent?.(handleRef.current, 'focus');
+    }
+    wasExpanded.current = expanded;
+  }, [expanded]);
 
   const animateTo = useCallback(
     (toValue: number) =>
@@ -176,14 +217,24 @@ export function BottomSheet({
     const stops = hasFull ? [0, midOffset, maxOffset] : [midOffset, maxOffset];
     const atPeek = detent === 'peek';
     const lowest = atPeek && onClose ? maxOffset + peekHeight : maxOffset;
-    const pos = (dy: number) => Math.min(lowest, Math.max(0, stop + dy));
+    const pos = (dy: number) => dragPosition(stop, dy, handoffDy.current, lowest);
     return PanResponder.create({
-      onMoveShouldSetPanResponderCapture: (_, g) => sheetTakesDrag(g, scrollY.current, detent === 'full'),
+      onStartShouldSetPanResponderCapture: (e) => {
+        startOnHeader.current = e.nativeEvent.pageY - layoutY.current - stop <= HEADER_DRAG_HEIGHT;
+        handoffDy.current = 0;
+        return false;
+      },
+      onMoveShouldSetPanResponderCapture: (_, g) =>
+        sheetTakesDrag(g, scrollY.current, detent === 'full', startOnHeader.current),
       onMoveShouldSetPanResponder: (_, g) => isVerticalDrag(g),
+      // Same-gesture handoff: if the list scrolled first, the sheet starts from where the list stopped.
+      onPanResponderGrant: (_, g) => {
+        handoffDy.current = detent === 'full' && !startOnHeader.current ? g.dy : 0;
+      },
       onPanResponderTerminationRequest: () => false,
       onPanResponderMove: (_, g) => offset.setValue(pos(g.dy)),
       onPanResponderRelease: (_, g) => {
-        if (onClose && shouldClose(atPeek, g.dy, g.vy, peekHeight)) return goTo('closed');
+        if (onClose && shouldClose(atPeek, g.dy - handoffDy.current, g.vy, peekHeight)) return goTo('closed');
         const t = pickStop(stops, stop, Math.min(maxOffset, pos(g.dy)), g.vy);
         goTo(t <= 1 && hasFull ? 'full' : t >= maxOffset - 1 ? 'peek' : 'half');
       },
@@ -203,42 +254,68 @@ export function BottomSheet({
     [detent, hasFull],
   );
 
+  const backdrop = hasFull
+    ? offset.interpolate({ inputRange: [0, midOffset], outputRange: [BACKDROP_OPACITY, 0], extrapolate: 'clamp' })
+    : 0;
   return (
-    <Animated.View
-      testID="bottom-sheet"
-      style={[styles.sheet, { height: fullH, transform: [{ translateY: offset }] }]}
-      {...pan.panHandlers}
-    >
-      <Pressable
-        accessibilityRole="adjustable"
-        accessibilityLabel={detent === 'full' || (detent === 'half' && !hasFull) ? 'Collapse details' : 'Expand details'}
-        accessibilityValue={{ text: `Place details, ${detent} size` }}
-        accessibilityHint="Swipe up or down to resize"
-        accessibilityActions={[
-          { name: 'increment' },
-          { name: 'decrement' },
-          { name: 'expand', label: 'Expand' },
-          { name: 'collapse', label: 'Collapse' },
-          ...(onClose ? [{ name: 'close', label: 'Close' }] : []),
-        ]}
-        onAccessibilityAction={(e) => {
-          const n = e.nativeEvent.actionName;
-          if (n === 'increment' || n === 'expand') step(1);
-          else if (n === 'decrement' || n === 'collapse') step(-1);
-          else if (n === 'close') goTo('closed');
+    <>
+      {hasFull && (
+        <Animated.View
+          pointerEvents={detent === 'full' ? 'auto' : 'none'}
+          style={[StyleSheet.absoluteFill, styles.backdrop, { opacity: backdrop }]}
+          testID="bottom-sheet-backdrop"
+        >
+          {detent === 'full' && (
+            <Pressable
+              accessibilityElementsHidden
+              importantForAccessibility="no"
+              style={StyleSheet.absoluteFill}
+              onPress={() => goTo('half')}
+              testID="bottom-sheet-backdrop-tap"
+            />
+          )}
+        </Animated.View>
+      )}
+      <Animated.View
+        testID="bottom-sheet"
+        onLayout={(e) => {
+          layoutY.current = e.nativeEvent.layout.y;
         }}
-        // Tap cycles PEEK -> HALF -> FULL -> PEEK.
-        onPress={() => goTo(detent === 'peek' ? 'half' : detent === 'half' && hasFull ? 'full' : 'peek')}
-        hitSlop={{ top: 12, bottom: 8, left: 0, right: 0 }}
-        style={styles.handleArea}
-        testID="bottom-sheet-handle"
+        style={[styles.sheet, { height: fullH, transform: [{ translateY: offset }] }]}
+        {...pan.panHandlers}
       >
-        <View style={styles.handle} />
-      </Pressable>
-      <SheetScrollContext.Provider value={scrollProps}>
-        <View style={styles.body}>{children}</View>
-      </SheetScrollContext.Provider>
-    </Animated.View>
+        <Pressable
+          ref={handleRef}
+          accessibilityRole="adjustable"
+          accessibilityLabel={detent === 'full' || (detent === 'half' && !hasFull) ? 'Collapse details' : 'Expand details'}
+          accessibilityValue={{ text: `Place details, ${detent} size` }}
+          accessibilityHint="Swipe up or down to resize"
+          accessibilityActions={[
+            { name: 'increment' },
+            { name: 'decrement' },
+            { name: 'expand', label: 'Expand' },
+            { name: 'collapse', label: 'Collapse' },
+            ...(onClose ? [{ name: 'close', label: 'Close' }] : []),
+          ]}
+          onAccessibilityAction={(e) => {
+            const n = e.nativeEvent.actionName;
+            if (n === 'increment' || n === 'expand') step(1);
+            else if (n === 'decrement' || n === 'collapse') step(-1);
+            else if (n === 'close') goTo('closed');
+          }}
+          // Tap cycles PEEK -> HALF -> FULL -> PEEK.
+          onPress={() => goTo(detent === 'peek' ? 'half' : detent === 'half' && hasFull ? 'full' : 'peek')}
+          hitSlop={{ top: 12, bottom: 8, left: 0, right: 0 }}
+          style={styles.handleArea}
+          testID="bottom-sheet-handle"
+        >
+          <View style={styles.handle} />
+        </Pressable>
+        <SheetScrollContext.Provider value={scrollProps}>
+          <View style={styles.body}>{children}</View>
+        </SheetScrollContext.Provider>
+      </Animated.View>
+    </>
   );
 }
 
@@ -259,6 +336,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 12,
   },
+  backdrop: { backgroundColor: '#000' },
   handleArea: { height: Math.max(44, touchTarget), alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' },
   handle: { width: 40, height: 5, borderRadius: 3, backgroundColor: '#9FB2A5' },
   body: { flex: 1, paddingHorizontal: 16 },
