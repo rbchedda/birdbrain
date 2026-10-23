@@ -139,10 +139,11 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
       return { needsConfirmation: !data.session };
     },
     async completeAuthRedirect(p) {
-      if (p.code) checkAuth(await sb.auth.exchangeCodeForSession(p.code));
-      else if (p.accessToken && p.refreshToken)
-        checkAuth(await sb.auth.setSession({ access_token: p.accessToken, refresh_token: p.refreshToken }));
-      else throw new Error('This sign-in link is missing its code.');
+      // PKCE only: a code is useless without this device's code verifier, so a
+      // crafted link can't sign the phone into someone else's account. Raw
+      // access/refresh tokens from a URL are never accepted (login-CSRF).
+      if (!p.code) throw new Error('This sign-in link is missing its code.');
+      checkAuth(await sb.auth.exchangeCodeForSession(p.code));
     },
     async signOut() {
       checkAuth(await sb.auth.signOut());
