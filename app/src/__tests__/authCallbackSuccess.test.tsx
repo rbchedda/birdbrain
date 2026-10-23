@@ -61,9 +61,33 @@ describe('auth/callback success', () => {
     await addJournalEntry(draft('from the field'), guest);
     await renderRouter('./src/app', { initialUrl: '/auth/callback?code=abc123' });
     await waitFor(() => expect(done).toHaveBeenCalledWith(expect.objectContaining({ code: 'abc123' })));
+    expect(await screen.findByText(/Save 1 hunt from this phone to a@example.test\?/)).toBeTruthy();
+    expect(upsert).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByText('Save to this account'));
     expect(await screen.findByText(copy.savedToAccount)).toBeTruthy();
     expect(upsert).toHaveBeenCalledTimes(1);
     expect(await journalEntries()).toHaveLength(1);
     await waitFor(() => expect(screen.queryByTestId('auth-callback')).toBeNull());
+  });
+
+  it('"Not my account" signs out and keeps the hunts on the phone, uploading nothing', async () => {
+    jest.spyOn(backend, 'completeAuthRedirect').mockImplementation(async () => {
+      current = { userId: 'u2', email: 'x@example.test' };
+    });
+    const out = jest.spyOn(backend, 'signOut').mockImplementation(async () => { current = null; });
+    await addJournalEntry(draft('mine'), guest);
+    await renderRouter('./src/app', { initialUrl: '/auth/callback?code=evil' });
+    await fireEvent.press(await screen.findByText('Not my account'));
+    await waitFor(() => expect(out).toHaveBeenCalled());
+    expect(upsert).not.toHaveBeenCalled();
+    expect(await journalEntries()).toHaveLength(1);
+  });
+
+  it('a raw-token link is refused (PKCE only)', async () => {
+    const real = jest.spyOn(backend, 'completeAuthRedirect').mockRejectedValue(new Error('This sign-in link is missing its code.'));
+    await addJournalEntry(draft('keep'), guest);
+    await renderRouter('./src/app', { initialUrl: '/auth/callback#access_token=a&refresh_token=b' });
+    await waitFor(() => expect(real).toHaveBeenCalled());
+    expect(upsert).not.toHaveBeenCalled();
   });
 });

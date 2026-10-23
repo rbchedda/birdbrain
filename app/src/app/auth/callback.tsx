@@ -1,10 +1,11 @@
 import * as Linking from 'expo-linking';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { backend } from '@/data';
-import { syncJournal } from '@/data/journal';
+import { journalEntries, syncJournal } from '@/data/journal';
+import { Button } from '@/components/ui';
 import { authRedirectMessage, parseAuthRedirect } from '@/lib/authRedirect';
 import { setFlags, showToast, copy } from '@/lib/fieldDraft';
 import { syncConsentOnSignIn } from '@/lib/termsConsent';
@@ -14,7 +15,8 @@ import { colors, space } from '@/theme/tokens';
  * Email-confirmation landing (signUp emailRedirectTo). Handles a PKCE `code`
  * or implicit `access_token`/`refresh_token`; any error, expired link or
  * already-confirmed account goes to Sign in with a friendly message.
- * Pending hunts are never touched here except to upload them.
+ * Pending hunts are never touched here except to upload them, and only after
+ * the user confirms the account they're about to go to (anti login-CSRF).
  */
 export default function AuthCallback() {
   const query = useLocalSearchParams<Record<string, string>>();
@@ -44,11 +46,36 @@ export default function AuthCallback() {
       }
       await setFlags({ signInFailed: false, confirmPending: false }).catch(() => undefined);
       await syncConsentOnSignIn().catch(() => undefined);
-      const r = await syncJournal(backend, { force: true }).catch(() => null);
-      if (r && r.synced > 0) showToast(copy.savedToAccount);
-      router.replace('/');
+      const pending = (await journalEntries().catch(() => [])).filter((e) => e.sync?.status !== 'synced').length;
+      if (pending === 0) return router.replace('/');
+      const session = await backend.getSession().catch(() => null);
+      setConfirm({ count: pending, email: session?.email ?? 'this account' });
     })().catch(() => toSignIn(authRedirectMessage({})));
   }, [url, query]);
+
+  const [confirm, setConfirm] = useState<{ count: number; email: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    setBusy(true);
+    const r = await syncJournal(backend, { force: true }).catch(() => null);
+    if (r && r.synced > 0) showToast(copy.savedToAccount);
+    router.replace('/');
+  };
+  const notMine = async () => {
+    setBusy(true);
+    await backend.signOut().catch(() => undefined);
+    router.replace({ pathname: '/sign-in', params: { message: 'Signed out. Your hunts are still saved on this phone.' } });
+  };
+  if (confirm)
+    return (
+      <View style={styles.root} testID="auth-callback-confirm">
+        <Text style={styles.text}>
+          Save {confirm.count} {confirm.count === 1 ? 'hunt' : 'hunts'} from this phone to {confirm.email}?
+        </Text>
+        <Button label="Save to this account" variant="primary" busy={busy} onPress={save} />
+        <Button label="Not my account" busy={busy} onPress={notMine} />
+      </View>
+    );
   return (
     <View style={styles.root} testID="auth-callback">
       <ActivityIndicator color={colors.accent} />
