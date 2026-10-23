@@ -13,7 +13,7 @@
 // Data: Pennsylvania Game Commission. Attribution and an "as is" disclaimer are
 // required by the PGC Mapping Center license; show them in the app's data page.
 
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -23,6 +23,27 @@ const PGC = 'https://services1.arcgis.com/k8yxvICm95iIFicb/arcgis/rest/services'
 const PAGE_SIZE = 1000;
 // PGC's ArcGIS host is sometimes slow; cap each request so one hung layer can't wedge a run.
 export const FETCH_TIMEOUT_MS = Number(process.env.INGEST_FETCH_TIMEOUT_MS) || 60_000;
+
+// Supabase Root 2021 CA (public). The pooler's chain ends here, not in Node's trust store.
+// Provenance in the PR that added it; source: Supabase dashboard's certificate download URL.
+export const SUPABASE_CA_PATH = new URL('./supabase-ca.crt', import.meta.url);
+
+/**
+ * pg.Client config that always verifies the server against the Supabase CA.
+ * sslmode and every other ssl* query param are removed, because pg lets the URL's
+ * TLS settings override the ssl object. The rest of the URL is left byte-for-byte as is.
+ */
+export function pgClientConfig(connectionString, ca = readFileSync(SUPABASE_CA_PATH, 'utf8')) {
+  const q = connectionString.indexOf('?');
+  let url = connectionString;
+  if (q !== -1) {
+    const hash = connectionString.indexOf('#', q);
+    const query = connectionString.slice(q + 1, hash === -1 ? undefined : hash);
+    const kept = query.split('&').filter((kv) => kv && !/^ssl/i.test(decodeURIComponent(kv.split('=')[0])));
+    url = connectionString.slice(0, q) + (kept.length ? '?' + kept.join('&') : '') + (hash === -1 ? '' : connectionString.slice(hash));
+  }
+  return { connectionString: url, ssl: { ca, rejectUnauthorized: true } };
+}
 
 /** Case-insensitive property lookup across candidate field names. */
 export function pick(props, ...names) {
@@ -465,7 +486,7 @@ async function main() {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error('Set DATABASE_URL, or use --describe / --out <dir>.');
   const { default: pg } = await import('pg');
-  const client = new pg.Client({ connectionString: url });
+  const client = new pg.Client(pgClientConfig(url));
   await client.connect();
   let failed = false;
   try {
