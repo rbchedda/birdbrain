@@ -43,7 +43,9 @@ export default function SignInScreen() {
       if (mode === 'in') {
         await backend.signIn(email.trim(), password);
         await syncConsentOnSignIn().catch(() => undefined);
-        done();
+        // Show that it worked before leaving, so sign-in never looks like 'nothing happened'.
+        setMessage({ tone: 'success', text: `Signed in as ${email.trim()}. Saved hunts will sync.` });
+        setTimeout(done, 1200);
       } else {
         const { needsConfirmation } = await backend.signUp(email.trim(), password);
         if (needsConfirmation) {
@@ -64,7 +66,7 @@ export default function SignInScreen() {
         // Spec 03: no error state; the hunt waits and the chip turns orange when signal returns.
         reportSignal(false);
         setMessage({ tone: 'info', text: pending ? copy.savedOffline : 'No signal. Try again when you have service.' });
-      } else setMessage({ tone: 'error', text: (e as Error).message });
+      } else setMessage({ tone: 'error', text: (e as Error)?.message || 'Sign-in didn’t work. Please try again.' });
       if (pending) await setFlags({ signInFailed: true }).catch(() => undefined);
     } finally {
       setBusy(null);
