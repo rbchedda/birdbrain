@@ -13,6 +13,9 @@ import { syncConsentOnSignIn } from '@/lib/termsConsent';
 import { needsUsername } from '@/lib/username';
 import { colors, space } from '@/theme/tokens';
 
+/** Matches the hosted auth password_min_length; older 6–7 char passwords still sign in. */
+const MIN_NEW_PASSWORD = 8;
+
 export default function SignInScreen() {
   const [mode, setMode] = useState<'in' | 'up'>('in');
   const [email, setEmail] = useState('');
@@ -111,11 +114,14 @@ export default function SignInScreen() {
           accessibilityLabel="Password"
           onSubmitEditing={submit}
         />
+        {mode === 'up' && password.length > 0 && password.length < MIN_NEW_PASSWORD && (
+          <Text style={ui.muted}>Use at least {MIN_NEW_PASSWORD} characters.</Text>
+        )}
         {message && <Notice tone={message.tone}>{message.text}</Notice>}
         <Button
           label={mode === 'in' ? 'Sign in' : 'Create account'}
           variant="primary"
-          disabled={!email.includes('@') || password.length < 6}
+          disabled={!email.includes('@') || password.length < (mode === 'up' ? MIN_NEW_PASSWORD : 6)}
           busy={busy === 'email'}
           onPress={submit}
         />
