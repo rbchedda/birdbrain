@@ -6,7 +6,7 @@ import { env, hasSupabase } from './env';
 
 export const supabase: SupabaseClient | null = hasSupabase
   ? createClient(env.supabaseUrl, env.supabaseKey, {
-      auth: { storage: AsyncStorage, autoRefreshToken: true, persistSession: true, detectSessionInUrl: false },
+      auth: { storage: AsyncStorage, autoRefreshToken: true, persistSession: true, detectSessionInUrl: false, flowType: 'pkce' },
     })
   : null;
 

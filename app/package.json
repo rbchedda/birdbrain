@@ -49,7 +49,9 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "eas-build-pre-install": "node scripts/check-eas-production.mjs",
+    "check:eas": "node scripts/check-eas-production.mjs"
   },
   "private": true,
   "jest": {

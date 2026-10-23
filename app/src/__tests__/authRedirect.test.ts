@@ -30,14 +30,18 @@ describe('email confirmation redirect', () => {
     expect(Linking.createURL).toHaveBeenCalledWith('/auth/callback');
   });
 
-  it('completeAuthRedirect uses the PKCE code, else the tokens, else throws', async () => {
+  it('completeAuthRedirect accepts only the PKCE code, never raw tokens', async () => {
     const sb = fakeSb();
     const b = createSupabaseBackend(sb);
     await b.completeAuthRedirect({ code: 'c1' });
     expect(sb.auth.exchangeCodeForSession).toHaveBeenCalledWith('c1');
-    await b.completeAuthRedirect({ accessToken: 'a', refreshToken: 'r' });
-    expect(sb.auth.setSession).toHaveBeenCalledWith({ access_token: 'a', refresh_token: 'r' });
+    await expect(b.completeAuthRedirect({ accessToken: 'a', refreshToken: 'r' })).rejects.toThrow(/missing its code/);
+    expect(sb.auth.setSession).not.toHaveBeenCalled();
     await expect(b.completeAuthRedirect({})).rejects.toThrow();
+  });
+
+  it('Expo Go exp:// redirect with a code is parsed for the exchange', () => {
+    expect(parseAuthRedirect('exp://u.expo.dev/b241d97d-d20a-4a3a-ad72-7705ce5fab47/group/g/--/auth/callback?code=xyz')).toMatchObject({ code: 'xyz' });
   });
 
   it('parses query and #fragment params, ignoring malformed ones', () => {

@@ -57,6 +57,7 @@ export function buildMapHtml(opts: { terrain?: boolean; assets?: MapAssets | nul
 <html>
 <head>
 <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <style>${maplibreCss}</style>
 <style>
