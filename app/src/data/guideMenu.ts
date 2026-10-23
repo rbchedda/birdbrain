@@ -8,18 +8,18 @@ export type GuideRow = { key: string; icon: string; title: string; desc: string;
 export const BEFORE_YOU_GO: GuideRow[] = [
   { key: 'hours', icon: '◷', title: 'Seasons & legal hours', desc: "What's open this week and today's shooting times", href: '/guide/hours' },
   { key: 'rules', icon: '§', title: 'Rules & licenses', desc: 'Licenses, orange requirements, shot and dog rules', href: '/guide/regs' },
-  // No stocking screen exists yet; the map shows the PGC stocking pins.
-  { key: 'trip', icon: '⌂', title: 'Plan a trip', desc: 'Stocking release weeks and where they happen', href: '/' },
+  // Opens the Map with a one-time hint (PlanTripHint).
+  { key: 'trip', icon: '⌂', title: 'Plan a trip', desc: "Pick a spot on the map, check the day's legal hours and weather, and save a plan.", href: '/?hint=plan' },
 ];
 
-/** Row descriptions; the first four are verbatim from 01-guide, turkey and bobwhite are not in the mockup. */
+/** Row descriptions; the first four are verbatim from 01-guide, turkey and bobwhite are designer follow-up copy (PR #48). */
 export const BIRD_DESC: Record<BirdKey, string> = {
   pheasant: 'Stocked on game lands · fields & hedgerows',
   grouse: 'Young forest and edges · native',
   woodcock: 'Wet thickets · migratory, needs HIP',
   dove: 'Cut grain fields · split season',
-  turkey: 'Mature woods and field edges · fall and spring',
-  bobwhite: 'Small quail · coveys in brushy fields',
+  turkey: 'Where fall flocks feed and roost, which areas are open, and how the fall season works.',
+  bobwhite: 'Where you can hunt quail in PA, mostly release areas and preserves, plus season basics.',
 };
 
 export const BIRD_ROWS: GuideRow[] = birds.map((b) => ({
@@ -32,5 +32,5 @@ export const BIRD_ROWS: GuideRow[] = birds.map((b) => ({
 
 export const LEARN: GuideRow[] = [
   // Gear checklist is the current home for new-hunter basics.
-  { key: 'basics', icon: '?', title: 'Hunting basics', desc: 'Safety, dogs, and field care for new hunters', href: '/guide/gear' },
+  { key: 'basics', icon: '?', title: 'Hunting basics', desc: 'What to bring, safety orange rules, and first-hunt tips.', href: '/guide/gear' },
 ];
