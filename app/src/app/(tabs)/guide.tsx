@@ -27,7 +27,7 @@ export default function GuideScreen() {
         <Text style={styles.disclaimer} testID="guide-disclaimer">
           Unofficial summary, always verify with the PGC Hunting & Trapping Digest
         </Text>
-        <DigestLink testID="guide-digest-top" />
+        <DigestLink testID="guide-digest-top" style={styles.small} />
         <View style={styles.footer}>
           <Text
             accessibilityRole="link"
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.bodySemi, fontSize: 16, color: colors.text },
   desc: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.muted },
   chev: { fontSize: 20, color: colors.muted },
-  disclaimer: { color: colors.dove, fontFamily: fonts.bodySemi, fontSize: 13 },
+  disclaimer: { color: colors.muted, fontFamily: fonts.body, fontSize: 12, lineHeight: 16, marginTop: space.lg },
   footer: { flexDirection: 'row', flexWrap: 'wrap', gap: space.lg },
-  small: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, paddingVertical: space.xs },
+  small: { fontFamily: fonts.body, fontSize: 12, color: colors.muted, paddingVertical: space.xs },
 });
