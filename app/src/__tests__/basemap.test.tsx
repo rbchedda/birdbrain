@@ -24,8 +24,10 @@ describe('map page', () => {
     expect(mapHtml).not.toContain("'USGS The National Map'");
   });
 
-  it('starts on Standard with every other basemap hidden', () => {
-    expect(mapHtml).toMatch(/\{ id: 'topo', type: 'raster', source: 'topo' \}/);
+  it('starts with every basemap hidden, then falls back to Standard if none is chosen', () => {
+    // Topo stays hidden until the app picks a basemap, so Terrain never fetches USGS tiles.
+    expect(mapHtml).toMatch(/\{ id: 'topo', type: 'raster', source: 'topo', layout: \{ visibility: 'none' \} \}/);
+    expect(mapHtml).toContain("current = 'topo'");
     expect(mapHtml).toMatch(/\{ id: 'satellite', type: 'raster', source: 'satellite', layout: \{ visibility: 'none' \} \}/);
     expect(basemapLayers.terrain).toEqual([]);
   });

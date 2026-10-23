@@ -82,7 +82,7 @@ ${terrain ? `<script>${pmtilesJs}</script>\n<script>${contourJs}</script>` : ''}
   }
   var GROUPS = ${JSON.stringify(basemapLayers)};
   var OFFLINE = ${JSON.stringify(offlineLayers)};
-  var offline = [], current = 'topo';
+  var offline = [], current = 'topo', basemapChosen = false;
   // Offline packs: tiles come from the app over the bridge. Esri is never a pack source.
   var tileId = 0, pending = {};
   function b64ToBuffer(b64) {
@@ -209,7 +209,8 @@ ${terrain ? `<script>${pmtilesJs}</script>\n<script>${contourJs}</script>` : ''}
           attribution: '${USGS_IMAGERY_ATTRIBUTION} ${USGS_ATTRIBUTION}' }
       },
       layers: [
-        { id: 'topo', type: 'raster', source: 'topo' },
+        // Hidden until the app picks a basemap, so terrain never requests USGS tiles.
+        { id: 'topo', type: 'raster', source: 'topo', layout: { visibility: 'none' } },
         { id: 'satellite', type: 'raster', source: 'satellite', layout: { visibility: 'none' } },
         { id: 'topo-offline', type: 'raster', source: 'topo-offline', layout: { visibility: 'none' } },
         { id: 'satellite-offline', type: 'raster', source: 'satellite-offline', layout: { visibility: 'none' } }
@@ -227,12 +228,13 @@ ${terrain ? `<script>${pmtilesJs}</script>\n<script>${contourJs}</script>` : ''}
     if (m.type === 'basemap') {
       // Unknown or not-yet-built basemaps (terrain before PR 2) fall back to topo.
       var name = GROUPS[m.name] && GROUPS[m.name].length ? m.name : 'topo';
+      basemapChosen = true;
       showBasemap(name);
       send({ type: 'basemap', name: name });
     }
     if (m.type === 'offline') {
       offline = m.basemaps || [];
-      showBasemap(current);
+      if (basemapChosen) showBasemap(current);
     }
     if (m.type === 'select') {
       selected = m.id;
@@ -315,6 +317,8 @@ ${terrain ? `<script>${pmtilesJs}</script>\n<script>${contourJs}</script>` : ''}
     loaded = true;
     queue.splice(0).forEach(apply);
     send({ type: 'ready', terrain: terrainOk });
+    // Fallback if the app never sends a basemap: show topo.
+    setTimeout(function () { if (!basemapChosen) showBasemap(current); }, 1500);
   });
 })();
 </script>
