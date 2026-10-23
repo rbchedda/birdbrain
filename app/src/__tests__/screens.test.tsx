@@ -289,8 +289,8 @@ describe('Guide tab', () => {
     ['woodcock', 'American woodcock', 'Wet thickets · migratory, needs HIP'],
     ['dove', 'Mourning dove', 'Cut grain fields · split season'],
     ['basics', 'Hunting basics', 'What to bring, safety orange rules, and first-hunt tips.'],
-    ['turkey', 'Wild turkey', 'Where fall flocks feed and roost, which areas are open, and how the fall season works.'],
-    ['bobwhite', 'Northern bobwhite', 'Where you can hunt quail in PA, mostly release areas and preserves, plus season basics.'],
+    ['turkey', 'Fall turkey', 'Where fall flocks feed and roost, which areas are open, and how the fall season works.'],
+    ['bobwhite', 'Bobwhite quail', 'Where you can hunt quail in PA, mostly release areas and preserves, plus season basics.'],
   ])('row %s has the 01-guide title and description, one tappable button', async (key, title, desc) => {
     await open('/guide');
     const row = await screen.findByTestId(`guide-row-${key}`);

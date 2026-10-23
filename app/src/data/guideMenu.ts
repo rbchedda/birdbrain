@@ -22,10 +22,13 @@ export const BIRD_DESC: Record<BirdKey, string> = {
   bobwhite: 'Where you can hunt quail in PA, mostly release areas and preserves, plus season basics.',
 };
 
+/** Guide row titles that differ from birds.ts names (engineer-approved). */
+export const BIRD_TITLE: Partial<Record<BirdKey, string>> = { turkey: 'Fall turkey', bobwhite: 'Bobwhite quail' };
+
 export const BIRD_ROWS: GuideRow[] = birds.map((b) => ({
   key: b.key,
   icon: b.key.slice(0, 2).replace(/^./, (c) => c.toUpperCase()),
-  title: b.name,
+  title: BIRD_TITLE[b.key] ?? b.name,
   desc: BIRD_DESC[b.key] ?? '',
   href: `/guide/bird/${b.key}`,
 }));
