@@ -27,7 +27,8 @@ import {
   birdChips,
   birdForQuery,
   emptyReason,
-  fitCamera,
+  rankMap,
+  resultBounds,
   isUncoveredBird,
   matchBirds,
   rankSpots,
@@ -101,6 +102,9 @@ export default function MapScreen() {
   const [bird, setBird] = useState<BirdOption | null>(null);
   const [unknownTerm, setUnknownTerm] = useState<string | null>(null);
   const [searchFocused, setSearchFocused] = useState(false);
+  const [mapCenter, setMapCenter] = useState<Place['center']>();
+  const [searchCenter, setSearchCenter] = useState<Place['center']>();
+  const [fit, setFit] = useState<{ bounds: [[number, number], [number, number]]; key: number }>();
   const [speciesFilters, setSpeciesFilters] = useState<SearchFilters>({ openNow: true, publicOnly: false, radiusMi: 25 });
   const [basemap, setBasemapState] = useState<Basemap>('topo');
   // Persisted (spec §5); defaults to Standard. Unknown or hidden values fall back to Standard.
@@ -231,17 +235,21 @@ export default function MapScreen() {
   };
   const signal = useSyncExternalStore(onSignal, getSignal, getSignal);
   const savedOnly = !signal.online || !!error;
-  const speciesOrigin = me ? { lng: me.lng, lat: me.lat } : PA_CENTER;
+  // No GPS: rank from the map center at the moment of the search (PA center before the map reports one).
+  const speciesOrigin = me ? { lng: me.lng, lat: me.lat } : (searchCenter ?? PA_CENTER);
   const speciesResults = useMemo(
     () => (bird ? rankSpots(bird.key, all, speciesOrigin, speciesFilters, today) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [bird, all, speciesOrigin.lng, speciesOrigin.lat, speciesFilters, today],
   );
+  const speciesRanks = useMemo(() => rankMap(speciesResults), [speciesResults]);
   const chips = useMemo(() => birdChips(today, speciesOrigin), [today, speciesOrigin.lng, speciesOrigin.lat]);
   const runSpecies = (b: BirdOption, filters = speciesFilters) => {
     Keyboard.dismiss();
     const open = seasonTag(b.key, today, speciesOrigin).kind !== 'closed';
     const f = { ...filters, openNow: open };
+    const origin = me ? { lng: me.lng, lat: me.lat } : (mapCenter ?? PA_CENTER);
+    setSearchCenter(mapCenter);
     setBird(b);
     setUnknownTerm(null);
     setQuery(b.label);
@@ -252,8 +260,8 @@ export default function MapScreen() {
     setExpanded(true);
     // Ask for location once; without it we rank from the map center and say so.
     if (!me && locStatus === 'idle') void startLocation();
-    const top = rankSpots(b.key, all, speciesOrigin, f, today);
-    if (top.length) setFocus({ ...fitCamera(speciesOrigin, top), key: Date.now() });
+    const top = rankSpots(b.key, all, origin, f, today);
+    if (top.length) setFit({ bounds: resultBounds(origin, top), key: Date.now() });
   };
   const clearSearch = () => {
     setQuery('');
@@ -278,6 +286,9 @@ export default function MapScreen() {
     <View style={styles.root} onLayout={(e) => setScreenH(e.nativeEvent.layout.height)}>
       <PlaceMap
         places={bird ? speciesResults.map((r) => r.place) : places}
+        ranks={bird ? speciesRanks : undefined}
+        fit={fit}
+        onCenterChange={setMapCenter}
         selectedId={selectedId}
         outline={detail.data?.outline}
         basemap={basemap}

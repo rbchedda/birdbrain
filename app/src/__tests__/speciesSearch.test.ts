@@ -3,7 +3,8 @@ import {
   birdForQuery,
   distanceDecay,
   emptyReason,
-  fitCamera,
+  rankMap,
+  resultBounds,
   isUncoveredBird,
   matchBirds,
   rankSpots,
@@ -102,11 +103,12 @@ describe('rankSpots', () => {
     expect(r).toHaveLength(20);
     expect(r[0].place.id).toBe('g29');
   });
-  it('fits the camera around origin + top 5', () => {
+  it('fits the camera exactly to origin + top 5 and maps ranks', () => {
     const r = rankSpots('grouse', places, origin, all, '2026-10-24');
-    const cam = fitCamera(origin, r);
-    expect(cam.center.lat).toBeGreaterThan(origin.lat);
-    expect(cam.zoom).toBeGreaterThanOrEqual(5);
-    expect(cam.zoom).toBeLessThanOrEqual(14);
+    expect(resultBounds(origin, r)).toEqual([
+      [origin.lng, origin.lat],
+      [origin.lng, origin.lat + 0.6],
+    ]);
+    expect(rankMap(r)).toEqual({ 'near-small': 1, 'far-big': 2 });
   });
 });

@@ -74,7 +74,7 @@ export function SpeciesResults(p: SpeciesResultsProps) {
       <Text style={ui.muted}>{p.seasonLabel} · ranked by distance + habitat fit</Text>
       {p.savedOnly && <Text style={ui.muted} testID="species-saved">Showing saved results · distances live from GPS</Text>}
       {p.originKind === 'center' && (
-        <Text style={ui.muted} testID="species-from-center">Location is off, so spots are ranked from the middle of the map.</Text>
+        <Text style={ui.muted} testID="species-from-center">Location is off, so spots are ranked from the map center.</Text>
       )}
       <View style={styles.chips}>
         <Chip label="Open now" active={filters.openNow} onPress={() => onFilters({ ...filters, openNow: !filters.openNow })} />

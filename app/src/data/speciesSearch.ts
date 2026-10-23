@@ -192,15 +192,18 @@ export function birdChips(today: Ymd, at: LngLat): BirdOption[] {
   return [...searchBirds].sort((a, b) => order[seasonTag(a.key, today, at).kind] - order[seasonTag(b.key, today, at).kind]);
 }
 
-/** Center + zoom that fits the origin and the top 5 results (rough Web Mercator fit). */
-export function fitCamera(origin: LngLat, results: SpotResult[]): { center: LngLat; zoom: number } {
+/** Exact [[west, south], [east, north]] bounds of the origin plus the top 5 results. */
+export function resultBounds(origin: LngLat, results: SpotResult[]): [[number, number], [number, number]] {
   const pts = [origin, ...results.slice(0, 5).map((r) => r.place.center)];
   const lngs = pts.map((p) => p.lng);
   const lats = pts.map((p) => p.lat);
-  const [w, e, s, n] = [Math.min(...lngs), Math.max(...lngs), Math.min(...lats), Math.max(...lats)];
-  const span = Math.max(e - w, (n - s) * 1.3, 0.01);
-  const zoom = Math.max(5, Math.min(14, Math.log2(360 / span) - 0.6));
-  return { center: { lng: (w + e) / 2, lat: (s + n) / 2 }, zoom: Math.round(zoom * 10) / 10 };
+  return [
+    [Math.min(...lngs), Math.min(...lats)],
+    [Math.max(...lngs), Math.max(...lats)],
+  ];
 }
+
+/** Place id -> rank, for numbered pins. */
+export const rankMap = (results: SpotResult[]) => Object.fromEntries(results.map((r) => [r.place.id, r.rank]));
 
 export const formatMiles = (mi: number) => `${mi < 10 ? mi.toFixed(1) : Math.round(mi)} mi`;
