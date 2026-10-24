@@ -9,6 +9,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  type ScrollViewInstance,
   StyleSheet,
   Text,
   TextInput,
@@ -674,7 +675,7 @@ function PlaceDetails({
 }) {
   const session = useSession();
   const sheetScroll = useBottomSheetScroll();
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const moreY = useRef(0);
   const onMore = () => {
     onExpand?.();

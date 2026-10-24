@@ -133,7 +133,7 @@ describe('OpenToday card', () => {
   const now = new Date('2026-11-01T15:00:00Z'); // Sunday 10 AM ET
 
   it('puts the disclaimer and digest link at the top, then status, limits and Sunday rules', async () => {
-    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue();
     await render(<OpenToday now={now} at={harrisburg} />);
     const card = screen.getByTestId('open-today');
     const first = card.props.children[0];

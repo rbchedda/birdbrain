@@ -10,6 +10,7 @@ import {
   Pressable,
   StyleSheet,
   View,
+  type ViewInstance,
 } from 'react-native';
 
 import { colors, radius, touchTarget } from '@/theme/tokens';
@@ -148,7 +149,7 @@ export function BottomSheet({
   const startOnHeader = useRef(false);
   /** dy already consumed by the inner list when the sheet took over mid-gesture. */
   const handoffDy = useRef(0);
-  const handleRef = useRef<View>(null);
+  const handleRef = useRef<ViewInstance>(null);
 
   useEffect(() => {
     if (!requestDetent) return;

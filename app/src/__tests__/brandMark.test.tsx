@@ -18,7 +18,8 @@ describe('brand mark (birdbrain-logo/final README)', () => {
   it('app.json points icon, adaptive icon, splash and favicon at the new assets on the ground color', () => {
     const e = JSON.parse(fs.readFileSync(path.join(__dirname, '../../app.json'), 'utf8')).expo;
     expect(e.icon).toBe('./assets/icon.png');
-    expect(e.splash).toMatchObject({ image: './assets/splash-icon.png', backgroundColor: '#0E1A13' });
+    // SDK 58 dropped the top-level `splash` key; the expo-splash-screen plugin below carries it.
+    expect(e.splash).toBeUndefined();
     expect(e.plugins).toContainEqual(['expo-splash-screen', expect.objectContaining({ image: './assets/splash-icon.png', backgroundColor: '#0E1A13' })]);
     expect(e.android.adaptiveIcon).toMatchObject({ backgroundColor: '#0E1A13', monochromeImage: './assets/android-icon-monochrome.png' });
     expect(e.web.favicon).toBe('./assets/favicon.png');

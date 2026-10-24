@@ -16,7 +16,7 @@ const icons: Record<string, { on: IconName; off: IconName }> = {
   profile: { on: 'person-circle', off: 'person-circle-outline' },
 };
 
-export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+export function TabBar({ state, descriptors, emitter, navigateToTab }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -26,8 +26,8 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
         const label = descriptors[route.key].options.title ?? route.name;
 
         const onPress = () => {
-          const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-          if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
+          const event = emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+          if (!focused && !event.defaultPrevented) navigateToTab(route.key);
         };
 
         const icon = icons[route.name] ?? icons.index;

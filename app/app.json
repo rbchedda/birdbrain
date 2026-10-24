@@ -5,11 +5,6 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0E1A13"
-    },
     "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true,
@@ -17,10 +12,7 @@
         "NSLocationWhenInUseUsageDescription": "BirdBrain shows where you are on the map so you can see which land you're on."
       },
       "bundleIdentifier": "com.rbchedda.birdbrain",
-      "usesAppleSignIn": false,
-      "runtimeVersion": {
-        "policy": "appVersion"
-      }
+      "usesAppleSignIn": false
     },
     "android": {
       "adaptiveIcon": {
@@ -83,6 +75,6 @@
     "updates": {
       "url": "https://u.expo.dev/b241d97d-d20a-4a3a-ad72-7705ce5fab47"
     },
-    "runtimeVersion": "exposdk:57.0.0"
+    "runtimeVersion": "exposdk:58.0.0"
   }
 }
