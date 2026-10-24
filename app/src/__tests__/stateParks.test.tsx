@@ -49,7 +49,7 @@ describe('approved wording, verbatim', () => {
 
 describe('French Creek State Park sheet', () => {
   it('shows both lines, links line 1 to the DCNR hunting map, and never says open/public hunting', async () => {
-    const spy = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    const spy = jest.spyOn(Linking, 'openURL').mockResolvedValue();
     const onClose = jest.fn();
     await render(<StateParkSheet park={frenchCreek} onClose={onClose} />);
     expect(screen.getByText('French Creek State Park')).toBeTruthy();

@@ -178,7 +178,7 @@ describe('subscription disclosure (Apple 3.1.2)', () => {
     expect(season).toMatch(/Manage or cancel in your App Store or Google Play account settings/);
     expect(season).toContain(PRODUCTS.season_pass_yearly.introOffer!.price.display);
     expect(screen.getByTestId('disclosure-weekend').props.children).toMatch(/does not renew and is not a subscription/);
-    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue();
     await fireEvent.press(screen.getByText('Terms of Service'));
     await fireEvent.press(screen.getByText('Privacy Policy'));
     expect(open).toHaveBeenCalledWith(legal.termsUrl);

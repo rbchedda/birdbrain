@@ -8,7 +8,6 @@ import { colors } from '@/theme/tokens';
 export default function TabsLayout() {
   return (
     <Tabs
-      initialRouteName="index"
       tabBar={(props) => <TabBar {...props} />}
       screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.ground } }}
     >
