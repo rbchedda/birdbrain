@@ -2,7 +2,6 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { OpenToday } from '@/components/OpenToday';
 import { PostCard } from '@/components/PostCard';
 import { ScreenHeader } from '@/components/Screen';
 import { Button, Chip, SectionTitle, ui } from '@/components/ui';
@@ -32,7 +31,6 @@ export default function HuntLogScreen() {
     <View style={styles.root}>
       <ScreenHeader back title="Hunt log" subtitle="Your private diary" />
       <ScrollView contentContainerStyle={styles.body}>
-        <OpenToday />
         <SeasonStatsView stats={p.stats} />
         <SectionTitle>Season view</SectionTitle>
         <HeatStrip heat={p.stats.heat} />

@@ -102,6 +102,29 @@ describe('Profile hub', () => {
     expect(screen.getByLabelText('26 dog points')).toBeTruthy();
   });
 
+  it('hunt log has no Open today card and no unofficial-summary season/regs info', async () => {
+    await seed();
+    await open('/profile/hunt-log');
+    expect(await screen.findByTestId('hunt-log-list')).toBeTruthy();
+    expect(screen.queryByTestId('open-today')).toBeNull();
+    expect(screen.queryByTestId('open-today-disclaimer')).toBeNull();
+    expect(screen.queryByText(/Unofficial summary/)).toBeNull();
+    expect(screen.queryByText(/Open today\?/)).toBeNull();
+    expect(screen.queryByText(/PGC Hunting & Trapping Digest/)).toBeNull();
+    expect(screen.queryByText(/Daily \d|Possession/)).toBeNull();
+    expect(screen.queryByText(/Sunday exception/)).toBeNull();
+    // The rest of the page is still there.
+    expect(screen.getByTestId('season-stats')).toBeTruthy();
+    expect(screen.getByText('Recent hunts')).toBeTruthy();
+  });
+
+  it('hunt log with no hunts still has no Open today card', async () => {
+    await open('/profile/hunt-log');
+    expect(await screen.findByText(/No hunts logged yet/)).toBeTruthy();
+    expect(screen.queryByTestId('open-today')).toBeNull();
+    expect(screen.queryByText(/Unofficial summary/)).toBeNull();
+  });
+
   it('shows badges and a recap with no kill counts', async () => {
     await seed();
     await open('/profile/trophies');
