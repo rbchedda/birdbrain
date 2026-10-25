@@ -85,6 +85,19 @@ export interface NoticeDismissal {
   clientId?: string;
 }
 
+/** One hunt log entry as stored on the server (owner-only hunt_log_entries joined with diary_entries). */
+export interface ServerHuntLog {
+  clientId: string;
+  version: number;
+  species: Species | null;
+  caption: string;
+  huntedOn: string | null;
+  placeCounts: PlaceCount[];
+  createdAt: string;
+  /** null = a plain quick-log entry with no diary row. */
+  details: DiaryDetails | null;
+}
+
 export interface HuntLogUpsertResult {
   version: number;
   /** The server copy changed since baseVersion; nothing was written. */
@@ -158,6 +171,8 @@ export interface Backend {
   upsertHuntLogEntry(entry: HuntLogUpload): Promise<HuntLogUpsertResult>;
   /** Upload a private diary photo (idempotent by path); returns its storage path. */
   uploadDiaryPhoto(clientId: string, photo: { id: string; localUri: string }): Promise<string>;
+  /** Every hunt log entry the signed-in user has saved (owner-only RLS). Restores a new device or reinstall. */
+  listHuntLogEntries(): Promise<ServerHuntLog[]>;
   /** Delete a private hunt log entry (and its diary details and photos) by client UUID. Idempotent; owner-only. */
   deleteHuntLogEntry(clientId: string): Promise<void>;
 

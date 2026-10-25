@@ -1,3 +1,4 @@
+import { flags } from '@/lib/flags';
 import type { AccessType } from './access';
 
 export type Species = 'pheasant' | 'dove' | 'turkey' | 'grouse' | 'waterfowl' | 'woodcock';
@@ -214,11 +215,12 @@ export const allSpecies = Object.keys(speciesLabel) as Species[];
 export const migratory: Species[] = ['dove', 'waterfowl', 'woodcock'];
 
 /**
- * Species the hunt log and diary can save. Woodcock is guide/seasons only for now: the
- * database `public.species` enum has no 'woodcock' yet (needs a migration), so saving it would fail.
+ * Species the hunt log and diary can save. Woodcock is saveable once the
+ * `public.species` enum has it (supabase/migrations/20261030000000_woodcock.sql, applied by hand)
+ * AND EXPO_PUBLIC_FLAG_WOODCOCK_LOG is on; until then it is guide/seasons only.
  */
-export type LoggableSpecies = Exclude<Species, 'woodcock'>;
-export const loggableSpecies = allSpecies.filter((s): s is LoggableSpecies => s !== 'woodcock');
+export type LoggableSpecies = Species;
+export const loggableSpecies: LoggableSpecies[] = flags.woodcockLog ? allSpecies : allSpecies.filter((s) => s !== 'woodcock');
 
 export const placeTypeLabel: Record<PlaceType, string> = {
   game_land: 'State Game Lands',

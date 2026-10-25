@@ -72,7 +72,7 @@ describe('Profile hub', () => {
     await seed();
     await open('/profile');
     await fireEvent.press(await screen.findByLabelText('Settings'));
-    expect(await screen.findByText('SEASON STATS')).toBeTruthy();
+    expect(await screen.findByText('STATS')).toBeTruthy();
     expect(screen.getAllByText('Delete account').length).toBeGreaterThan(0);
     expect(screen.getByText('Privacy Policy')).toBeTruthy();
     expect(screen.getByText('Community rules')).toBeTruthy();

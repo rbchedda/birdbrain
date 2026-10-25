@@ -38,6 +38,19 @@ describe('woodcock 2026-27 (digest PDF p.47 / printed p.45)', () => {
     expect(allSpecies).toContain('woodcock');
     expect(loggableSpecies).not.toContain('woodcock' as never);
   });
+
+  it('is offered for logging only with the woodcockLog flag (needs the hosted migration first)', () => {
+    process.env.EXPO_PUBLIC_FLAG_WOODCOCK_LOG = '1';
+    try {
+      jest.isolateModules(() => {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const t = require('@/data/types') as typeof import('@/data/types');
+        expect(t.loggableSpecies).toContain('woodcock');
+      });
+    } finally {
+      delete process.env.EXPO_PUBLIC_FLAG_WOODCOCK_LOG;
+    }
+  });
 });
 
 describe('pheasant 2026-27 (digest PDF p.42-43 / printed p.40-41)', () => {

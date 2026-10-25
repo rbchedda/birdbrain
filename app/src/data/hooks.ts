@@ -4,7 +4,7 @@ import { AppState, Platform } from 'react-native';
 
 import type { Session } from './backend';
 import { onReconnect as onConnectivityBack, startConnectivity } from '@/lib/connectivity';
-import { journalEntries, onJournalChange, startJournalSync, syncJournal } from './journal';
+import { getPullState, journalEntries, onJournalChange, onPullChange, pullJournal, startJournalSync, syncJournal } from './journal';
 import { cachedPlace, pullPlans, setPlansSyncKick, syncPlans, toPlanPlace, type PlansPullReport } from '@/lib/plans';
 import { backend } from './index';
 import { cachedSafetyPlaces, saveSafetyPlaces } from '@/offline/safetyCache';
@@ -170,6 +170,17 @@ export function useJournal() {
   useEffect(() => onJournalChange(reload), [reload]);
   const retry = useCallback(() => syncJournal(backend, { force: true }).then(() => undefined), []);
   return { ...state, retry };
+}
+
+/** Progress of restoring this account's hunts from the server (new phone, reinstall). */
+export function usePullState() {
+  return useSyncExternalStore(onPullChange, getPullState, getPullState);
+}
+
+/** Upload anything waiting, then pull the account's hunts again. Forced for "try again"; otherwise at most once a minute. */
+export async function refreshFromAccount(force = true) {
+  await syncJournal(backend, { force }).catch(() => undefined);
+  return pullJournal(backend, { force });
 }
 
 /** Per-layer dates from ingest_state (Data sources page, place sheets). Empty until loaded or on error. */

@@ -30,15 +30,15 @@ export function gameLandOf(e: JournalEntry, lookup: PlaceLookup = () => undefine
   }
   return null;
 }
-const placeOf = (e: JournalEntry) => e.placeCounts?.[0]?.placeName?.trim() || null;
-const countiesOf = (e: JournalEntry, lookup: PlaceLookup) =>
+export const placeOf = (e: JournalEntry) => e.placeCounts?.[0]?.placeName?.trim() || null;
+export const countiesOf = (e: JournalEntry, lookup: PlaceLookup) =>
   (e.placeCounts ?? []).map((c) => lookup(c.placeId)?.county).filter((c): c is string => Boolean(c));
-const speciesOf = (e: JournalEntry): Species[] => [...new Set([...(e.details?.species ?? []), ...(e.species ? [e.species] : [])])];
-const flushesOf = (e: JournalEntry) =>
+export const speciesOf = (e: JournalEntry): Species[] => [...new Set([...(e.details?.species ?? []), ...(e.species ? [e.species] : [])])];
+export const flushesOf = (e: JournalEntry) =>
   e.details ? e.details.flushes : (e.placeCounts ?? []).reduce((t, c) => t + c.flushed, 0);
 const birdsInHand = (e: JournalEntry) =>
   e.details ? e.details.birds.reduce((t, b) => t + b.count, 0) : (e.placeCounts ?? []).reduce((t, c) => t + c.harvested, 0);
-const dated = (entries: JournalEntry[]) => entries.filter((e): e is JournalEntry & { huntedOn: string } => Boolean(e.huntedOn));
+export const dated = (entries: JournalEntry[]) => entries.filter((e): e is JournalEntry & { huntedOn: string } => Boolean(e.huntedOn));
 
 export interface MonthStats {
   month: string; // 'YYYY-MM'

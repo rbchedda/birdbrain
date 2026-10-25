@@ -1,12 +1,15 @@
+import { useLocalSearchParams, router } from 'expo-router';
+import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { OpenToday } from '@/components/OpenToday';
 import { PostCard } from '@/components/PostCard';
 import { ScreenHeader } from '@/components/Screen';
-import { Button, SectionTitle, ui } from '@/components/ui';
+import { Button, Chip, SectionTitle, ui } from '@/components/ui';
 import { HeatStrip, HuntLogList, SeasonStatsView, SectionRow, dogsSummary, lifeSummary, useProfileData } from '@/components/profile';
 import { backend } from '@/data';
 import { useAsync, useSession } from '@/data/hooks';
+import { speciesOf } from '@/data/stats';
 import { colors, space } from '@/theme/tokens';
 
 /** Profile › Hunt log (wireframe 07). */
@@ -16,6 +19,14 @@ export default function HuntLogScreen() {
   const p = useProfileData();
   const shared = useAsync(() => (me ? backend.postsBy(me) : Promise.resolve([])), [me]);
   const signedOut = backend.mode === 'supabase' && !session;
+  // Opened from a Stats chart ("See these hunts in your log"): show just those hunts, with a Clear chip.
+  const q = useLocalSearchParams<{ species?: string; ids?: string; label?: string }>();
+  const filtered = useMemo(() => {
+    const sp = q.species ? q.species.split(',').filter(Boolean) : [];
+    const ids = q.ids ? new Set(q.ids.split(',').filter(Boolean)) : null;
+    if (!sp.length && !ids) return null;
+    return p.entries.filter((e) => (ids ? ids.has(e.id) || ids.has(e.clientId) : true) && (sp.length ? speciesOf(e).some((x) => sp.includes(x)) : true));
+  }, [q.species, q.ids, p.entries]);
   const stuck = p.entries.some((e) => e.sync.status === 'failed' && !e.sync.conflict);
   return (
     <View style={styles.root}>
@@ -26,7 +37,12 @@ export default function HuntLogScreen() {
         <SectionTitle>Season view</SectionTitle>
         <HeatStrip heat={p.stats.heat} />
         <SectionTitle>Recent hunts</SectionTitle>
-        <HuntLogList entries={p.entries} signedOut={signedOut} />
+        {filtered && (
+          <View style={styles.row}>
+            <Chip active label={`${q.label ?? 'Filtered'} · ${filtered.length} ${filtered.length === 1 ? 'hunt' : 'hunts'}  ✕ Clear`} onPress={() => router.setParams({ species: undefined, ids: undefined, label: undefined })} />
+          </View>
+        )}
+        <HuntLogList entries={filtered ?? p.entries} signedOut={signedOut} />
         {stuck && <Button label="Retry backup now" icon="refresh" onPress={() => void p.retry()} />}
         <View style={styles.row}>
           <View style={{ flex: 1 }}>
