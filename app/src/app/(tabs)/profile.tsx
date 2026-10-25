@@ -3,11 +3,12 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { ProfileStatsSection } from '@/components/stats/ProfileStatsSection';
 import { SignInPrompt } from '@/components/SignInPrompt';
 import { PlansSection } from '@/components/spot/PlansSection';
 import { UsernameForm } from '@/components/UsernameForm';
 import { Button } from '@/components/ui';
-import { HuntLogList, SectionRow, StatTiles, badgesSummary, dogsSummary, lifeSummary, useProfileData } from '@/components/profile';
+import { HuntLogList, SectionRow, badgesSummary, dogsSummary, lifeSummary, useProfileData } from '@/components/profile';
 import { backend } from '@/data';
 import { useAsync, useSession } from '@/data/hooks';
 import { seasonLabel } from '@/data/stats';
@@ -79,16 +80,7 @@ export default function ProfileScreen() {
           />
         )}
         {session === null && <SignInPrompt why="Save your hunts so they’re never lost if you switch phones. Sign in to keep your private Hunt Log backed up to your account." />}
-        <Pressable accessibilityRole="button" accessibilityLabel="Stats" accessibilityHint="Opens your season stats" onPress={() => router.push('/profile/stats')}>
-          <StatTiles
-            testID="profile-stats"
-            tiles={[
-              { label: 'days afield', value: p.stats.daysAfield },
-              { label: 'flushes', value: p.stats.flushes },
-              { label: 'game lands', value: p.stats.gameLands },
-            ]}
-          />
-        </Pressable>
+        <ProfileStatsSection />
 
         <View style={styles.sectionHead}>
           <Text style={styles.section}>Hunt diary</Text>
