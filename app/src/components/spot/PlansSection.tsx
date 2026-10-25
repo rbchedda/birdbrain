@@ -10,8 +10,8 @@ import { colors, fonts, space } from '@/theme/tokens';
 
 export const PLANS_EMPTY = 'No hunts planned. Open a spot on the map and tap Plan a hunt.';
 
-/** Profile › Plans (spec 07): the only home for plans. Signed-in only (render it only with a session). */
-export function PlansSection({ owner }: { owner: string }) {
+/** Profile › Plans page (spec 07): the only home for plans. Signed-in only (render it only with a session). */
+export function PlansSection({ owner, title = true }: { owner: string; /** The Plans page already has a header; hide the in-page title there. */ title?: boolean }) {
   useFocusEffect(
     useCallback(() => {
       startPlansSyncOnce();
@@ -23,7 +23,7 @@ export function PlansSection({ owner }: { owner: string }) {
   const { upcoming, past } = splitPlans(plans);
   return (
     <View testID="profile-plans">
-      <SectionTitle>Plans</SectionTitle>
+      {title && <SectionTitle>Plans</SectionTitle>}
       {upcoming.length === 0 ? (
         <View style={{ gap: space.sm }} testID="plans-empty">
           <Text style={styles.muted}>{PLANS_EMPTY}</Text>

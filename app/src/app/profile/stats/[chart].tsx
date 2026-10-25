@@ -205,7 +205,7 @@ export default function StatsDetail() {
 
   return (
     <View style={styles.root}>
-      <ScreenHeader back title={TITLES[chart] ?? 'Stats'} subtitle={label} />
+      <ScreenHeader back backFallback="/profile/stats" title={TITLES[chart] ?? 'Stats'} subtitle={label} />
       <ScrollView contentContainerStyle={styles.body} testID={`stats-detail-${chart}`}>
         {sample && <SampleBadge />}
         <View style={{ flexDirection: 'row' }}><PrivacyPill /></View>

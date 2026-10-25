@@ -50,19 +50,19 @@ beforeEach(async () => {
 });
 
 describe('Profile hub', () => {
-  it('leads with three stats, the hunt diary, then Trophies, Life list and Dogs', async () => {
+  it('leads with the menu (Hunt log, Stats, Dogs, Plans), then the stats preview, Trophies and Life list', async () => {
     await seed();
     await open('/profile');
     expect(await screen.findByLabelText('1 days afield')).toBeTruthy();
     expect(screen.getByLabelText('11 flushes')).toBeTruthy();
     expect(screen.getByLabelText('1 game lands')).toBeTruthy();
     expect(screen.queryByLabelText(/life list$/)).toBeNull();
-    expect(screen.getByText('Hunt diary')).toBeTruthy();
-    expect(screen.getByText('See all 1 ›')).toBeTruthy();
-    expect(screen.getByText(/SGL 211/)).toBeTruthy();
-    expect(screen.getAllByText('🔒 Private').length).toBe(1);
-    for (const t of ['🏅 TROPHIES & BADGES', '❦ LIFE LIST', '🐕 DOGS']) expect(screen.getByText(t)).toBeTruthy();
-    expect(screen.getByText('Ruby ›')).toBeTruthy();
+    expect(screen.getByLabelText(/^Hunt log\. 1 hunt in your private diary/)).toBeTruthy();
+    expect(screen.getByLabelText(/^Dogs\. Ruby/)).toBeTruthy();
+    for (const t of ['Trophies & badges', 'Life list']) expect(screen.getByText(t)).toBeTruthy();
+    // The diary list itself now lives on the Hunt log page.
+    for (const gone of ['Hunt diary', 'See all 1 ›', '🔒 Private']) expect(screen.queryByText(gone)).toBeNull();
+    expect(screen.queryByText(/SGL 211/)).toBeNull();
     // Deferred to Settings (⚙).
     for (const gone of ['SEASON STATS', 'SETTINGS', 'Delete account', 'Privacy Policy', 'Log a hunt']) expect(screen.queryByText(gone)).toBeNull();
     expect(screen.queryByText(/only on this device/)).toBeNull();
@@ -85,11 +85,13 @@ describe('Profile hub', () => {
     expect(await screen.findByTestId('season-stats')).toBeTruthy();
   });
 
-  it('See all opens the full diary', async () => {
+  it('the Hunt log row opens the full diary', async () => {
     await seed();
     await open('/profile');
-    await fireEvent.press(await screen.findByText('See all 1 ›'));
+    await fireEvent.press(await screen.findByTestId('menu-hunt-log'));
     expect(await screen.findByTestId('hunt-log-list')).toBeTruthy();
+    expect(screen.getByText(/SGL 211/)).toBeTruthy();
+    expect(screen.getAllByText('🔒 Private').length).toBe(1);
   });
 
   it('shows the hunt log with sync status, season stats and tiles', async () => {
@@ -188,7 +190,7 @@ describe('Profile home county', () => {
     expect(screen.queryByText(/Zone \d/)).toBeNull();
     spy.mockImplementation(async (id: string) => ({ id, ...base, homeCounty: null }));
     await open('/profile');
-    await screen.findByText('Hunt diary');
+    await screen.findByTestId('profile-menu');
     expect(screen.queryByTestId('home-county')).toBeNull();
     expect(screen.queryByText(/Zone \d|County$/)).toBeNull();
     spy.mockRestore();
@@ -197,7 +199,7 @@ describe('Profile home county', () => {
   it('never infers county from places, entries or location', async () => {
     await seed();
     await open('/profile');
-    await screen.findByText('Hunt diary');
+    await screen.findByTestId('profile-menu');
     expect(screen.queryByTestId('home-county')).toBeNull();
   });
 });

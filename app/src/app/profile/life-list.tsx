@@ -8,7 +8,7 @@ export default function Screen() {
   const p = useProfileData();
   return (
     <View style={styles.root}>
-      <ScreenHeader back title="Life list" subtitle="Private · only you" />
+      <ScreenHeader back backFallback="/profile" title="Life list" subtitle="Private · only you" />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <LifeListView items={p.life} />
       </ScrollView>

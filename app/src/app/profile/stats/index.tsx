@@ -6,7 +6,7 @@ import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } fr
 import { ScreenHeader } from '@/components/Screen';
 import { Button, Notice } from '@/components/ui';
 import { CalendarHeat, DogBars, FlushDots, FlushLegend, HBars, HeatLegend, MonthBars, Swatch, placeItems, speciesItems } from '@/components/stats';
-import { ChartCard, LockedCard, PrivacyPill, ProfileSubNav, SampleBadge, SeasonPill, Skeleton, StatsHeaderRow, TilesRow } from '@/components/stats/parts';
+import { ChartCard, LockedCard, PrivacyPill, SampleBadge, SeasonPill, Skeleton, StatsHeaderRow, TilesRow } from '@/components/stats/parts';
 import { SeasonSheet } from '@/components/stats/SeasonSheet';
 import { useStatsData } from '@/components/stats/useStats';
 import { seasonLabel } from '@/data/stats';
@@ -34,10 +34,9 @@ export default function StatsScreen() {
 
   return (
     <View style={styles.root}>
-      <ScreenHeader back title="Profile" right={share ? <ShareButton sample={sample} /> : undefined} />
+      <ScreenHeader back backFallback="/profile" title="Stats" right={share ? <ShareButton sample={sample} /> : undefined} />
       <ScrollView contentContainerStyle={styles.body} testID="season-stats">
         {sample && <SampleBadge />}
-        <ProfileSubNav />
         {!d.online && (
           <View testID="stats-offline">
             <Notice>No signal. Stats use hunts on this phone{d.pending ? `, including ${d.pending} waiting to sync` : ''}.</Notice>

@@ -29,7 +29,7 @@ export default function HuntLogScreen() {
   const stuck = p.entries.some((e) => e.sync.status === 'failed' && !e.sync.conflict);
   return (
     <View style={styles.root}>
-      <ScreenHeader back title="Hunt log" subtitle="Your private diary" />
+      <ScreenHeader back backFallback="/profile" title="Hunt log" subtitle="Your private diary" />
       <ScrollView contentContainerStyle={styles.body}>
         <SeasonStatsView stats={p.stats} />
         <SectionTitle>Season view</SectionTitle>

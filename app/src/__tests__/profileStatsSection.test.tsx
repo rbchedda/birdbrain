@@ -51,8 +51,8 @@ describe('Profile › Stats section', () => {
     expect(screen.queryByText('SAMPLE DATA')).toBeNull();
     expect(screen.queryByTestId('profile-stats-guest-note')).toBeNull();
     expect(screen.queryByText(/\blat\b|\blng\b|latitude|longitude/i)).toBeNull();
-    // Still on the Profile page alongside the diary.
-    expect(screen.getByText('Hunt diary')).toBeTruthy();
+    // Still on the Profile page alongside the menu.
+    expect(screen.getByTestId('profile-menu')).toBeTruthy();
   });
 
   it('"See all stats" opens the full Stats page', async () => {

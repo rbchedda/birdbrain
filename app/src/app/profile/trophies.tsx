@@ -12,7 +12,7 @@ export default function TrophiesScreen() {
   const [tab, setTab] = useState<'hunts' | 'badges' | 'recap'>('badges');
   return (
     <View style={styles.root}>
-      <ScreenHeader back title="Trophies" subtitle="Effort and variety. No kill counts." />
+      <ScreenHeader back backFallback="/profile" title="Trophies" subtitle="Effort and variety. No kill counts." />
       <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.row}>
           <Chip label="Hunts" active={tab === 'hunts'} onPress={() => setTab('hunts')} />

@@ -40,7 +40,7 @@ export default function PlanDetail() {
   if (!plan) {
     return (
       <View style={styles.root}>
-        <ScreenHeader back title="Plan" />
+        <ScreenHeader back backFallback="/profile/plans" title="Plan" />
         <Text style={[styles.muted, { padding: space.lg }]}>
           This plan was deleted.
         </Text>
@@ -68,6 +68,7 @@ export default function PlanDetail() {
     <View style={styles.root}>
       <ScreenHeader
         back
+        backFallback="/profile/plans"
         title={plan.place.name}
         subtitle={
           plan.readOnly

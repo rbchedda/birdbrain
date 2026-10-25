@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,12 +10,15 @@ export function ScreenHeader({
   title,
   subtitle,
   back,
+  backFallback = '/',
   right,
 }: {
   title: string;
   subtitle?: string;
   /** Show a back button (stack screens). */
   back?: boolean;
+  /** Where Back goes when there is nothing to go back to (deep link, web reload). */
+  backFallback?: Href;
   right?: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
@@ -26,7 +29,7 @@ export function ScreenHeader({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Back"
-            onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace(backFallback))}
             style={styles.back}
           >
             <Ionicons name="chevron-back" size={26} color={colors.text} />

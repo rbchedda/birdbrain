@@ -12,7 +12,7 @@ export default function PastPlans() {
   const past = plans ? splitPlans(plans).past : [];
   return (
     <View style={styles.root}>
-      <ScreenHeader back title="Past plans" subtitle="Private · only you" />
+      <ScreenHeader back backFallback="/profile/plans" title="Past plans" subtitle="Private · only you" />
       <ScrollView contentContainerStyle={styles.body}>
         {plans && !past.length && <Text style={styles.muted}>No past plans yet.</Text>}
         {past.map((p) => (

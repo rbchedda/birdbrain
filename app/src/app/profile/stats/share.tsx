@@ -21,7 +21,7 @@ export default function StatsShare() {
   const card = useMemo(() => (on ? buildShareCard(d.entries, d.scope, d.ctx, sample ? SAMPLE_NOW : new Date()) : null), [on, d.entries, d.scope, d.ctx, sample]);
   return (
     <View style={styles.root}>
-      <ScreenHeader back title="Share card" subtitle="Totals only" />
+      <ScreenHeader back backFallback="/profile/stats" title="Share card" subtitle="Totals only" />
       <ScrollView contentContainerStyle={styles.body} testID="stats-share-screen">
         {!on || !card ? (
           <Notice>Sharing your season is not available yet. Your stats stay private to you.</Notice>

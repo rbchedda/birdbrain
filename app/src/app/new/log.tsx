@@ -159,7 +159,7 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
         )}
         {done && (
           <View style={styles.row}>
-            <Button label={done === 'private' ? 'My log' : 'View in feed'} onPress={() => router.push(done === 'private' ? '/profile' : '/feed')} style={{ flex: 1 }} />
+            <Button label={done === 'private' ? 'My log' : 'View in feed'} onPress={() => router.push(done === 'private' ? '/profile/hunt-log' : '/feed')} style={{ flex: 1 }} />
             <Button label="Log another" onPress={() => setDone(null)} style={{ flex: 1 }} />
           </View>
         )}

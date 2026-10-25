@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router, type Href } from 'expo-router';
 import { type ReactNode, useState } from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
@@ -28,26 +27,6 @@ export function SampleBadge() {
   return (
     <View style={s.sample} testID="stats-sample-badge" accessible accessibilityLabel="Sample data, not your hunts">
       <Text style={s.sampleText}>SAMPLE DATA</Text>
-    </View>
-  );
-}
-
-const SUBNAV: { label: string; href: Href; on?: boolean }[] = [
-  { label: 'Hunt log', href: '/profile/hunt-log' },
-  { label: 'Stats', href: '/profile/stats', on: true },
-  { label: 'Dogs', href: '/profile/dogs' },
-  { label: 'Plans', href: '/plans/past' },
-];
-
-/** Profile sub-navigation from the mockups: Hunt log · Stats · Dogs · Plans. */
-export function ProfileSubNav() {
-  return (
-    <View style={s.subnav} accessibilityRole="tablist">
-      {SUBNAV.map((t) => (
-        <Pressable key={t.label} accessibilityRole="tab" accessibilityState={{ selected: !!t.on }} onPress={() => !t.on && router.push(t.href)} style={[s.subtab, t.on && s.subtabOn]}>
-          <Text style={[s.subtabText, t.on && { color: colors.text }]}>{t.label}</Text>
-        </Pressable>
-      ))}
     </View>
   );
 }
@@ -186,10 +165,6 @@ const s = StyleSheet.create({
   seasonText: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text },
   sample: { alignSelf: 'center', backgroundColor: colors.dove, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
   sampleText: { fontFamily: fonts.bodySemi, fontSize: 11, letterSpacing: 0.7, color: colors.onDove },
-  subnav: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.border },
-  subtab: { flex: 1, minHeight: touchTarget, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 3, borderBottomColor: 'transparent' },
-  subtabOn: { borderBottomColor: colors.accent },
-  subtabText: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.muted },
   tiles: { flexDirection: 'row', gap: space.sm },
   tile: { flex: 1, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: radius.md, padding: space.md, minHeight: 80 },
   tileValue: { fontFamily: fonts.heading, fontSize: 28, lineHeight: 30, color: colors.text },
