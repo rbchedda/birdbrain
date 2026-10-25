@@ -27,7 +27,8 @@ import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
 const SIGN_IN_PROMPT_KEY = 'birdbrain.signInPromptSeen.v1';
 type PostDraft = Parameters<typeof addJournalEntry>[0];
 
-const groupFor: Record<LoggableSpecies, string> = {
+// Woodcock has no hunting group of its own, so it is never shared to one.
+const groupFor: Partial<Record<LoggableSpecies, string>> = {
   pheasant: 'pa-pheasant',
   dove: 'pa-dove',
   turkey: 'pa-turkey',

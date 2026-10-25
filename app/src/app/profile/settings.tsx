@@ -11,7 +11,7 @@ export default function SettingsScreen() {
     <View style={styles.root}>
       <ScreenHeader back title="Settings" />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        <SectionRow title="Season stats" summary="flushes, shots, points by month" href="/profile/stats" />
+        <SectionRow title="Stats" summary="days afield, flushes, hours, places and dogs by season" href="/profile/stats" />
         <SectionRow title="Offline maps" summary="basemap packs for game lands with no signal" href="/offline-maps" />
         <ProfileSettings />
         <AccountSettings />

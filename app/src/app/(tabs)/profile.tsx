@@ -79,7 +79,7 @@ export default function ProfileScreen() {
           />
         )}
         {session === null && <SignInPrompt why="Save your hunts so they’re never lost if you switch phones. Sign in to keep your private Hunt Log backed up to your account." />}
-        <Pressable accessibilityRole="button" accessibilityHint="Opens season stats" onPress={() => router.push('/profile/stats')}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Stats" accessibilityHint="Opens your season stats" onPress={() => router.push('/profile/stats')}>
           <StatTiles
             testID="profile-stats"
             tiles={[
