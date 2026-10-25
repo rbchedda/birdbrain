@@ -5,9 +5,9 @@ import { parseGeometry, parsePoint, toEwkt } from '@/lib/geo';
 import { removeAllUnder, type StorageBucketApi } from '@/lib/storageCleanup';
 
 import { classifyAccess, type AccessType } from './access';
-import { crewError, NotSignedInError, postKind, type Backend, type LeaveCrewResult, type PlanReminder, type Session } from './backend';
+import { crewError, NotSignedInError, postKind, type Backend, type LeaveCrewResult, type PlanReminder, type ServerHuntLog, type Session } from './backend';
 import placeDetailQuery from './placeDetailQuery.json';
-import type { Author, BirdCounts, Crew, Comment, Place, PlaceType, Post, Profile, Species, StockingEvent } from './types';
+import type { Author, BirdCounts, DiaryDetails, Crew, Comment, Place, PlaceType, Post, Profile, Species, StockingEvent } from './types';
 
 // posts -> profiles is ambiguous to PostgREST (likes, saves and comments join
 // them too), so embeds name the foreign key column.
@@ -580,6 +580,37 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
       const row = (Array.isArray(rows) ? rows[0] : rows) as Row | undefined;
       if (!row) throw new Error('Hunt log sync returned nothing.');
       return { version: Number(row.version), conflict: Boolean(row.conflict) };
+    },
+
+    async listHuntLogEntries() {
+      const userId = await me();
+      const PAGE = 500;
+      const out: ServerHuntLog[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const rows = (check(
+          await sb
+            .from('hunt_log_entries')
+            .select('client_id, species, caption, hunted_on, place_counts, version, created_at, diary_entries(details)')
+            .eq('owner_id', userId)
+            .order('id')
+            .range(from, from + PAGE - 1),
+        ) ?? []) as Row[];
+        for (const r of rows) {
+          const diary = Array.isArray(r.diary_entries) ? r.diary_entries[0] : r.diary_entries;
+          out.push({
+            clientId: r.client_id,
+            version: Number(r.version),
+            species: r.species ?? null,
+            caption: r.caption ?? '',
+            huntedOn: r.hunted_on ?? null,
+            placeCounts: Array.isArray(r.place_counts) ? r.place_counts : [],
+            createdAt: r.created_at,
+            details: diary?.details && typeof diary.details === 'object' && Object.keys(diary.details).length ? (diary.details as DiaryDetails) : null,
+          });
+        }
+        if (rows.length < PAGE) break;
+      }
+      return out;
     },
 
     async deleteHuntLogEntry(clientId) {

@@ -385,6 +385,21 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
       return { version: cur.version, conflict: true };
     },
 
+    // Mirrors the owner-only select on hunt_log_entries (plus the diary details).
+    async listHuntLogEntries() {
+      const rows = await readJson<Record<string, HuntLogUpload & { version: number }>>(HUNT_LOG_KEY, {});
+      return Object.values(rows).map((r) => ({
+        clientId: r.clientId,
+        version: r.version,
+        species: r.species,
+        caption: r.caption,
+        huntedOn: r.huntedOn,
+        placeCounts: r.placeCounts,
+        createdAt: r.huntedOn ? `${r.huntedOn}T12:00:00.000Z` : new Date().toISOString(),
+        details: r.details ?? null,
+      }));
+    },
+
     async deleteHuntLogEntry(clientId) {
       const rows = await readJson<Record<string, unknown>>(HUNT_LOG_KEY, {});
       delete rows[clientId];

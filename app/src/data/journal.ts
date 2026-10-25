@@ -1,8 +1,8 @@
 import { isNetworkError, reportSignal } from '@/lib/connectivity';
 import { newClientId, readJson, updateJson, writeJson } from '@/lib/localStore';
 
-import { NotSignedInError, postKind, sumCounts, type Backend, type HuntLogUpload } from './backend';
-import type { Author, DiaryDetails, Post, PostDraft } from './types';
+import { NotSignedInError, postKind, sumCounts, type Backend, type HuntLogUpload, type ServerHuntLog } from './backend';
+import { emptyDiaryDetails, type Author, type DiaryDetails, type Post, type PostDraft } from './types';
 
 /**
  * Private hunt log. Every entry is written to this device first, with a
@@ -312,6 +312,178 @@ async function runSync(backend: Backend, { now = Date.now, force = false }: Sync
   return report;
 }
 
+
+// --- pull: restore this account's hunts from the server ---------------------
+
+/** The account whose hunts this device last pulled in full. Until it matches, a restore is still owed. */
+export const PULLED_KEY = 'birdbrain.journalPulled.v1';
+/** A pull that succeeded this recently is not repeated unless forced (reconnect, sign-in, "try again"). */
+export const PULL_MIN_INTERVAL_MS = 60_000;
+
+export interface PullState {
+  phase: 'idle' | 'pulling' | 'ok' | 'failed';
+  /** Hunts added to this phone by the last pull. */
+  restored: number;
+  error: string | null;
+  /** The account this phone has fully pulled; null until the first successful pull. */
+  pulledFor: string | null;
+}
+let pullState: PullState = { phase: 'idle', restored: 0, error: null, pulledFor: null };
+const pullListeners = new Set<() => void>();
+const setPull = (next: Partial<PullState>) => {
+  pullState = { ...pullState, ...next };
+  pullListeners.forEach((l) => l());
+};
+export const getPullState = () => pullState;
+export function onPullChange(cb: () => void) {
+  pullListeners.add(cb);
+  return () => {
+    pullListeners.delete(cb);
+  };
+}
+/** Test hook. */
+export function resetPullState() {
+  pullState = { phase: 'idle', restored: 0, error: null, pulledFor: null };
+  lastPullOkAt = 0;
+  pulling = null;
+}
+
+export interface PullReport {
+  status: 'ok' | 'skipped' | 'failed';
+  restored: number;
+  updated: number;
+  removed: number;
+  error?: string;
+}
+
+const hasHuntedKind = (placeCounts: { harvested: number }[], d: DiaryDetails | null) =>
+  placeCounts.some((c) => c.harvested > 0) || !!d?.birds?.some((b) => b.count > 0);
+
+const normalizeDetails = (d: DiaryDetails | null): DiaryDetails | undefined => (d ? { ...emptyDiaryDetails(), ...d } : undefined);
+
+function fromServer(s: ServerHuntLog, userId: string): JournalEntry {
+  const details = normalizeDetails(s.details);
+  return {
+    id: s.clientId,
+    clientId: s.clientId,
+    author: { id: userId, username: null, displayName: 'You' },
+    mine: true,
+    kind: hasHuntedKind(s.placeCounts, s.details) ? 'harvest' : 'hunt',
+    species: s.species,
+    caption: s.caption,
+    createdAt: s.createdAt,
+    publicAfter: null,
+    huntedOn: s.huntedOn,
+    location: 'hidden',
+    area: null,
+    counts: sumCounts(s.placeCounts),
+    placeCounts: s.placeCounts,
+    likes: 0,
+    comments: 0,
+    likedByMe: false,
+    group: null,
+    sync: { status: 'synced', version: s.version, rev: 0, attempts: 0, nextAttemptAt: 0, error: null, conflict: false },
+    ...(details ? { details } : {}),
+  };
+}
+
+const isSynced = (e: JournalEntry) => !e.deleted && e.sync.status === 'synced' && e.sync.version !== null;
+
+/**
+ * Pure merge of the server's list into this phone's entries, by client id:
+ * - on the server only: added as synced (a new phone, or a reinstall);
+ * - on both: unsaved local work always wins; a synced copy takes a newer server version;
+ * - local tombstones stay (their delete is still queued);
+ * - a synced entry that was on the server before the pull began and is gone now was deleted elsewhere.
+ * Never creates a second copy of an entry.
+ */
+export function mergeServerHunts(
+  local: JournalEntry[],
+  server: ServerHuntLog[],
+  userId: string,
+  syncedBefore: ReadonlySet<string>,
+): { entries: JournalEntry[]; restored: number; updated: number; removed: number } {
+  const byId = new Map(local.map((e) => [e.clientId, e]));
+  const seen = new Set<string>();
+  let restored = 0;
+  let updated = 0;
+  let removed = 0;
+  const replaced = new Map<string, JournalEntry>();
+  const add: JournalEntry[] = [];
+  for (const s of server) {
+    if (seen.has(s.clientId)) continue;
+    seen.add(s.clientId);
+    const cur = byId.get(s.clientId);
+    if (!cur) {
+      add.push(fromServer(s, userId));
+      restored++;
+    } else if (!cur.deleted && cur.author.id === userId && isSynced(cur) && s.version > (cur.sync.version ?? 0)) {
+      const next = fromServer(s, userId);
+      replaced.set(cur.clientId, { ...next, id: cur.id, createdAt: cur.createdAt });
+      updated++;
+    }
+  }
+  const keep = (e: JournalEntry) => {
+    const gone = server.length > 0 && !seen.has(e.clientId) && syncedBefore.has(e.clientId) && isSynced(e) && e.author.id === userId;
+    if (gone) removed++;
+    return !gone;
+  };
+  const entries = [...local.filter(keep).map((e) => replaced.get(e.clientId) ?? e), ...add];
+  return { entries, restored, updated, removed };
+}
+
+let pulling: Promise<PullReport> | null = null;
+let lastPullOkAt = 0;
+
+/**
+ * Restore this account's hunts from Supabase and merge them into the local journal.
+ * Signed out: nothing happens (hunts stay on this phone). Offline or failing: the
+ * local journal is untouched and the phone keeps showing what it has.
+ */
+export function pullJournal(backend: Backend, opts: { force?: boolean; now?: () => number } = {}): Promise<PullReport> {
+  pulling ??= runPull(backend, opts).finally(() => {
+    pulling = null;
+  });
+  return pulling;
+}
+
+async function runPull(backend: Backend, { force = false, now = Date.now }: { force?: boolean; now?: () => number }): Promise<PullReport> {
+  const none: PullReport = { status: 'skipped', restored: 0, updated: 0, removed: 0 };
+  if (typeof backend.getSession !== 'function' || typeof backend.listHuntLogEntries !== 'function') return none;
+  const session = await backend.getSession().catch(() => null);
+  if (!session) return none;
+  if (!force && now() - lastPullOkAt < PULL_MIN_INTERVAL_MS && pullState.pulledFor === session.userId) return none;
+  const pulledFor = await readJson<string | null>(PULLED_KEY, null);
+  setPull({ phase: 'pulling', error: null, pulledFor });
+  try {
+    const syncedBefore = new Set((await allEntries()).filter(isSynced).map((e) => e.clientId));
+    const server = await backend.listHuntLogEntries();
+    let report: PullReport = { status: 'ok', restored: 0, updated: 0, removed: 0 };
+    await update((cur) => {
+      const m = mergeServerHunts(cur, server, session.userId, syncedBefore);
+      report = { status: 'ok', restored: m.restored, updated: m.updated, removed: m.removed };
+      return m.restored || m.updated || m.removed ? m.entries : cur;
+    });
+    await writeJson(PULLED_KEY, session.userId);
+    lastPullOkAt = now();
+    reportSignal(true);
+    setPull({ phase: 'ok', restored: report.restored, error: null, pulledFor: session.userId });
+    if (report.restored || report.updated || report.removed) notify();
+    return report;
+  } catch (err) {
+    if (isNetworkError(err)) reportSignal(false);
+    const error = err instanceof Error ? err.message : String(err);
+    setPull({ phase: 'failed', error });
+    return { ...none, status: 'failed', error };
+  }
+}
+
+/** Hunts that belong on screen for the signed-in account (the whole journal when signed out). */
+export function entriesForAccount(entries: JournalEntry[], userId: string | null, guestOwner: string | null): JournalEntry[] {
+  if (!userId) return entries;
+  return entries.filter((e) => e.author.id === userId || (e.author.id === GUEST_AUTHOR && (!guestOwner || guestOwner === userId)));
+}
+
 // --- change notifications for screens -------------------------------------
 
 const listeners = new Set<() => void>();
@@ -357,17 +529,21 @@ export function startJournalSync(backend: Backend, triggers: SyncTriggers): () =
     const next = Math.min(...waiting.map((e) => e.sync.nextAttemptAt));
     timer = setTimeout(run, Math.max(0, next - Date.now()));
   };
-  const run = (force: boolean | unknown = false) => {
+  const run = (force: boolean | unknown = false, pull = true) => {
     syncJournal(backend, { force: force === true })
+      .catch(() => undefined)
+      // Push first, then pull, so the server already has anything just saved here.
+      .then(() => (pull ? pullJournal(backend, { force: force === true }) : undefined))
       .catch(() => undefined)
       .then(schedule);
   };
+  const queued = () => run(false, false);
   const subs = [
     triggers.onForeground(() => run()),
     triggers.onReconnect(() => run(true)),
     triggers.onSignIn?.(() => run(true)) ?? (() => {}),
     // A new or edited entry uploads right away.
-    (queuedListeners.add(run), () => queuedListeners.delete(run)),
+    (queuedListeners.add(queued), () => queuedListeners.delete(queued)),
   ];
   run();
   return () => {
