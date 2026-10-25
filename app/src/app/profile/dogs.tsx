@@ -8,7 +8,7 @@ export default function Screen() {
   const p = useProfileData();
   return (
     <View style={styles.root}>
-      <ScreenHeader back title="Dogs" subtitle="Private · only you" />
+      <ScreenHeader back backFallback="/profile" title="Dogs" subtitle="Private · only you" />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <DogsView dogs={p.dogs} onChange={() => void p.reloadDogs()} />
       </ScrollView>

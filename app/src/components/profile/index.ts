@@ -1,6 +1,7 @@
 export { AccountSettings, ProfileSettings } from './AccountSettings';
 export { DogsView, dogsSummary } from './DogsView';
 export { HeatStrip, HuntLogList, entrySummary, syncBadge } from './HuntLogList';
+export { MenuRow } from './MenuRow';
 export { LifeListView, lifeSummary } from './LifeListView';
 export { SeasonStatsView } from './SeasonStatsView';
 export { SectionRow } from './SectionRow';

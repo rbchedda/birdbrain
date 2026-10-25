@@ -100,8 +100,30 @@ describe('Plan a hunt → Profile › Plans', () => {
     expect(screen.getByRole('button', { name: 'Directions' })).toBeTruthy();
   });
 
-  it('Profile shows the Plans section: empty state, then upcoming rows', async () => {
+  it('Plan a hunt on the spot screen → Profile › Plans row (1 upcoming) → Plans page → plan → Back, Back', async () => {
+    await openSpot();
+    await fireEvent.press(await screen.findByTestId('tile-plan'));
+    await fireEvent.press(await screen.findByTestId('species-pheasant'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Next' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Save plan' }));
+    expect(await screen.findByTestId('plan-saved-toast')).toBeTruthy();
     await open('/profile');
+    expect(await screen.findByLabelText(/^Plans\. 1 upcoming/)).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('menu-plans'));
+    expect(screen).toHavePathname('/profile/plans');
+    expect(screen.getByLabelText('Back')).toBeTruthy();
+    const stored = JSON.parse((await AsyncStorage.getItem(PLANS_KEY))!) as Plan[];
+    await fireEvent.press(await screen.findByTestId(`plan-row-${stored[0].id}`));
+    expect(await screen.findByRole('button', { name: 'Delete' })).toBeTruthy();
+    expect(screen.getByLabelText('Back')).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText('Back'));
+    expect(screen).toHavePathname('/profile/plans');
+    await fireEvent.press(screen.getByLabelText('Back'));
+    expect(await screen.findByTestId('profile-menu')).toBeTruthy();
+  });
+
+  it('Profile › Plans page: empty state, then upcoming rows', async () => {
+    await open('/profile/plans');
     expect(await screen.findByTestId('plans-empty')).toHaveTextContent(/No hunts planned/);
     expect(screen.getByRole('button', { name: 'Open map' })).toBeTruthy();
   });
@@ -124,7 +146,7 @@ describe('Plan a hunt → Profile › Plans', () => {
     const owner = sampleMe.id;
     jest.spyOn(backend, 'upsertPlan').mockRejectedValue(new Error('relation "public.plans" does not exist'));
     await AsyncStorage.setItem(PLANS_KEY, JSON.stringify([{ ...plan, owner }]));
-    await open('/profile');
+    await open('/profile/plans');
     const row = await screen.findByTestId(`plan-row-${plan.id}`);
     expect(row).toHaveTextContent(/Sat.*Nov 14.*Pheasant stocking \(sample B\).*Pheasant/);
     expect(screen.getByTestId('badge-waiting')).toHaveTextContent('Saved on phone · waiting to sync');
