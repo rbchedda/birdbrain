@@ -3,6 +3,7 @@ import { PLAN_TRIP_HINT_KEY } from '@/components/guide/PlanTripHint';
 import { colors } from '@/theme/tokens';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
+import { setShareToCommunity } from '@/lib/shareToCommunity';
 
 import { backend } from '@/data';
 import { loadPlaces } from '@/data/hooks';
@@ -451,6 +452,7 @@ describe('Guide tab', () => {
 
 describe('After-the-hunt log', () => {
   it('shares a delayed post with per-place counts that stay private', async () => {
+    await setShareToCommunity(true);
     await open('/new/post?placeId=stock-sample-1');
     expect(await screen.findByText('Pheasant stocking (sample B)')).toBeTruthy();
     await fireEvent.press(screen.getByLabelText('More flushed'));
@@ -500,3 +502,5 @@ describe('After-the-hunt log', () => {
     expect(screen.queryByText(/only on this device/)).toBeNull();
   });
 });
+
+afterEach(() => setShareToCommunity(false));

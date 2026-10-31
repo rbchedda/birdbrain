@@ -3,7 +3,9 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { CommunityOptIn } from '@/components/CommunityOptIn';
 import { SignInSheet } from '@/components/SignInSheet';
+import { useShareToCommunity } from '@/lib/shareToCommunity';
 import { needsAccount } from '@/lib/gate';
 import { readJson, writeJson } from '@/lib/localStore';
 import { ScreenHeader } from '@/components/Screen';
@@ -60,6 +62,8 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
   const mode = fixedMode ?? 'diary';
   // "Log hunt" (the default, mode=diary) always saves privately and never creates a post.
   // Only the chooser's "Post" (mode=post) offers delayed sharing.
+  const sharing = useShareToCommunity();
+  // Posting is opt-in: until "Share to community" is on, nothing can be shared.
   const isPost = mode === 'post';
   const { places } = usePlaces();
   const session = useSession();
@@ -69,7 +73,7 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
   const [counts, setCounts] = useState<PlaceCount[]>([]);
   const [caption, setCaption] = useState('');
   const [chosenAudience, setAudience] = useState<'shared' | 'private'>('shared');
-  const audience = isPost ? chosenAudience : 'private';
+  const audience = isPost && sharing ? chosenAudience : 'private';
   const [location, setLocation] = useState<LocationVisibility>('blurred');
   const [toGroup, setToGroup] = useState(false);
   const [picking, setPicking] = useState(false);
@@ -141,6 +145,18 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
 
   // Log hunt (redesign mockups 02/02b): essentials above the fold, sticky Save hunt.
   if (!isPost) return <LogHuntSheet />;
+
+  if (!sharing) {
+    return (
+      <View style={styles.root}>
+        <ScreenHeader title="Post" subtitle="Share with hunters. Delayed, location blurred." back />
+        <ScrollView contentContainerStyle={styles.body}>
+          <Notice>Your diary is private by default. Turn on “Share to community” to post delayed, blurred entries.</Notice>
+          <CommunityOptIn />
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
