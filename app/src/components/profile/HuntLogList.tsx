@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { OnlyYouTag } from '@/components/stats/parts';
 import { ui } from '@/components/ui';
 import type { JournalEntry } from '@/data/journal';
 import { copy } from '@/lib/fieldDraft';
@@ -52,7 +53,7 @@ export function HuntLogList({ entries, signedOut, limit }: { entries: JournalEnt
               {entrySummary(e)}
             </Text>
             <View style={styles.row} accessibilityLabel={`Sync status: ${s.text}`}>
-              <Text style={styles.private}>🔒 Private</Text>
+              <OnlyYouTag />
               <Ionicons name={s.icon} size={14} color={s.color} />
               <Text style={[ui.muted, { color: s.color, fontSize: 12 }]}>{s.text}</Text>
             </View>
@@ -69,12 +70,28 @@ export function HuntLogList({ entries, signedOut, limit }: { entries: JournalEnt
 }
 
 /** Season view heat strip: one cell per week from Sep 1, orange if hunted. */
+/** Season view strip, using the stats calendar spec: 14pt cells, 2pt gap, radius 3, with a legend (review tweak 14). */
+const heatFill = (n: number) => (n >= 2 ? colors.accent : n === 1 ? 'rgba(255,106,31,0.55)' : colors.border);
 export function HeatStrip({ heat }: { heat: number[] }) {
   return (
-    <View style={styles.heat} accessibilityLabel={`Season view: ${heat.filter(Boolean).length} weeks hunted`}>
-      {heat.map((n, i) => (
-        <View key={i} style={[styles.cell, { backgroundColor: n ? colors.accent : colors.border, opacity: n ? Math.min(1, 0.5 + n * 0.2) : 1 }]} />
-      ))}
+    <View style={{ gap: space.sm }} testID="heat-strip">
+      <View style={styles.heat} accessibilityLabel={`Season view: ${heat.filter(Boolean).length} weeks hunted`}>
+        {heat.map((n, i) => (
+          <View key={i} style={[styles.cell, { backgroundColor: heatFill(n) }]} />
+        ))}
+      </View>
+      <View style={styles.legend} testID="heat-legend">
+        {[
+          { n: 0, label: 'no hunt' },
+          { n: 1, label: '1 hunt' },
+          { n: 2, label: '2+' },
+        ].map((l) => (
+          <View key={l.label} style={styles.legendItem}>
+            <View style={[styles.cell, { backgroundColor: heatFill(l.n) }]} />
+            <Text style={styles.legendText}>{l.label}</Text>
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
@@ -82,7 +99,9 @@ export function HeatStrip({ heat }: { heat: number[] }) {
 const styles = StyleSheet.create({
   title: { fontFamily: fonts.heading, fontSize: 17, color: colors.text },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  private: { fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.dove, marginRight: space.xs, borderWidth: 1, borderColor: colors.dove, borderRadius: 999, paddingHorizontal: 6, overflow: 'hidden' },
-  heat: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
-  cell: { width: 22, height: 10, borderRadius: 3 },
+  heat: { flexDirection: 'row', flexWrap: 'wrap', gap: 2 },
+  cell: { width: 14, height: 14, borderRadius: 3 },
+  legend: { flexDirection: 'row', gap: space.md, alignItems: 'center' },
+  legendItem: { flexDirection: 'row', gap: 6, alignItems: 'center' },
+  legendText: { fontFamily: fonts.body, fontSize: 12, color: colors.muted },
 });

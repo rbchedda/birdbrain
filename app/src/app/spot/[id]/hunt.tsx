@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ScreenHeader } from '@/components/Screen';
+import { EmptyState } from '@/components/States';
 import { useSpot } from '@/components/spot/PlanParts';
 import { birdByKey } from '@/data/birds';
 import { speciesLabel } from '@/data/types';
@@ -34,6 +35,15 @@ export default function WhatToHunt() {
           <Text style={styles.text}>{hours ? `Legal hours ${hours}` : 'Legal hours: check the PGC digest'}</Text>
           {sun && <Text style={styles.muted}>{sun}</Text>}
         </View>
+        {!groups.good.length && !groups.possible.length && (
+          <EmptyState
+            testID="hunt-empty"
+            icon="leaf-outline"
+            title="Nothing open today"
+            body="No open seasons here today. See what opens next."
+            secondary={{ label: 'See what opens next', onPress: () => router.push('/guide'), testID: 'hunt-empty-next' }}
+          />
+        )}
         <Group title="Good fit here" rows={groups.good} testID="group-good" />
         <Group title="Possible" rows={groups.possible} testID="group-possible" />
         <Text style={styles.muted} testID="season-footer">

@@ -200,16 +200,16 @@ describe('crew posts never touch public counts', () => {
     await join(bob, (await invite(alice, crew)).token);
     place = (await db.query(`insert into public.places (name, type, geom, source, source_id) values ('Game Lands 1', 'game_land', 'SRID=4326;POINT(-77 40)', 'test', 'gl1') returning id`)).rows[0]?.id;
     const pub = (await rows(alice, `insert into public.posts (author_id, species) values ($1, 'pheasant') returning id`, [alice]))[0].id;
-    await age(pub);
     await q(alice, `insert into public.post_place_counts (post_id, place_id, harvested) values ($1, $2, 1)`, [pub, place]);
+    await age(pub);
     await q(bob, 'insert into public.likes (post_id, user_id) values ($1, $2)', [pub, bob]);
   });
 
   it('a crew post with counts, likes and comments leaves every public metric unchanged, for members and outsiders', async () => {
     const before = { eve: await publicMetrics(eve), bob: await publicMetrics(bob), alice: await publicMetrics(alice) };
     const pid = (await rows(alice, `insert into public.posts (author_id, species, group_id) values ($1, 'pheasant', $2) returning id`, [alice, crew]))[0].id;
-    await age(pid);
     await q(alice, `insert into public.post_place_counts (post_id, place_id, harvested, flushed) values ($1, $2, 3, 9)`, [pid, place]);
+    await age(pid);
     await q(bob, 'insert into public.likes (post_id, user_id) values ($1, $2)', [pid, bob]);
     await q(bob, `insert into public.comments (post_id, author_id, body) values ($1, $2, 'nice')`, [pid, bob]);
     await db.query(`update public.comments set public_after = now() - interval '1 hour' where post_id = $1`, [pid]).catch(() => {});

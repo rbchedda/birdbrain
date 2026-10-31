@@ -3,6 +3,10 @@ export const colors = {
   surface: '#17261E',
   surfaceRaised: '#1F3328',
   border: '#2A4A38',
+  /** Interactive tile / avatar fill (one step above surfaceRaised). */
+  tile: '#264733',
+  /** Secondary body copy on surface (9.0:1). */
+  subtle: '#B8C7BC',
   text: '#F2F4EF',
   muted: '#9FB2A5',
   accent: '#FF6A1F',
@@ -29,6 +33,12 @@ export const radius = { sm: 8, md: 12, lg: 20, pill: 999 } as const;
 
 /** Minimum touch target, per the design brief. */
 export const touchTarget = 44;
+
+/** Field-test minimum for every tappable control on Profile pages (review beta-4.4, T5). */
+export const fieldTarget = 56;
+
+/** Scroll bottom padding on Profile subpages: tab bar 83pt + 24pt, so legends are never clipped. */
+export const profileBottomPad = 107;
 
 /**
  * Map palette (birdbrain-map-style spec §2a), separate from the UI tokens so

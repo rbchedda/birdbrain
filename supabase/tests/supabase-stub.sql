@@ -10,7 +10,8 @@ create schema storage;
 grant usage on schema public, extensions, auth, storage to anon, authenticated, service_role;
 
 -- is_anonymous matches the real Supabase column (true for anonymous sign-ins).
-create table auth.users (id uuid primary key, email text, is_anonymous boolean not null default false);
+-- created_at matches the real Supabase column (account creation time, server-set).
+create table auth.users (id uuid primary key, email text, is_anonymous boolean not null default false, created_at timestamptz default now());
 
 create function auth.uid() returns uuid language sql stable as $$
   select nullif(current_setting('request.jwt.claims', true)::json ->> 'sub', '')::uuid

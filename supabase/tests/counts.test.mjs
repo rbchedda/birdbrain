@@ -75,6 +75,8 @@ describe('per-place bird counts', () => {
   });
 
   it('does not let others add counts to someone else’s post', async () => {
+    // Counts lock once a post is public; the rest of this suite edits a pending post.
+    await db.query(`update public.posts set public_after = now() + interval '1 day' where id = $1`, [postId]);
     await assert.rejects(
       as(db, 'authenticated', bob, (tx) =>
         tx.query(`insert into public.post_place_counts (post_id, place_id, flushed) values ($1, $2, 50)`, [postId, fieldA]),

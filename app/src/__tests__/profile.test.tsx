@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
+import { fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 
 import { addJournalEntry, journalEntries, journalIdle, pendingDeletes, resetJournalForRestart, syncJournal } from '@/data/journal';
 import { homeCountyLabel } from '@/app/(tabs)/profile';
@@ -57,7 +57,7 @@ describe('Profile hub', () => {
     expect(screen.getByLabelText('11 flushes')).toBeTruthy();
     expect(screen.getByLabelText('1 game lands')).toBeTruthy();
     expect(screen.queryByLabelText(/life list$/)).toBeNull();
-    expect(screen.getByLabelText(/^Hunt log\. 1 hunt in your private diary/)).toBeTruthy();
+    expect(screen.getByLabelText(/^Hunt log\. 1 hunt · private diary/)).toBeTruthy();
     expect(screen.getByLabelText(/^Dogs\. Ruby/)).toBeTruthy();
     for (const t of ['Trophies & badges', 'Life list']) expect(screen.getByText(t)).toBeTruthy();
     // The diary list itself now lives on the Hunt log page.
@@ -91,7 +91,7 @@ describe('Profile hub', () => {
     await fireEvent.press(await screen.findByTestId('menu-hunt-log'));
     expect(await screen.findByTestId('hunt-log-list')).toBeTruthy();
     expect(screen.getByText(/SGL 211/)).toBeTruthy();
-    expect(screen.getAllByText('🔒 Private').length).toBe(1);
+    expect(screen.getAllByText('Only you').length).toBe(2); // header pill + the entry tag;
   });
 
   it('shows the hunt log with sync status, season stats and tiles', async () => {
@@ -145,9 +145,16 @@ describe('Profile hub', () => {
     await seed();
     await open('/profile/dogs');
     expect(await screen.findByText(/1 hunts · 26 pts · 5 flushes · 2 retrieves/)).toBeTruthy();
-    await fireEvent.changeText(screen.getByLabelText('Dog name'), 'Duke');
+    await fireEvent.changeText(screen.getByLabelText('Dog’s name'), 'Duke');
     await fireEvent.press(screen.getByText('Add dog'));
     expect(await screen.findByTestId('dog-card-Duke')).toBeTruthy();
+    // Remove lives in the dog's detail behind a confirm sheet (review tweak 8).
+    expect(screen.queryByTestId('dog-remove-Duke')).toBeNull();
+    await fireEvent.press(screen.getByTestId('dog-open-Duke'));
+    await fireEvent.press(screen.getByTestId('dog-remove-Duke'));
+    expect(screen.getByText('Remove Duke?')).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('dog-remove-yes'));
+    await waitFor(() => expect(screen.queryByTestId('dog-card-Duke')).toBeNull());
 
     await open('/profile/life-list');
     expect(await screen.findByText('Pheasant')).toBeTruthy();

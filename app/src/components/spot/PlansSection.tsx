@@ -2,13 +2,14 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { EmptyState } from '@/components/States';
 import { PlanRow } from '@/components/spot/PlanParts';
 import { Button, SectionTitle } from '@/components/ui';
 import { refreshPlans, startPlansSyncOnce } from '@/data/hooks';
 import { splitPlans, usePlans } from '@/lib/plans';
 import { colors, fonts, space } from '@/theme/tokens';
 
-export const PLANS_EMPTY = 'No hunts planned. Open a spot on the map and tap Plan a hunt.';
+export const PLANS_EMPTY = 'Pick a spot on the map and tap Plan a hunt. You’ll see legal hours, sunrise and the forecast for that day.';
 
 /** Profile › Plans page (spec 07): the only home for plans. Signed-in only (render it only with a session). */
 export function PlansSection({ owner, title = true }: { owner: string; /** The Plans page already has a header; hide the in-page title there. */ title?: boolean }) {
@@ -25,14 +26,18 @@ export function PlansSection({ owner, title = true }: { owner: string; /** The P
     <View testID="profile-plans">
       {title && <SectionTitle>Plans</SectionTitle>}
       {upcoming.length === 0 ? (
-        <View style={{ gap: space.sm }} testID="plans-empty">
-          <Text style={styles.muted}>{PLANS_EMPTY}</Text>
-          <Button label="Open map" icon="map-outline" onPress={() => router.navigate('/')} />
-        </View>
+        <EmptyState
+          testID="plans-empty"
+          icon="calendar-outline"
+          title="No hunts planned"
+          body={PLANS_EMPTY}
+          action={{ label: 'Open map', onPress: () => router.navigate('/'), testID: 'plans-empty-map' }}
+          secondary={past.length > 0 ? { label: 'See past plans', onPress: () => router.push('/plans/past'), testID: 'plans-empty-past' } : undefined}
+        />
       ) : (
         upcoming.map((p) => <PlanRow key={p.id} plan={p} />)
       )}
-      {past.length > 0 && (
+      {past.length > 0 && upcoming.length > 0 && (
         <Pressable accessibilityRole="link" onPress={() => router.push('/plans/past')} style={styles.link} testID="past-plans-link">
           <Text style={styles.linkText}>Past plans ›</Text>
         </Pressable>

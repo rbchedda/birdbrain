@@ -15,7 +15,9 @@ export function Button({
   busy,
   style,
   a11y,
+  testID,
 }: {
+  testID?: string;
   label: string;
   icon?: IconName;
   onPress?: () => void;
@@ -33,6 +35,7 @@ export function Button({
       accessibilityState={{ disabled: disabled || busy, busy }}
       disabled={disabled || busy}
       onPress={onPress}
+      testID={testID}
       style={({ pressed }) => [
         styles.button,
         variant === 'primary' && styles.primary,
