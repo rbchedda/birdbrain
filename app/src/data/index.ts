@@ -1,5 +1,5 @@
 import { hasSupabase, useSampleData } from '@/lib/env';
-import { supabase } from '@/lib/supabase';
+import { clearStoredSession, supabase } from '@/lib/supabase';
 
 import type { Backend } from './backend';
 import { createSampleBackend } from './sampleBackend';
@@ -13,7 +13,7 @@ import { createUnconfiguredBackend } from './unconfiguredBackend';
  */
 export const backend: Backend =
   hasSupabase && supabase
-    ? createSupabaseBackend(supabase)
+    ? createSupabaseBackend(supabase, { clearStoredSession })
     : useSampleData
       ? createSampleBackend()
       : createUnconfiguredBackend();
