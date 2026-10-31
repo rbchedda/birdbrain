@@ -6,11 +6,13 @@ import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Tex
 import { PostCard } from '@/components/PostCard';
 import { ScreenHeader } from '@/components/Screen';
 import { SignInPrompt } from '@/components/SignInPrompt';
+import { ErrorState, OfflineBanner, SkeletonBlock, useOnline } from '@/components/States';
 import { Button, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { useCrewSize, useInviteCardDismissed, useMyCrews } from '@/data/crew';
 import { useSession } from '@/data/hooks';
 import type { Post } from '@/data/types';
+import { isNetworkError } from '@/lib/connectivity';
 import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
 
 const PAGE = 10;
@@ -106,6 +108,21 @@ export function InviteCard({ onDismiss }: { onDismiss: () => void }) {
   );
 }
 
+/** Loading: skeleton post cards (#1f3328, radius 10), no spinner. */
+function FeedSkeleton() {
+  return (
+    <View style={{ paddingHorizontal: space.lg, gap: space.lg }} testID="feed-loading" accessibilityLabel="Loading feed" accessibilityLiveRegion="polite">
+      {[0, 1].map((i) => (
+        <View key={i} style={{ gap: space.sm, padding: space.lg, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border }}>
+          <SkeletonBlock height={16} width="55%" />
+          <SkeletonBlock height={12} width="40%" />
+          <SkeletonBlock height={120} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export default function FeedScreen() {
   const session = useSession();
   const { tab } = useLocalSearchParams<{ tab?: string }>();
@@ -122,6 +139,10 @@ export default function FeedScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
+  const online = useOnline();
+  const [netDown, setNetDown] = useState(false);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const offline = !online || netDown;
   const loadingMore = useRef(false);
   // 'error' fails closed: no posts until we know the rules were accepted.
   const [rules, setRules] = useState<'unknown' | 'accepted' | 'required' | 'error'>('unknown');
@@ -149,7 +170,10 @@ export default function FeedScreen() {
       setPosts(page.posts);
       setNext(page.next);
       setError(undefined);
+      setNetDown(false);
+      setSavedAt(new Date());
     } catch (e) {
+      setNetDown(isNetworkError(e));
       setError((e as Error).message);
     } finally {
       setRefreshing(false);
@@ -221,7 +245,20 @@ export default function FeedScreen() {
         <ScreenHeader title="Feed" />
         <Segments value={segment} onChange={setSegment} />
         {invite}
-        <ActivityIndicator color={colors.accent} style={{ margin: space.lg }} accessibilityLabel="Loading feed" />
+        <FeedSkeleton />
+      </View>
+    );
+  }
+
+  // Nothing to show and the server failed (not a signal problem): the shared error pattern (empty-states 06).
+  if (error && !offline && posts.length === 0) {
+    return (
+      <View style={styles.root}>
+        <ScreenHeader title="Feed" />
+        <Segments value={segment} onChange={setSegment} />
+        <View style={styles.gate}>
+          <ErrorState title="Couldn’t load the feed." reassurance="The server didn’t answer. Your hunts and plans are safe on this phone." onRetry={refresh} testID="feed-error" />
+        </View>
       </View>
     );
   }
@@ -231,6 +268,11 @@ export default function FeedScreen() {
       <ScreenHeader title="Feed" />
       <Segments value={segment} onChange={setSegment} />
       {invite}
+      {offline && (
+        <OfflineBanner testID="feed-offline" style={{ marginHorizontal: space.lg, marginBottom: space.md }}>
+          {savedAt && posts.length ? `showing posts saved at ${savedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}. New posts load when you’re back in range.` : 'New posts load when you’re back in range.'}
+        </OfflineBanner>
+      )}
       <FlatList
         data={posts}
         keyExtractor={(p) => p.id}
@@ -252,7 +294,7 @@ export default function FeedScreen() {
               <Text style={styles.rulesLink}>Community rules</Text>
             </Pressable>
             {notice && <Notice tone="success">{notice}</Notice>}
-            {error && <Notice tone="error">{error}</Notice>}
+            {error && !offline && <Notice tone="error">{error}</Notice>}
           </View>
         }
         ListEmptyComponent={

@@ -5,6 +5,8 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text
 
 import { countsText, PostCard } from '@/components/PostCard';
 import { ScreenHeader } from '@/components/Screen';
+import { OfflineBanner, useOnline } from '@/components/States';
+import { isNetworkError } from '@/lib/connectivity';
 import { ActionMenu, ReportSheet } from '@/components/Sheets';
 import { SignInPrompt } from '@/components/SignInPrompt';
 import { Button, Notice, SectionTitle, ui } from '@/components/ui';
@@ -22,6 +24,7 @@ export default function PostScreen() {
   const [body, setBody] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
+  const online = useOnline();
   const [menuFor, setMenuFor] = useState<Comment | null>(null);
   const [report, setReport] = useState<ReportTarget | null>(null);
 
@@ -49,11 +52,13 @@ export default function PostScreen() {
   }
 
   const p = post.data;
+  const offline = !online || (!!post.error && isNetworkError(post.error));
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScreenHeader title="Post" back />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        {post.error && <Notice tone="error">{post.error.message}</Notice>}
+        {offline && <OfflineBanner testID="post-offline">{p ? 'you can read this post. Comments and likes wait for signal.' : 'this post loads when you’re back in range.'}</OfflineBanner>}
+        {post.error && !offline && <Notice tone="error">{post.error.message}</Notice>}
         {!post.loading && !p && !post.error && (
           <Notice>This post isn’t available. It may be deleted, not public yet, or from someone you’ve blocked.</Notice>
         )}

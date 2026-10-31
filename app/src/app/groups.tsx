@@ -3,6 +3,8 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ScreenHeader } from '@/components/Screen';
 import { SignInPrompt } from '@/components/SignInPrompt';
+import { EmptyState } from '@/components/States';
+import { router } from 'expo-router';
 import { Tag } from '@/components/Tag';
 import { Button, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
@@ -23,6 +25,15 @@ export default function GroupsScreen() {
         <ScrollView contentContainerStyle={styles.body}>
           {groups.error && <Notice tone="error">{groups.error.message}</Notice>}
           {error && <Notice tone="error">{error}</Notice>}
+          {groups.data && groups.data.length === 0 && !groups.error && (
+            <EmptyState
+              testID="groups-empty"
+              icon="people-outline"
+              title="No crews yet"
+              body="Start a private crew and invite the people you hunt with by link or QR code."
+              action={{ label: 'Create a crew', onPress: () => router.push('/crew/invite') }}
+            />
+          )}
           {groups.data?.map((g) => (
             <View key={g.id} style={ui.card} testID={`group-${g.slug}`}>
               <View style={ui.row}>

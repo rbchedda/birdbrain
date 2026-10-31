@@ -1,6 +1,9 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { router } from 'expo-router';
+
 import { ScreenHeader } from '@/components/Screen';
+import { EmptyState } from '@/components/States';
 import { PrivacyPill } from '@/components/stats/parts';
 import { PlanRow } from '@/components/spot/PlanParts';
 import { useSession } from '@/data/hooks';
@@ -15,7 +18,15 @@ export default function PastPlans() {
     <View style={styles.root}>
       <ScreenHeader back backFallback="/profile/plans" title="Past plans" right={<PrivacyPill testID="page-privacy" />} />
       <ScrollView contentContainerStyle={styles.body}>
-        {plans && !past.length && <Text style={styles.muted}>No past plans yet.</Text>}
+        {plans && !past.length && (
+          <EmptyState
+            testID="past-plans-empty"
+            icon="calendar-outline"
+            title="No past plans"
+            body="Plans move here the day after their date, so you can reuse a good one next season."
+            secondary={{ label: 'Back to Plans', onPress: () => (router.canGoBack() ? router.back() : router.replace('/profile/plans')) }}
+          />
+        )}
         {past.map((p) => (
           <PlanRow key={p.id} plan={p} />
         ))}
