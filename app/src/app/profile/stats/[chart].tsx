@@ -11,7 +11,7 @@ import { useStatsData } from '@/components/stats/useStats';
 import { seasonLabel } from '@/data/stats';
 import { ALL_TIME, fmtNum, huntsInScope, speciesFor, type CalCell, type DogRow } from '@/data/statsCharts';
 import { formatDay } from '@/lib/time';
-import { colors, fonts, radius, space } from '@/theme/tokens';
+import { colors, fonts, profileBottomPad, radius, space } from '@/theme/tokens';
 
 const TITLES: Record<string, string> = { days: 'Days afield', calendar: 'Season calendar', species: 'What you hunted', flush: 'Flushes per hour', places: 'Places', dogs: 'Dog work' };
 
@@ -233,7 +233,7 @@ function DayCell({ cell, onPress }: { cell: CalCell; onPress: () => void }) {
 const CELL = 44;
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
-  body: { paddingHorizontal: space.lg, paddingBottom: space.xxl * 2, gap: space.md },
+  body: { paddingHorizontal: space.lg, paddingBottom: profileBottomPad, gap: space.md },
   insight: { fontFamily: fonts.heading, fontSize: 22, lineHeight: 28, color: colors.text },
   legend: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md },
   cap: { fontFamily: fonts.body, fontSize: 12, lineHeight: 16, color: colors.muted },

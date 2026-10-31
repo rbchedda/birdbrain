@@ -8,6 +8,21 @@ import { StatTiles } from './StatTiles';
 
 const monthName = (ym: string) => new Date(`${ym}-15T12:00:00Z`).toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
 
+/** "16.5 hours · 3 miles · …" with every 0-valued item hidden (review tweak 13: no "0 counties"). */
+export function summaryLine(stats: Pick<SeasonStats, 'hours' | 'miles' | 'shots' | 'counties' | 'dogRetrieves'>): string {
+  const items: [number, string, string][] = [
+    [stats.hours, 'hour', 'hours'],
+    [stats.miles, 'mile', 'miles'],
+    [stats.shots, 'shot', 'shots'],
+    [stats.counties, 'county', 'counties'],
+    [stats.dogRetrieves, 'retrieve', 'retrieves'],
+  ];
+  return items
+    .filter(([v]) => v > 0)
+    .map(([v, one, many]) => `${v} ${v === 1 ? one : many}`)
+    .join(' · ');
+}
+
 /** Season stats, led by days afield. Effort only. */
 export function SeasonStatsView({ stats }: { stats: SeasonStats }) {
   return (
@@ -22,9 +37,11 @@ export function SeasonStatsView({ stats }: { stats: SeasonStats }) {
           { label: 'dog points', value: stats.dogPoints },
         ]}
       />
-      <Text style={ui.muted}>
-        {`${stats.hours} hours · ${stats.miles} miles · ${stats.shots} shots · ${stats.counties} counties · ${stats.dogRetrieves} retrieves`}
-      </Text>
+      {summaryLine(stats) !== '' && (
+        <Text style={ui.muted} testID="season-summary-line">
+          {summaryLine(stats)}
+        </Text>
+      )}
       {stats.byMonth.length > 0 && (
         <View style={ui.card}>
           <View style={styles.tr}>

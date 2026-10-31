@@ -13,7 +13,7 @@ import { seasonLabel } from '@/data/stats';
 import { ALL_TIME, type DogRow } from '@/data/statsCharts';
 import { flags } from '@/lib/flags';
 import { formatDay } from '@/lib/time';
-import { colors, fonts, radius, space } from '@/theme/tokens';
+import { colors, fonts, profileBottomPad, radius, space } from '@/theme/tokens';
 
 export const scopeLabel = (scope: string) => (scope === ALL_TIME ? 'All time' : `${seasonLabel(scope)} season`);
 
@@ -43,10 +43,10 @@ export default function StatsScreen() {
           </View>
         )}
         {d.guest && (
-          <View style={styles.account} testID="stats-guest-note">
-            <Text style={styles.accountText}>Your stats are on this phone only. Sign in and they are saved to your account, so they come back on a new phone.</Text>
-            <Button label="Sign in to save my stats" icon="log-in-outline" onPress={() => router.push('/sign-in')} />
-          </View>
+          // Review tweak 15: the sign-in card lives once, on Profile root. Pushed pages get a 1-line note (the note itself is the 56pt tap target).
+          <Pressable accessibilityRole="link" accessibilityLabel="On this phone only. Sign in to save your stats to your account" onPress={() => router.push('/sign-in')} style={styles.guestNote} testID="stats-guest-note">
+            <Text style={styles.cap} numberOfLines={1}>On this phone only. <Text style={styles.guestLink}>Sign in to save ›</Text></Text>
+          </Pressable>
         )}
         {d.restoring && !d.loading && (
           <View testID="stats-restoring"><Notice>Restoring your hunts from your account…</Notice></View>
@@ -199,7 +199,7 @@ function EmptyState({ scope, allTime, guest }: { scope: string; allTime: boolean
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
-  body: { paddingHorizontal: space.lg, paddingBottom: space.xxl * 2, gap: space.md },
+  body: { paddingHorizontal: space.lg, paddingBottom: profileBottomPad, gap: space.md },
   legend: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md, marginTop: space.xs },
   cap: { fontFamily: fonts.body, fontSize: 12, lineHeight: 16, color: colors.muted },
   bests: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
@@ -209,6 +209,8 @@ const styles = StyleSheet.create({
   bestDate: { fontFamily: fonts.body, fontSize: 12, color: colors.muted },
   dogName: { fontFamily: fonts.heading, fontSize: 18, color: colors.text, marginBottom: 2 },
   dogSub: { fontFamily: fonts.body, fontSize: 12, color: colors.muted },
+  guestNote: { minHeight: 56, justifyContent: 'center' },
+  guestLink: { fontFamily: fonts.bodySemi, color: colors.accent },
   account: { gap: space.sm, padding: space.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   accountText: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.text },
   footer: { gap: space.sm },
@@ -216,7 +218,7 @@ const styles = StyleSheet.create({
   sampleLinkText: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.accent },
   iconBtn: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', gap: space.sm, padding: space.lg, borderRadius: 16, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.border },
-  emptyTitle: { fontFamily: fonts.heading, fontSize: 28, color: colors.text },
-  emptyBody: { fontFamily: fonts.body, fontSize: 15, lineHeight: 21, color: colors.muted, textAlign: 'center' },
+  emptyTitle: { fontFamily: fonts.heading, fontSize: 24, textTransform: 'uppercase', color: colors.text },
+  emptyBody: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, color: colors.subtle, textAlign: 'center' },
   sectionLabel: { fontFamily: fonts.bodySemi, fontSize: 13, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.muted },
 });

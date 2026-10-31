@@ -32,7 +32,7 @@ describe('Stats as a guest', () => {
     expect(screen.getByText('Your season starts here')).toBeTruthy();
     expect(screen.getByText('Log your first hunt')).toBeTruthy();
     expect(screen.getByTestId('stats-guest-note')).toBeTruthy();
-    expect(screen.getByText(/Sign in and they are saved to your account/)).toBeTruthy();
+    expect(screen.getByText(/On this phone only\./)).toBeTruthy();
     expect(screen.queryByText(/reinstall/i)).toBeNull();
     expect(list).not.toHaveBeenCalled();
   });

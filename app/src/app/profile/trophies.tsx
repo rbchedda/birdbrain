@@ -4,7 +4,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { ScreenHeader } from '@/components/Screen';
 import { Chip, SectionTitle } from '@/components/ui';
 import { BadgeGrid, HuntLogList, RecapPreview, useProfileData } from '@/components/profile';
-import { colors, space } from '@/theme/tokens';
+import { colors, profileBottomPad, space } from '@/theme/tokens';
 
 /** Profile › Trophies (wireframe 08): [Hunts] [Badges] [Recap]. */
 export default function TrophiesScreen() {
@@ -35,6 +35,6 @@ export default function TrophiesScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
-  body: { paddingHorizontal: space.lg, paddingBottom: space.xxl, gap: space.sm },
+  body: { paddingHorizontal: space.lg, paddingBottom: profileBottomPad, gap: space.sm },
   row: { flexDirection: 'row', gap: space.sm },
 });
