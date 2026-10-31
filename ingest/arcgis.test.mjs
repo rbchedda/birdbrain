@@ -10,6 +10,7 @@ import {
   ingestCounties,
   ingestSource,
   missingFields,
+  parseMinRatio,
   pick,
   SOURCES,
   toCountyRows,
@@ -297,5 +298,68 @@ describe('counties (spatial join for place county)', () => {
     assert.equal(res.upserted, 3);
     const again = await ingestCounties(db, { fetchImpl, minRows: 3 });
     assert.equal(again.skipped, true);
+  });
+});
+
+describe('shrink and truncation guard', () => {
+  const url = SOURCES.pheasant_stocking.layerUrl;
+  const count = async (db) => (await db.query("select count(*)::int as n from public.places where source = $1", [SOURCES.pheasant_stocking.source])).rows[0].n;
+  const seed = async () => {
+    const db = await createTestDb();
+    await ingestSource(db, SOURCES.pheasant_stocking, { fetchImpl: fakeServer({ [url]: { features: stockingFeatures, lastEditDate: 1 } }, { pageCap: 1000 }).fetchImpl });
+    assert.equal(await count(db), 2);
+    return db;
+  };
+
+  it('aborts without deleting when a source drops below 80% of its last count', async () => {
+    const db = await seed();
+    const { fetchImpl } = fakeServer({ [url]: { features: stockingFeatures.slice(0, 1), lastEditDate: 2 } }, { pageCap: 1000 });
+    await assert.rejects(ingestSource(db, SOURCES.pheasant_stocking, { fetchImpl }), /shrink guard: 1 rows is under 80% of the previous 2/);
+    assert.equal(await count(db), 2);
+  });
+
+  it('honours a configurable threshold (option and INGEST_MIN_RATIO)', async () => {
+    const db = await seed();
+    const { fetchImpl } = fakeServer({ [url]: { features: stockingFeatures.slice(0, 1), lastEditDate: 2 } }, { pageCap: 1000 });
+    const r = await ingestSource(db, SOURCES.pheasant_stocking, { fetchImpl, minRatio: 0.5 });
+    assert.equal(r.deleted, 1);
+    assert.equal(parseMinRatio(undefined), 0.8);
+    assert.equal(parseMinRatio('0.6'), 0.6);
+    assert.throws(() => parseMinRatio('abc'), /INGEST_MIN_RATIO/);
+    assert.throws(() => parseMinRatio('1.5'), /INGEST_MIN_RATIO/);
+    const prev = process.env.INGEST_MIN_RATIO;
+    process.env.INGEST_MIN_RATIO = 'nope';
+    try {
+      await assert.rejects(ingestSource(db, SOURCES.pheasant_stocking, { fetchImpl, force: true }), /INGEST_MIN_RATIO/);
+    } finally {
+      if (prev === undefined) delete process.env.INGEST_MIN_RATIO; else process.env.INGEST_MIN_RATIO = prev;
+    }
+  });
+
+  const truncating = (pageFn) => async (raw) => {
+    const u = new URL(raw);
+    if (u.pathname.endsWith('/query')) return { ok: true, json: async () => pageFn(Number(u.searchParams.get('resultOffset'))) };
+    return { ok: true, json: async () => ({ name: 'x', maxRecordCount: 2, editingInfo: { lastEditDate: 3 }, fields: [] }) };
+  };
+
+  it('aborts on an empty page that still claims exceededTransferLimit', async () => {
+    const db = await seed();
+    const fetchImpl = truncating((offset) => offset === 0
+      ? { features: stockingFeatures, exceededTransferLimit: true }
+      : { features: [], exceededTransferLimit: true });
+    await assert.rejects(ingestSource(db, SOURCES.pheasant_stocking, { fetchImpl }), /partial result.*refusing to delete/);
+    assert.equal(await count(db), 2);
+  });
+
+  it('aborts on a short page before the end', async () => {
+    const db = await seed();
+    const fetchImpl = truncating(() => ({ features: stockingFeatures.slice(0, 1), exceededTransferLimit: true }));
+    await assert.rejects(ingestSource(db, SOURCES.pheasant_stocking, { fetchImpl }), /short page \(1 < 2\)/);
+    assert.equal(await count(db), 2);
+  });
+
+  it('non-strict fetchFeatures still follows server-capped pages', async () => {
+    const { fetchImpl } = fakeServer({ 'https://x/L': { features: stockingFeatures } });
+    assert.equal((await fetchFeatures('https://x/L', { fetchImpl })).length, 2);
   });
 });
