@@ -22,6 +22,21 @@ import { classifyAccess } from '../app/src/data/access.ts';
 const PGC = 'https://services1.arcgis.com/k8yxvICm95iIFicb/arcgis/rest/services';
 const PAGE_SIZE = 1000;
 // PGC's ArcGIS host is sometimes slow; cap each request so one hung layer can't wedge a run.
+/**
+ * Relative-shrink guard: a source whose fresh row count is below this fraction
+ * of the rows it already has in places is aborted without deleting anything.
+ * Override with INGEST_MIN_RATIO (0..1) or ingestSource's { minRatio }.
+ */
+export const DEFAULT_MIN_RATIO = 0.8;
+
+/** Parse a ratio in [0, 1]; throws on anything else so a typo can't disable the guard. */
+export function parseMinRatio(value, fallback = DEFAULT_MIN_RATIO) {
+  if (value === undefined || value === null || value === '') return fallback;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0 || n > 1) throw new Error(`INGEST_MIN_RATIO must be a number from 0 to 1, got "${value}".`);
+  return n;
+}
+
 export const FETCH_TIMEOUT_MS = Number(process.env.INGEST_FETCH_TIMEOUT_MS) || 60_000;
 
 // Supabase Root 2021 CA (public). The pooler's chain ends here, not in Node's trust store.
@@ -202,8 +217,9 @@ export async function fetchLayerInfo(layerUrl, { fetchImpl = fetch, timeoutMs } 
 }
 
 /** Every feature as WGS84 GeoJSON, following ArcGIS pagination. */
-export async function fetchFeatures(layerUrl, { fetchImpl = fetch, pageSize = PAGE_SIZE, timeoutMs } = {}) {
+export async function fetchFeatures(layerUrl, { fetchImpl = fetch, pageSize = PAGE_SIZE, timeoutMs, strict = false } = {}) {
   const features = [];
+  let prevMore = false;
   // Advance by what the server returned; it may cap pages below pageSize.
   for (let offset = 0; ; offset = features.length) {
     const params = new URLSearchParams({
@@ -219,7 +235,15 @@ export async function fetchFeatures(layerUrl, { fetchImpl = fetch, pageSize = PA
     const page = await getJson(`${layerUrl}/query?${params}`, fetchImpl, timeoutMs);
     features.push(...(page.features ?? []));
     const more = page.exceededTransferLimit ?? page.properties?.exceededTransferLimit;
-    if (!page.features?.length || (!more && page.features.length < pageSize)) break;
+    const n = page.features?.length ?? 0;
+    // strict: pageSize is already capped at the layer's maxRecordCount, so a
+    // short page that still says "more", or an empty page after "more", means
+    // the server truncated the result.
+    if (strict && more && n === 0) throw new Error(`partial result at offset ${offset}: exceededTransferLimit but no features`);
+    if (strict && more && n < pageSize) throw new Error(`partial result at offset ${offset}: short page (${n} < ${pageSize}) with exceededTransferLimit`);
+    if (strict && !n && prevMore) throw new Error(`partial result at offset ${offset}: empty page after exceededTransferLimit`);
+    prevMore = Boolean(more);
+    if (!n || (!more && n < pageSize)) break;
   }
   return features;
 }
@@ -423,18 +447,29 @@ export async function needsRun(db, config, lastEditDate) {
 }
 
 /** Ingest one source end to end. Returns a summary for logging. */
-export async function ingestSource(db, config, { fetchImpl = fetch, force = false } = {}) {
+export async function ingestSource(db, config, { fetchImpl = fetch, force = false, minRatio = parseMinRatio(process.env.INGEST_MIN_RATIO) } = {}) {
+  minRatio = parseMinRatio(minRatio);
   const info = await fetchLayerInfo(config.layerUrl, { fetchImpl });
   if (!force && !(await needsRun(db, config, info.lastEditDate))) {
     return { source: config.source, skipped: true, lastEditDate: info.lastEditDate };
   }
-  const features = await fetchFeatures(config.layerUrl, { fetchImpl, pageSize: Math.min(PAGE_SIZE, info.maxRecordCount || PAGE_SIZE) });
+  let features;
+  try {
+    features = await fetchFeatures(config.layerUrl, { fetchImpl, pageSize: Math.min(PAGE_SIZE, info.maxRecordCount || PAGE_SIZE), strict: true });
+  } catch (err) {
+    throw new Error(`${config.source}: ${err.message}; refusing to delete existing rows.`);
+  }
   const rows = toRows(config, features);
   // An empty or wildly short result usually means a schema change upstream; don't wipe the table.
   if (features.length > 0 && rows.length === 0) {
     throw new Error(`${config.source}: ${features.length} features but 0 usable rows. Check field mapping with --describe.`);
   }
   if (features.length === 0) throw new Error(`${config.source}: layer returned no features; refusing to delete existing rows.`);
+  const { rows: prevRows } = await db.query('select count(*)::int as n from public.places where source = $1', [config.source]);
+  const previous = Number(prevRows[0]?.n ?? 0);
+  if (previous > 0 && rows.length < previous * minRatio) {
+    throw new Error(`${config.source}: shrink guard: ${rows.length} rows is under ${Math.round(minRatio * 100)}% of the previous ${previous}; refusing to delete existing rows. Set INGEST_MIN_RATIO lower if the drop is real.`);
+  }
   const result = await upsertRows(db, config, rows, { layerUrl: config.layerUrl, lastEditDate: info.lastEditDate });
   return { source: config.source, features: features.length, ...result, lastEditDate: info.lastEditDate };
 }
