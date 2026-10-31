@@ -4,7 +4,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { ScreenHeader } from '@/components/Screen';
 import { AccountSettings, ProfileSettings, SectionRow } from '@/components/profile';
 import { Button, SectionTitle } from '@/components/ui';
-import { colors, space } from '@/theme/tokens';
+import { colors, profileBottomPad, space } from '@/theme/tokens';
 
 export default function SettingsScreen() {
   return (
@@ -24,5 +24,5 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
-  body: { paddingHorizontal: space.lg, paddingBottom: space.xxl, gap: space.sm },
+  body: { paddingHorizontal: space.lg, paddingBottom: profileBottomPad, gap: space.sm },
 });

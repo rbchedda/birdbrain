@@ -124,6 +124,6 @@ describe('Log hunt never creates a post', () => {
   it('Profile shows private diary entries, never posts', async () => {
     await open('/profile/hunt-log');
     expect(await screen.findByTestId('hunt-log-list')).toBeTruthy();
-    expect(screen.getAllByText('🔒 Private').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Only you').length).toBeGreaterThan(0);
   });
 });

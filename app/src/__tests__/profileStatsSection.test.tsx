@@ -40,7 +40,7 @@ describe('Profile › Stats section', () => {
     await open('/profile');
     const section = await screen.findByTestId('profile-stats-section');
     expect(section).toBeTruthy();
-    expect(screen.getByRole('header', { name: 'Stats' })).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'This season' })).toBeTruthy();
     expect(screen.getByText(/Only you/)).toBeTruthy();
     expect(await screen.findByTestId('profile-stats-live')).toBeTruthy();
     expect(screen.getByLabelText('1 days afield')).toBeTruthy();
@@ -64,21 +64,23 @@ describe('Profile › Stats section', () => {
     expect(screen.getByLabelText('1 days afield')).toBeTruthy();
   });
 
-  it('no hunts this season: a labelled SAMPLE preview, "Log your first hunt", and still a way into Stats', async () => {
+  it('no hunts this season: one "Your season starts here" card, no sample numbers, a 56pt "Log your first hunt"', async () => {
     await open('/profile');
-    expect(await screen.findByTestId('profile-stats-sample')).toBeTruthy();
-    expect(screen.getByText('SAMPLE DATA')).toBeTruthy();
-    expect(screen.getByTestId('profile-stats-empty-copy')).toBeTruthy();
-    expect(screen.getByLabelText('118 flushes')).toBeTruthy();
-    expect(screen.getByText(/Only you/)).toBeTruthy();
-    expect(screen.queryByTestId('profile-stats-live')).toBeNull();
-    await fireEvent.press(screen.getAllByText('Log your first hunt')[0]);
+    const card = await screen.findByTestId('profile-season-starts');
+    expect(card).toHaveTextContent(/Your season starts here/);
+    expect(screen.queryByTestId('profile-stats-sample')).toBeNull();
+    expect(screen.queryByText(/SAMPLE/)).toBeNull();
+    expect(screen.queryByTestId('profile-stats-section')).toBeNull();
+    // No digits anywhere on the empty Profile body (menu summaries included).
+    expect(screen.getByTestId('profile-menu')).not.toHaveTextContent(/\d/);
+    expect(card).not.toHaveTextContent(/\d/);
+    await fireEvent.press(screen.getByTestId('profile-log-first'));
     expect(await screen.findByText(/Private diary entry · not a post/)).toBeTruthy();
   });
 
-  it('empty state "See all stats" still opens the Stats page', async () => {
+  it('empty state: the Stats menu row still opens the Stats page', async () => {
     await open('/profile');
-    await fireEvent.press(await screen.findByTestId('profile-stats-see-all'));
+    await fireEvent.press(await screen.findByTestId('menu-stats'));
     expect(await screen.findByTestId('stats-empty')).toBeTruthy();
   });
 

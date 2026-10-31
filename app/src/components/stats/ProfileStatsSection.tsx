@@ -5,119 +5,109 @@ import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-na
 
 import { Button } from '@/components/ui';
 import { buildStats } from '@/data/statsCharts';
-import { sampleEntries, sampleLookup, sampleRoster, SAMPLE_SEASON, SAMPLE_TODAY } from '@/data/statsSample';
-import { seasonLabel } from '@/data/stats';
-import { flags } from '@/lib/flags';
-import { colors, fonts, radius, space } from '@/theme/tokens';
+import { colors, fieldTarget, fonts, radius, space } from '@/theme/tokens';
 
 import { MonthBars } from './charts';
-import { PrivacyPill, SampleBadge, Skeleton, TilesRow } from './parts';
+import { PrivacyPill, Skeleton, TilesRow } from './parts';
 import { useStatsData } from './useStats';
 
-/**
- * Profile › Stats section: a live, private preview of this season (the same
- * numbers as the Stats page, from the same aggregation and account restore),
- * with one obvious way into the full page. No hunts this season shows a
- * clearly labelled SAMPLE preview instead. Always the current season: past
- * seasons and All time (the multiYearStats gate) live on the full page.
- */
-export function ProfileStatsSection() {
+export type ProfileStats = ReturnType<typeof useProfileStats>;
+
+/** This season's stats for Profile root (same aggregation + account restore as the Stats page). */
+export function useProfileStats() {
   const d = useStatsData(false);
+  const model = useMemo(() => buildStats(d.entries, d.current, d.ctx), [d.entries, d.current, d.ctx]);
+  return { d, model, empty: !d.loading && model.state === 'empty' };
+}
+
+/**
+ * Zero hunts this season (review beta-4.4 T1, stats spec §6): ONE card, no numbers,
+ * no zero tiles and no sample data. "YOUR SEASON STARTS HERE" + one 56pt primary button.
+ */
+export function SeasonStartsCard() {
+  return (
+    <View style={s.starts} testID="profile-season-starts">
+      <View style={s.startsIcon}>
+        <Ionicons name="bar-chart" size={32} color={colors.dove} />
+      </View>
+      <Text style={s.startsTitle} accessibilityRole="header">Your season starts here</Text>
+      <Text style={s.startsBody}>Log a hunt and BirdBrain builds your days afield, season calendar and flush rates. Only you can see them.</Text>
+      <Button label="Log your first hunt" variant="primary" onPress={() => router.push('/new/log')} style={s.bigBtn} testID="profile-log-first" />
+    </View>
+  );
+}
+
+/**
+ * Profile › "THIS SEASON": a live, private preview of this season with one
+ * obvious way into the full page. Rendered only when there is at least one
+ * hunt this season (the empty case is SeasonStartsCard). Always the current
+ * season: past seasons and All time (multiYearStats) live on the Stats page.
+ */
+export function ProfileStatsSection({ stats }: { stats: ProfileStats }) {
+  const { d, model, empty } = stats;
   const win = useWindowDimensions();
   const chartW = Math.min(win.width, 560) - space.lg * 2 - space.md * 2;
-  const model = useMemo(() => buildStats(d.entries, d.current, d.ctx), [d.entries, d.current, d.ctx]);
-  const empty = model.state === 'empty';
-  const sample = useMemo(
-    () =>
-      empty
-        ? buildStats(sampleEntries(), SAMPLE_SEASON, { lookup: sampleLookup, roster: sampleRoster, today: SAMPLE_TODAY, woodcockSeparate: flags.woodcockLog, compareLast: false })
-        : null,
-    [empty],
-  );
+  if (empty) return null;
   const open = () => router.push('/profile/stats');
-  const m = empty && sample ? sample : model;
 
   return (
     <View style={s.wrap} testID="profile-stats-section">
       <View style={s.head}>
-        <Text style={s.title} accessibilityRole="header">Stats</Text>
-        <Text style={s.season} numberOfLines={1}>{seasonLabel(d.current)} season</Text>
-        <View style={{ flex: 1 }} />
-        <PrivacyPill />
+        <Text style={s.title} accessibilityRole="header">This season</Text>
+        <PrivacyPill label="Only you can see these stats" />
       </View>
 
       {d.loading ? (
         <View style={{ gap: space.sm }} testID="profile-stats-loading" accessibilityLabel="Loading your stats" accessibilityLiveRegion="polite">
-          <Skeleton h={80} />
+          <Skeleton h={76} />
           <Skeleton h={120} />
         </View>
       ) : (
         <>
-          {empty && (
-            <View style={s.sampleHead}>
-              <SampleBadge />
-              <Text style={s.cap} testID="profile-stats-empty-copy">
-                No hunts logged this season yet. This is what your stats will look like.
-              </Text>
-            </View>
-          )}
-          {/* Tapping the preview also opens Stats; it stays non-accessible so each tile keeps its own label (the button below is the screen-reader path). */}
-          <Pressable accessible={false} onPress={open} style={empty ? s.dim : undefined} testID={empty ? 'profile-stats-sample' : 'profile-stats-live'}>
+          {/* Tapping the preview also opens Stats; it stays non-accessible so each tile keeps its own label (the row below is the screen-reader path). */}
+          <Pressable accessible={false} onPress={open} testID="profile-stats-live">
             <View style={{ gap: space.sm }}>
-              <TilesRow tiles={m.tiles} />
-              {m.gates.days.ready && (
-                <View style={s.chart} accessible accessibilityLabel={empty ? `Sample chart. ${m.days.a11y}` : m.days.a11y}>
+              <TilesRow tiles={model.tiles} />
+              {model.gates.days.ready && (
+                <View style={s.chart} accessible accessibilityLabel={model.days.a11y}>
                   <Text style={s.chartTitle}>Days afield by month</Text>
-                  <MonthBars bars={m.days.bars} compare={false} selected={null} width={chartW} height={120} />
+                  <MonthBars bars={model.days.bars} compare={false} selected={null} width={chartW} height={120} />
                 </View>
               )}
             </View>
           </Pressable>
-          {!empty && model.state === 'few' && <Text style={s.cap}>Charts fill in as you log more hunts.</Text>}
-          {d.guest && !empty && (
-            <Text style={s.cap} testID="profile-stats-guest-note">On this phone only. Sign in to save your stats to your account.</Text>
-          )}
-          {empty ? (
-            <View style={{ gap: space.sm }}>
-              <Button label="Log your first hunt" icon="add" variant="primary" onPress={() => router.push('/new/log')} />
-              <SeeAll label="See all stats" onPress={open} />
-            </View>
-          ) : (
-            <SeeAll label="See all stats" onPress={open} primary />
-          )}
+          {model.state === 'few' && <Text style={s.cap}>Charts fill in as you log more hunts.</Text>}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="See all stats"
+            accessibilityHint="Opens your full stats page"
+            onPress={open}
+            hitSlop={{ left: 16, right: 16 }}
+            style={({ pressed }) => [s.seeAll, pressed && { opacity: 0.7 }]}
+            testID="profile-stats-see-all"
+          >
+            <Text style={s.seeAllText}>See all stats</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.accent} />
+          </Pressable>
         </>
       )}
     </View>
   );
 }
 
-function SeeAll({ label, onPress, primary }: { label: string; onPress: () => void; primary?: boolean }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityHint="Opens your full stats page"
-      onPress={onPress}
-      style={[s.seeAll, primary && s.seeAllPrimary]}
-      testID="profile-stats-see-all"
-    >
-      <Text style={[s.seeAllText, primary && { color: colors.onAccent }]}>{label}</Text>
-      <Ionicons name="chevron-forward" size={18} color={primary ? colors.onAccent : colors.accent} />
-    </Pressable>
-  );
-}
-
 const s = StyleSheet.create({
-  wrap: { gap: space.sm, marginTop: space.md },
-  head: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  title: { fontFamily: fonts.headingSemi, fontSize: 18, color: colors.text },
-  season: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, flexShrink: 1 },
+  wrap: { gap: space.sm },
+  // "THIS SEASON": Barlow Condensed 22/700, uppercase, 24pt above and 8pt below (review tweak 10).
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: space.xl, marginBottom: 0 },
+  title: { fontFamily: fonts.heading, fontSize: 22, textTransform: 'uppercase', color: colors.text },
   cap: { fontFamily: fonts.body, fontSize: 12, lineHeight: 16, color: colors.muted },
-  sampleHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  dim: { opacity: 0.7 },
   chart: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: radius.md, padding: space.md, gap: space.xs },
   chartTitle: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.muted },
-  seeAll: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, borderRadius: radius.md, borderWidth: 1, borderColor: colors.accent },
-  seeAllPrimary: { backgroundColor: colors.accent },
+  seeAll: { minHeight: fieldTarget, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
   seeAllText: { fontFamily: fonts.bodySemi, fontSize: 16, color: colors.accent },
+  starts: { alignItems: 'center', gap: space.md, padding: space.xl, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  startsIcon: { width: 72, height: 72, borderRadius: 16, backgroundColor: colors.tile, alignItems: 'center', justifyContent: 'center' },
+  startsTitle: { fontFamily: fonts.heading, fontSize: 24, textTransform: 'uppercase', color: colors.text, textAlign: 'center' },
+  startsBody: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, color: colors.subtle, textAlign: 'center' },
+  bigBtn: { alignSelf: 'stretch', minHeight: fieldTarget },
 });

@@ -34,7 +34,11 @@ export function Patterns() {
 export const HATCH = 'url(#bb-hatch)';
 export const DOTS = 'url(#bb-dots)';
 
-const niceMax = (n: number) => Math.max(5, Math.ceil(n / 5) * 5);
+/** Day counts are whole numbers: ticks are 0, ceil(max/2), max — never "2.5" (review tweak 9). */
+export const dayTicks = (rawMax: number) => {
+  const mx = Math.max(2, Math.ceil(rawMax));
+  return { mx, ticks: [0, Math.ceil(mx / 2), mx] };
+};
 
 /** Little legend swatch. */
 export function Swatch({ kind, label }: { kind: 'solid' | 'hatch' | 'dots'; label: string }) {
@@ -61,17 +65,17 @@ export function MonthBars({
   const top = 26;
   const bot = height - 24;
   const ph = bot - top;
-  const mx = niceMax(Math.max(...bars.map((b) => Math.max(b.days, compare ? (b.last ?? 0) : 0)), 1));
+  const { mx, ticks } = dayTicks(Math.max(...bars.map((b) => Math.max(b.days, compare ? (b.last ?? 0) : 0)), 1));
   const gw = (width - 26) / Math.max(bars.length, 1);
   return (
     <Svg width={width} height={height} accessibilityLabel="Bar chart of days afield by month">
       <Patterns />
-      {[0, mx / 2, mx].map((v) => {
+      {ticks.map((v) => {
         const y = bot - (ph * v) / mx;
         return (
           <G key={v}>
-            <Line x1={22} x2={width} y1={y} y2={y} stroke={colors.border} strokeWidth={1} strokeDasharray={v === 0 ? undefined : '3 4'} />
-            <SvgText fontFamily={fonts.body} x={0} y={y + 4} fontSize={12} fill={colors.muted}>{fmtNum(v)}</SvgText>
+            <Line x1={22} x2={width} y1={y} y2={y} stroke={colors.border} strokeWidth={1} strokeDasharray={v === 0 ? undefined : '3 3'} />
+            <SvgText fontFamily={fonts.bodyMedium} x={0} y={y + 4} fontSize={12} fill={colors.muted}>{String(v)}</SvgText>
           </G>
         );
       })}
