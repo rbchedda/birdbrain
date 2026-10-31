@@ -25,6 +25,8 @@ before(async () => {
   for (const [id, n] of [[alice, 'alice'], [bob, 'bob'], [carol, 'carol'], [dave, 'dave'], [erin, 'erin']]) {
     await createUser(db, id, `${n}@example.test`);
   }
+  // Reporters only count toward auto-hide once their account is 3+ days old.
+  await db.query(`update auth.users set created_at = now() - interval '30 days'`);
 });
 
 describe('reporting', () => {
@@ -77,7 +79,7 @@ describe('hidden pending review after N reports', () => {
 
   it('does not count guest (anonymous) reporters toward the threshold', async () => {
     const guests = ['f1', 'f2', 'f3'].map(u);
-    for (const g of guests) await db.query('insert into auth.users (id, email, is_anonymous) values ($1, null, true)', [g]);
+    for (const g of guests) await db.query(`insert into auth.users (id, email, is_anonymous, created_at) values ($1, null, true, now() - interval '30 days')`, [g]);
     const id = await post(alice, 'guests reported this');
     await age(id);
     for (const g of guests) await report(g, 'post_id', id);
