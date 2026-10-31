@@ -42,8 +42,9 @@ describe('Profile is a menu', () => {
     expect(rows).toHaveLength(4);
     ROWS.forEach(([, label], i) => expect(rows[i].props.accessibilityLabel).toMatch(new RegExp(`^${label}\\. `)));
     expect(screen.getByLabelText('Settings')).toBeTruthy();
-    expect(screen.getByTestId('profile-stats-section')).toBeTruthy();
-    expect(screen.getByTestId('profile-stats-see-all')).toBeTruthy();
+    // No hunts yet: one "Your season starts here" card instead of the stats preview (review T1).
+    expect(screen.getByTestId('profile-season-starts')).toBeTruthy();
+    expect(screen.queryByTestId('profile-stats-section')).toBeNull();
   });
 
   it('has no tab row, tablist or swipe pager', async () => {
@@ -81,7 +82,7 @@ describe('Profile is a menu', () => {
   it('the summaries are live: hunt count on the Hunt log row', async () => {
     await hunt('pheasant', 'SGL 211');
     await open('/profile');
-    expect(await screen.findByLabelText(/^Hunt log\. 1 hunt in your private diary/)).toBeTruthy();
+    expect(await screen.findByLabelText(/^Hunt log\. 1 hunt · private diary/)).toBeTruthy();
   });
 
   it('"See all stats" in the preview and the Stats row open the same Stats page', async () => {

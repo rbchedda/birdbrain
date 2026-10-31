@@ -10,7 +10,7 @@ import { useStatsData } from '@/components/stats/useStats';
 import { buildShareCard } from '@/data/statsCharts';
 import { SAMPLE_NOW } from '@/data/statsSample';
 import { flags } from '@/lib/flags';
-import { colors, fonts, space } from '@/theme/tokens';
+import { colors, fonts, profileBottomPad, space } from '@/theme/tokens';
 
 /** Season share card. Behind `statsShare` (off) until a lawyer has checked what a card may say. */
 export default function StatsShare() {
@@ -42,6 +42,6 @@ export default function StatsShare() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
-  body: { paddingHorizontal: space.lg, paddingBottom: space.xxl, gap: space.md },
+  body: { paddingHorizontal: space.lg, paddingBottom: profileBottomPad, gap: space.md },
   cap: { fontFamily: fonts.body, fontSize: 12, lineHeight: 16, color: colors.muted },
 });

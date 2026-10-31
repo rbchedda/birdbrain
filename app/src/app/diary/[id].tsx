@@ -3,12 +3,13 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ScreenHeader } from '@/components/Screen';
+import { PrivacyPill } from '@/components/stats/parts';
 import { Button, Notice, SectionTitle, ui } from '@/components/ui';
 import { useJournal } from '@/data/hooks';
 import { editJournalEntry, removeJournalEntry, type JournalEntry } from '@/data/journal';
 import { coverLabel, speciesLabel } from '@/data/types';
 import { formatDay } from '@/lib/time';
-import { colors, fonts, space } from '@/theme/tokens';
+import { colors, fonts, profileBottomPad, space } from '@/theme/tokens';
 
 import { birdsTotal, DiaryForm, diaryDraft, formValueFrom } from './new';
 
@@ -48,7 +49,7 @@ export default function DiaryEntryScreen() {
   const d = e.details;
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScreenHeader back title={e.huntedOn ? formatDay(e.huntedOn) : 'Diary entry'} subtitle="Private · only you" />
+      <ScreenHeader back title={e.huntedOn ? formatDay(e.huntedOn) : 'Diary entry'} right={<PrivacyPill testID="page-privacy" />} />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <View accessibilityLabel={`Sync status: ${syncText(e)}`}>
           <Notice tone={e.sync.status === 'failed' ? 'error' : e.sync.status === 'synced' ? 'success' : 'info'}>{syncText(e)}</Notice>
@@ -133,7 +134,7 @@ export default function DiaryEntryScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
-  body: { paddingHorizontal: space.lg, paddingBottom: space.xxl * 2, gap: space.sm },
+  body: { paddingHorizontal: space.lg, paddingBottom: profileBottomPad, gap: space.sm },
   line: { flexDirection: 'row', justifyContent: 'space-between', gap: space.md, paddingVertical: space.xs },
   value: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text, flexShrink: 1, textAlign: 'right' },
 });

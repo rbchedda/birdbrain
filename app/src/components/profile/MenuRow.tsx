@@ -34,8 +34,8 @@ export function MenuRow({
       style={({ pressed }) => [s.row, compact && s.compact, pressed && s.pressed]}
       testID={testID}
     >
-      <View style={[s.tile, compact && s.tileCompact]}>
-        <Ionicons name={icon} size={compact ? 20 : 24} color={compact ? colors.dove : colors.accent} />
+      <View style={s.tile}>
+        <Ionicons name={icon} size={22} color={colors.accent} />
       </View>
       <View style={s.text}>
         <Text style={[s.label, compact && s.labelCompact]} numberOfLines={1}>{label}</Text>
@@ -47,13 +47,13 @@ export function MenuRow({
 }
 
 const s = StyleSheet.create({
-  row: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: space.md, paddingVertical: space.sm },
-  compact: { minHeight: 56 },
+  // Review beta-4.4 tweak 12: 64pt rows, one icon set (22pt line glyph, orange, in a 40pt #264733 tile, radius 10), chevron 20pt with a 16pt right inset.
+  row: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: radius.md, paddingLeft: space.md, paddingRight: space.lg, paddingVertical: space.sm },
+  compact: { minHeight: 64 },
   pressed: { backgroundColor: colors.surfaceRaised },
-  tile: { width: 44, height: 44, borderRadius: radius.sm, backgroundColor: colors.surfaceRaised, alignItems: 'center', justifyContent: 'center' },
-  tileCompact: { width: 36, height: 36 },
+  tile: { width: 40, height: 40, borderRadius: 10, backgroundColor: colors.tile, alignItems: 'center', justifyContent: 'center' },
   text: { flex: 1, gap: 2 },
   label: { fontFamily: fonts.headingSemi, fontSize: 20, color: colors.text },
   labelCompact: { fontSize: 17 },
-  summary: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
+  summary: { fontFamily: fonts.body, fontSize: 14, color: colors.subtle },
 });

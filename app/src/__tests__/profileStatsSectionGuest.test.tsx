@@ -33,16 +33,17 @@ describe('Profile › Stats section as a guest', () => {
     await open('/profile');
     expect(await screen.findByTestId('profile-stats-live')).toBeTruthy();
     expect(screen.getByLabelText('4 flushes')).toBeTruthy();
-    expect(screen.getByTestId('profile-stats-guest-note')).toHaveTextContent(/On this phone only\. Sign in to save your stats to your account\./);
+    // One sign-in surface: the 72pt backup row (review T3).
+    expect(screen.getByTestId('profile-backup-line')).toHaveTextContent('1 hunt is on this phone only.');
     expect(list).not.toHaveBeenCalled();
     await fireEvent.press(screen.getByTestId('profile-stats-see-all'));
     expect(await screen.findByTestId('stats-tiles')).toBeTruthy();
   });
 
-  it('guest with no hunts gets the sample preview and the log button', async () => {
+  it('guest with no hunts gets the season-starts card, no sample numbers, and the log button', async () => {
     await open('/profile');
-    expect(await screen.findByTestId('profile-stats-sample')).toBeTruthy();
-    expect(screen.getByText('SAMPLE DATA')).toBeTruthy();
-    expect(screen.getAllByText('Log your first hunt').length).toBeGreaterThan(0);
+    expect(await screen.findByTestId('profile-season-starts')).toBeTruthy();
+    expect(screen.queryByText(/SAMPLE/)).toBeNull();
+    expect(screen.getAllByText('Log your first hunt').length).toBe(1);
   });
 });
