@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
+import { CommunityOptIn } from '@/components/CommunityOptIn';
 import { ScreenHeader } from '@/components/Screen';
 import { AccountSettings, ProfileSettings, SectionRow } from '@/components/profile';
 import { Button, SectionTitle } from '@/components/ui';
@@ -13,6 +14,8 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <SectionRow title="Stats" summary="days afield, flushes, hours, places and dogs by season" href="/profile/stats" />
         <SectionRow title="Offline maps" summary="basemap packs for game lands with no signal" href="/offline-maps" />
+        <SectionTitle>Share to community</SectionTitle>
+        <CommunityOptIn />
         <ProfileSettings />
         <AccountSettings />
         <SectionTitle>Legal</SectionTitle>

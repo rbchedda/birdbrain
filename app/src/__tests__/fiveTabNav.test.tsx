@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
+import { setShareToCommunity } from '@/lib/shareToCommunity';
 
 import { backend } from '@/data';
 import { journalEntries } from '@/data/journal';
@@ -73,6 +74,7 @@ describe('＋ chooser', () => {
 
   it('Post routes to the delayed post flow', async () => {
     await open('/new');
+    await setShareToCommunity(true);
     await fireEvent.press(await screen.findByLabelText('Post'));
     expect(await screen.findByText('Share (delayed)')).toBeTruthy();
     expect(screen.getByText(/Delayed: only you see it until/)).toBeTruthy();
@@ -127,3 +129,5 @@ describe('Log hunt never creates a post', () => {
     expect(screen.getAllByText('Only you').length).toBeGreaterThan(0);
   });
 });
+
+afterEach(() => setShareToCommunity(false));
