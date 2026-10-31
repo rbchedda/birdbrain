@@ -12,7 +12,12 @@
         "NSLocationWhenInUseUsageDescription": "BirdBrain shows where you are on the map so you can see which land you're on."
       },
       "bundleIdentifier": "com.rbchedda.birdbrain",
-      "usesAppleSignIn": false
+      "usesAppleSignIn": false,
+      "icon": {
+        "light": "./assets/icon.png",
+        "dark": "./assets/icon-dark.png",
+        "tinted": "./assets/icon-tinted.png"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -23,10 +28,6 @@
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
       ],
