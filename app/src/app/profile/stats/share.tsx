@@ -3,6 +3,7 @@ import { Share, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useMemo } from 'react';
 
 import { ScreenHeader } from '@/components/Screen';
+import { OfflineBanner, useOnline } from '@/components/States';
 import { Button, Notice } from '@/components/ui';
 import { PrivacyPill, SampleBadge } from '@/components/stats/parts';
 import { ShareCardView, shareText } from '@/components/stats/ShareCardView';
@@ -18,6 +19,7 @@ export default function StatsShare() {
   const sample = sampleParam === '1';
   const d = useStatsData(sample);
   const on = flags.statsShare;
+  const online = useOnline();
   const card = useMemo(() => (on ? buildShareCard(d.entries, d.scope, d.ctx, sample ? SAMPLE_NOW : new Date()) : null), [on, d.entries, d.scope, d.ctx, sample]);
   return (
     <View style={styles.root}>
@@ -30,6 +32,7 @@ export default function StatsShare() {
             {sample && <SampleBadge />}
             <View style={{ flexDirection: 'row' }}><PrivacyPill /></View>
             <ShareCardView card={card} />
+            {!online && <OfflineBanner testID="share-offline">you can save or send the card from this phone now. Posting it to the Feed waits for signal.</OfflineBanner>}
             <Text style={styles.cap}>The card stops at the last full day, and waits out the same delay as a shared post, so it never shows where you are today.{card.heldBack ? ` ${card.heldBack} recent ${card.heldBack === 1 ? 'hunt is' : 'hunts are'} left out for now.` : ''}</Text>
             <Text style={styles.cap}>Never on a card: place names, dates, start times, bird totals, shots, dog names, coordinates, weather.</Text>
             <Button label="Share card" icon="share-outline" variant="primary" onPress={() => void Share.share({ message: shareText(card) })} />

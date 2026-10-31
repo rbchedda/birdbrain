@@ -4,6 +4,7 @@ import { ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-nati
 
 import { QrCode } from '@/components/QrCode';
 import { ScreenHeader } from '@/components/Screen';
+import { OfflineBanner, useOnline } from '@/components/States';
 import { CrewSignInSheet } from '@/components/CrewSignInSheet';
 import { Button, Notice, SectionTitle, ui } from '@/components/ui';
 import { backend } from '@/data';
@@ -24,6 +25,7 @@ export default function CrewInviteScreen() {
   const session = useSession();
   const { id, token } = useLocalSearchParams<{ id?: string; token?: string }>();
   const title = id ? 'Invite to crew' : token ? 'Crew invite' : 'Crews';
+  const online = useOnline();
 
   return (
     <View style={styles.root}>
@@ -32,6 +34,7 @@ export default function CrewInviteScreen() {
         <CrewSignInSheet />
       ) : (
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+          {!online && <OfflineBanner testID="invite-offline">{id ? 'your last invite link still works. New links wait for signal.' : 'invites need signal. Starting or joining a crew waits until you reconnect.'}</OfflineBanner>}
           {id ? <ShareInvite crewId={id} /> : <StartOrJoin initialToken={token} />}
           <Text style={ui.muted}>{PRIVACY}</Text>
         </ScrollView>
@@ -44,6 +47,7 @@ function ShareInvite({ crewId }: { crewId: string }) {
   const [invite, setInvite] = useState<CrewInvite | null>(null);
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
+  const online = useOnline();
 
   const make = async () => {
     setBusy(true);
@@ -76,7 +80,7 @@ function ShareInvite({ crewId }: { crewId: string }) {
             style={{ alignSelf: 'stretch' }}
             onPress={() => Share.share({ message: `Join my hunting crew on BirdBrain: ${url}` }).catch(() => {})}
           />
-          <Button label="New link" icon="refresh-outline" busy={busy} style={{ alignSelf: 'stretch' }} onPress={make} />
+          <Button label={online ? 'New link' : 'Invites need signal'} icon="refresh-outline" busy={busy} disabled={!online} style={{ alignSelf: 'stretch' }} onPress={make} />
         </View>
       )}
     </View>
@@ -88,6 +92,7 @@ function StartOrJoin({ initialToken }: { initialToken?: string }) {
   const [code, setCode] = useState(initialToken ?? '');
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState<'create' | 'join' | null>(null);
+  const online = useOnline();
 
   const create = async () => {
     const n = name.trim();
@@ -123,7 +128,7 @@ function StartOrJoin({ initialToken }: { initialToken?: string }) {
       {initialToken ? (
         <View style={ui.card}>
           <Text style={ui.body}>You’ve been invited to a private crew.</Text>
-          <Button label="Join crew" icon="people-outline" variant="primary" busy={busy === 'join'} onPress={join} />
+          <Button label="Join crew" icon="people-outline" variant="primary" busy={busy === 'join'} disabled={!online} onPress={join} />
         </View>
       ) : (
         <>
@@ -137,7 +142,7 @@ function StartOrJoin({ initialToken }: { initialToken?: string }) {
             style={ui.input}
             accessibilityLabel="Crew name"
           />
-          <Button label="Start crew" icon="add-outline" variant="primary" busy={busy === 'create'} onPress={create} />
+          <Button label="Start crew" icon="add-outline" variant="primary" busy={busy === 'create'} disabled={!online} onPress={create} />
           <SectionTitle>Have an invite?</SectionTitle>
           <TextInput
             value={code}
@@ -149,7 +154,7 @@ function StartOrJoin({ initialToken }: { initialToken?: string }) {
             style={ui.input}
             accessibilityLabel="Invite link"
           />
-          <Button label="Join crew" icon="people-outline" busy={busy === 'join'} onPress={join} />
+          <Button label="Join crew" icon="people-outline" busy={busy === 'join'} disabled={!online} onPress={join} />
         </>
       )}
     </View>

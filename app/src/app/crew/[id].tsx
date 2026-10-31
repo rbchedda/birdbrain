@@ -4,11 +4,13 @@ import { Alert, Platform, ScrollView, StyleSheet, Text, View } from 'react-nativ
 
 import { CrewSignInSheet } from '@/components/CrewSignInSheet';
 import { ScreenHeader } from '@/components/Screen';
+import { OfflineBanner, SkeletonBlock, useOnline } from '@/components/States';
 import { Tag } from '@/components/Tag';
 import { Button, Notice, SectionTitle, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { useAsync, useSession } from '@/data/hooks';
 import type { CrewMember } from '@/data/types';
+import { isNetworkError } from '@/lib/connectivity';
 import { needsAccount } from '@/lib/gate';
 import { colors, fonts, space } from '@/theme/tokens';
 
@@ -21,6 +23,7 @@ export default function CrewScreen() {
   const crew = useAsync(() => (session && !needsAccount('crews', session) && id ? backend.crew(id) : Promise.resolve(null)), [session, id]);
   const [error, setError] = useState<string>();
   const [leaving, setLeaving] = useState(false);
+  const online = useOnline();
 
   const leave = async () => {
     setLeaving(true);
@@ -51,20 +54,36 @@ export default function CrewScreen() {
     );
 
   const c = crew.data;
+  const offline = !online || (!!crew.error && isNetworkError(crew.error));
   return (
     <View style={styles.root}>
       <ScreenHeader title={c?.name ?? 'Crew'} subtitle={c ? `${c.memberCount} ${c.memberCount === 1 ? 'member' : 'members'} · private` : undefined} back />
       <ScrollView contentContainerStyle={styles.body}>
-        {crew.error && <Notice tone="error">{crew.error.message}</Notice>}
+        {offline && <OfflineBanner testID="crew-offline">{c ? 'you can read the crew, but invites and shared plans wait until you reconnect.' : 'this crew loads when you’re back in range.'}</OfflineBanner>}
+        {crew.error && !offline && <Notice tone="error">{crew.error.message}</Notice>}
         {error && <Notice tone="error">{error}</Notice>}
+        {crew.loading && !c && !offline && (
+          <View style={{ gap: space.sm }} testID="crew-loading" accessibilityLabel="Loading crew" accessibilityLiveRegion="polite">
+            {[70, 55, 62, 48].map((w) => (
+              <View key={w} style={[ui.card, ui.row, { gap: space.md }]}>
+                <SkeletonBlock height={40} width={40} style={{ borderRadius: 20 }} />
+                <View style={{ flex: 1, gap: space.sm }}>
+                  <SkeletonBlock height={14} width={`${w}%`} />
+                  <SkeletonBlock height={12} width="40%" />
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
         {!crew.loading && !crew.error && !c && <Notice>This crew doesn’t exist, or you’re not a member.</Notice>}
         {c && (
           <>
             {c.role === 'admin' && (
               <Button
-                label="Invite people"
+                label={offline ? 'Invites need signal' : 'Invite people'}
                 icon="qr-code-outline"
                 variant="primary"
+                disabled={offline}
                 onPress={() => router.push({ pathname: '/crew/invite', params: { id: c.id } })}
               />
             )}
