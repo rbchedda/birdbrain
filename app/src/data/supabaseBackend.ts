@@ -62,7 +62,11 @@ function toCounts(v: unknown): BirdCounts | null {
   return { flushed: Number(c.flushed) || 0, roosters: Number(c.roosters) || 0, harvested: Number(c.harvested) || 0 };
 }
 
-export function createSupabaseBackend(sb: SupabaseClient): Backend {
+export function createSupabaseBackend(
+  sb: SupabaseClient,
+  opts: { clearStoredSession?: () => Promise<void> } = {},
+): Backend {
+  const clearStored = opts.clearStoredSession ?? (async () => undefined);
   let blocked = new Set<string>();
 
   async function me() {
@@ -146,7 +150,11 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
       checkAuth(await sb.auth.exchangeCodeForSession(p.code));
     },
     async signOut() {
-      checkAuth(await sb.auth.signOut());
+      try {
+        checkAuth(await sb.auth.signOut());
+      } finally {
+        await clearStored();
+      }
       blocked = new Set();
     },
     async deleteAccount() {
@@ -159,6 +167,7 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
       }
       check(await sb.rpc('delete_my_account'));
       await sb.auth.signOut({ scope: 'local' });
+      await clearStored();
       blocked = new Set();
     },
 
