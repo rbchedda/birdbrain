@@ -87,6 +87,8 @@ Two jobs, both plain Node (no extra dependencies). Every network request has a t
 
 Each run checks the layer's `editingInfo.lastEditDate` against `ingest_state` and skips unchanged layers. Re-runs are safe, features removed upstream are deleted, and a run that returns no usable rows fails instead of wiping the table.
 
+**Shrink guard.** Before deleting anything, each place source is checked against the rows it already has in `places`. If the fresh result has fewer than 80% of that count, or the ArcGIS result was truncated (a page with `exceededTransferLimit` that is short or empty), that source is aborted with nothing upserted or deleted, the other sources still run, and the job exits non-zero. Set the threshold with `INGEST_MIN_RATIO` (0 to 1, default `0.8`; `0` disables the count check) or `ingestSource(db, config, { minRatio })`. An invalid value fails the source rather than silently turning the guard off.
+
 ```
 npm run ingest:describe                              # live fields (* = mapped), drift check, sample rows; no DB
 DATABASE_URL=postgres://... npm run ingest           # counties, then all place sources
