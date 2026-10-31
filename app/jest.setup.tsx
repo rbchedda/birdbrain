@@ -32,3 +32,25 @@ jest.mock('expo-location', () => ({
     throw new Error('no fix in tests');
   }),
 }));
+
+// expo-secure-store has no native module under Jest: an in-memory keychain
+// that enforces the real key charset and 2048-byte value limit.
+jest.mock('expo-secure-store', () => {
+  const store = new Map<string, string>();
+  const checkKey = (k: string) => {
+    if (!/^[A-Za-z0-9._-]+$/.test(k)) throw new Error(`Invalid SecureStore key: ${k}`);
+  };
+  return {
+    __store: store,
+    getItemAsync: jest.fn(async (k: string) => (checkKey(k), store.has(k) ? store.get(k)! : null)),
+    setItemAsync: jest.fn(async (k: string, v: string) => {
+      checkKey(k);
+      if (Buffer.byteLength(v, 'utf8') > 2048) throw new Error('SecureStore value over 2048 bytes');
+      store.set(k, v);
+    }),
+    deleteItemAsync: jest.fn(async (k: string) => {
+      checkKey(k);
+      store.delete(k);
+    }),
+  };
+});
