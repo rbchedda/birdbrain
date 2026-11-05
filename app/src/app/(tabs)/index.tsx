@@ -53,6 +53,7 @@ import { backend } from '@/data';
 import { accessLabel } from '@/data/access';
 import { distanceKm, pointInGeometry } from '@/lib/geo';
 import { PastSeasonsCard } from '@/components/spot/PastSeasonsCard';
+import { SpotVerdictCard } from '@/components/spot/SpotVerdictCard';
 import { miles, SpotTiles } from '@/components/spot/SpotActions';
 import { openSpecies, openTags, todayRow } from '@/lib/spotPlan';
 import type { AccessType } from '@/data/access';
@@ -795,6 +796,7 @@ function PlaceDetails({
           <Tag key={t} label={t} tone="accent" />
         ))}
       </View>
+      <SpotVerdictCard place={place} reference={today.date} />
       <SpotTiles place={place} me={me ?? null} />
       <Pressable
         accessibilityRole="button"

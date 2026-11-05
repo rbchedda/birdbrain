@@ -1,3 +1,4 @@
+import type { SpotVerdictSnapshot } from '@/data/spotVerdict';
 import type {
   Crew,
   CrewDetail,
@@ -205,6 +206,9 @@ export interface PlanUpload {
   notes: string;
   reminder: PlanReminder;
   crewId: string | null;
+  /** Per-Plan opt-in for crew to see the owner's spot verdict. Default false. */
+  showSpotVerdictToCrew: boolean;
+  spotVerdictSnapshot: SpotVerdictSnapshot | null;
 }
 
 export class NotSignedInError extends Error {

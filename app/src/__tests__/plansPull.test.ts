@@ -38,6 +38,8 @@ function server() {
     reminder: 'none',
     crewId: null,
     crewName: null,
+    showSpotVerdictToCrew: false,
+    spotVerdictSnapshot: null,
     createdAt: '2026-10-20T12:00:00Z',
     updatedAt: '2026-10-20T12:00:00Z',
     ...over,

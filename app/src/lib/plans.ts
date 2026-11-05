@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import type { AccessType } from '@/data/access';
 import { NotSignedInError, type Backend, type PlanUpload, type ServerPlan } from '@/data/backend';
 import type { LngLat, PlaceType, Species } from '@/data/types';
+import type { SpotVerdictSnapshot } from '@/data/spotVerdict';
 import { flags } from '@/lib/flags';
 import { newClientId, readJson, updateJson } from '@/lib/localStore';
 import type { Reminder } from '@/lib/spotPlan';
@@ -43,6 +44,10 @@ export interface Plan {
   /** True only when a local notification was actually scheduled. */
   reminderScheduled: boolean;
   crew: { id: string; name: string } | null;
+  /** Per-Plan opt-in: crew may see owner's spot verdict. Default OFF. */
+  showSpotVerdictToCrew: boolean;
+  /** Owner-computed crew payload; null when opt-in is off. */
+  spotVerdictSnapshot: SpotVerdictSnapshot | null;
   /** 'local': phone-only (flag off). 'pending': waiting to sync (flag on). */
   sync: 'local' | 'pending' | 'synced';
   /** Tombstone: deleted here, delete not yet pushed. Hidden from every list. */
@@ -53,7 +58,7 @@ export interface Plan {
   updatedAt: string;
 }
 
-export type PlanDraft = Pick<Plan, 'place' | 'date' | 'species' | 'notes' | 'reminder' | 'crew'>;
+export type PlanDraft = Pick<Plan, 'place' | 'date' | 'species' | 'notes' | 'reminder' | 'crew'> & { showSpotVerdictToCrew?: boolean; spotVerdictSnapshot?: SpotVerdictSnapshot | null };
 
 // --- reminders: pluggable because expo-notifications is not in this build (no new native modules).
 export type ReminderScheduler = (plan: Plan) => Promise<boolean>;
@@ -73,7 +78,17 @@ export function onPlansChange(cb: () => void) {
 
 const accountOf = (p: Plan) => p.account ?? p.owner;
 const raw = () => readJson<Plan[]>(PLANS_KEY, []);
-const all = async () => (await raw()).filter((p) => !p.deleted);
+
+/** Backfill fields added after a plan was saved on-device. */
+function normalizePlan(p: Plan): Plan {
+  return {
+    ...p,
+    showSpotVerdictToCrew: p.showSpotVerdictToCrew === true,
+    spotVerdictSnapshot: p.showSpotVerdictToCrew ? (p.spotVerdictSnapshot ?? null) : null,
+  };
+}
+
+const all = async () => (await raw()).filter((p) => !p.deleted).map(normalizePlan);
 
 // The app registers one syncer (data/hooks); any change kicks it so new plans upload right away.
 let kick: () => void = () => {};
@@ -103,6 +118,8 @@ export async function savePlan(owner: string, draft: PlanDraft, now = new Date()
   const iso = now.toISOString();
   const plan: Plan = {
     ...clean(draft),
+    showSpotVerdictToCrew: draft.showSpotVerdictToCrew === true,
+    spotVerdictSnapshot: draft.spotVerdictSnapshot ?? null,
     id: newClientId(),
     owner,
     reminderScheduled: false,
@@ -160,6 +177,8 @@ const toUpload = (p: Plan): PlanUpload => ({
   notes: p.notes,
   reminder: p.reminder,
   crewId: p.crew?.id ?? null,
+  showSpotVerdictToCrew: p.showSpotVerdictToCrew === true,
+  spotVerdictSnapshot: p.showSpotVerdictToCrew ? p.spotVerdictSnapshot : null,
 });
 
 export interface PlansSyncReport {
@@ -288,6 +307,8 @@ function fromServer(r: ServerPlan, account: string, place: PlanPlace, prev?: Pla
     reminder: r.reminder,
     reminderScheduled: mine ? (prev?.reminderScheduled ?? false) : false,
     crew: r.crewId ? { id: r.crewId, name: r.crewName ?? prev?.crew?.name ?? 'crew' } : null,
+    showSpotVerdictToCrew: r.showSpotVerdictToCrew === true,
+    spotVerdictSnapshot: r.spotVerdictSnapshot ?? null,
     sync: 'synced',
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,

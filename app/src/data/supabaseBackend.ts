@@ -638,6 +638,8 @@ export function createSupabaseBackend(
         species: p.species.slice(0, 20),
         notes: p.notes ? p.notes.slice(0, 500) : null,
         reminder: p.reminder,
+        show_spot_verdict_to_crew: p.showSpotVerdictToCrew === true,
+        spot_verdict_snapshot: p.showSpotVerdictToCrew ? p.spotVerdictSnapshot : null,
       };
       // Insert-or-ignore keeps replays of the offline queue idempotent (unique user_id, client_id).
       check(await sb.from('plans').upsert({ user_id: userId, client_id: p.clientId, ...cols, crew_id: null }, { onConflict: 'user_id,client_id', ignoreDuplicates: true }));
@@ -661,12 +663,13 @@ export function createSupabaseBackend(
       await me();
       const res = await sb
         .from('plans')
-        .select('user_id, client_id, place_id, place_name, plan_date, species, notes, reminder, crew_id, created_at, updated_at')
+        .select('user_id, client_id, place_id, place_name, plan_date, species, notes, reminder, crew_id, show_spot_verdict_to_crew, spot_verdict_snapshot, created_at, updated_at')
         .limit(1000);
       check(res);
       const rows = (res.data ?? []) as {
         user_id: string; client_id: string; place_id: string; place_name: string; plan_date: string; species: string[] | null;
-        notes: string | null; reminder: PlanReminder; crew_id: string | null; created_at: string; updated_at: string;
+        notes: string | null; reminder: PlanReminder; crew_id: string | null; show_spot_verdict_to_crew: boolean | null; spot_verdict_snapshot: unknown;
+        created_at: string; updated_at: string;
       }[];
       // Crew names are a nicety; if groups can't be read the plan still shows as "crew".
       const ids = [...new Set(rows.map((r) => r.crew_id).filter((x): x is string => !!x))];
@@ -686,6 +689,8 @@ export function createSupabaseBackend(
         reminder: r.reminder,
         crewId: r.crew_id,
         crewName: r.crew_id ? (names.get(r.crew_id) ?? null) : null,
+        showSpotVerdictToCrew: r.show_spot_verdict_to_crew === true,
+        spotVerdictSnapshot: (r.spot_verdict_snapshot as import('@/data/spotVerdict').SpotVerdictSnapshot | null) ?? null,
         createdAt: r.created_at,
         updatedAt: r.updated_at,
       }));
