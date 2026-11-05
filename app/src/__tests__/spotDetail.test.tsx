@@ -6,6 +6,7 @@ import { sampleMe } from '@/data/posts';
 import { samplePlans } from '@/data/sampleBackend';
 import { resetSignal } from '@/lib/connectivity';
 import { PLANS_KEY, type Plan } from '@/lib/plans';
+import { formatDay, todayET, type Ymd } from '@/lib/time';
 
 const appDir = './src/app';
 const metrics = { frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } };
@@ -74,10 +75,15 @@ describe('Plan a hunt → Profile › Plans', () => {
     await fireEvent.press(await screen.findByTestId('tile-plan'));
     expect(await screen.findByTestId('day-chips')).toBeTruthy();
     expect(screen.getByText('Today')).toBeTruthy();
+    // Calendar opens on the current month; Next month → pick the 14th of that month
+    // (date-stable: was hardcoded 2026-11-14 which broke once "today" entered November).
+    const [ty, tm] = todayET().split('-').map(Number);
+    const pickDate = new Date(Date.UTC(ty, tm, 14)); // month index tm = next calendar month
+    const pickYmd = pickDate.toISOString().slice(0, 10) as Ymd;
     await fireEvent.press(screen.getByText('Pick a date'));
     await fireEvent.press(screen.getByLabelText('Next month'));
-    await fireEvent.press(screen.getByLabelText('2026-11-14'));
-    expect(screen.getByTestId('plan-day-card')).toHaveTextContent(/Sat, Nov 14/);
+    await fireEvent.press(screen.getByLabelText(pickYmd));
+    expect(screen.getByTestId('plan-day-card')).toHaveTextContent(new RegExp(formatDay(pickYmd).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
     expect(screen.queryByTestId('plan-forecast')).toBeNull();
     expect(screen.getByTestId('plan-day-card')).not.toHaveTextContent(/forecast|wind|°/i);
     await fireEvent.press(screen.getByTestId('species-pheasant'));
@@ -91,7 +97,7 @@ describe('Plan a hunt → Profile › Plans', () => {
 
     const stored = JSON.parse((await AsyncStorage.getItem(PLANS_KEY))!) as Plan[];
     expect(stored).toHaveLength(1);
-    expect(stored[0]).toMatchObject({ date: '2026-11-14', species: ['pheasant'], reminder: 'none', crew: null });
+    expect(stored[0]).toMatchObject({ date: pickYmd, species: ['pheasant'], reminder: 'none', crew: null });
     expect(stored[0].notes).toHaveLength(500);
 
     await fireEvent.press(screen.getByTestId('toast-view'));
