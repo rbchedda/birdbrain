@@ -1,3 +1,4 @@
+import { flags } from '@/lib/flags';
 import {
   DIARY_SHARE_DEFAULT_TTL_DAYS,
   DIARY_SHARE_DELAY_NOTE,
@@ -14,7 +15,12 @@ import {
 describe('diaryShare helpers', () => {
   const saved = { ...process.env };
   afterEach(() => {
-    process.env = { ...saved };
+    // Mutate in place — expo/virtual/env is the same object as process.env; replacing
+    // the binding would leave flag getters reading a stale env.
+    for (const k of Object.keys(process.env)) {
+      if (!(k in saved)) delete process.env[k];
+    }
+    Object.assign(process.env, saved);
     jest.resetModules();
   });
 
@@ -48,6 +54,14 @@ describe('diaryShare helpers', () => {
   it('keeps TTL defaults in sync with legal rules', () => {
     expect(DIARY_SHARE_DEFAULT_TTL_DAYS).toBe(30);
     expect(DIARY_SHARE_MAX_TTL_DAYS).toBe(365);
+  });
+
+  it('diaryShare flag defaults off', () => {
+    delete process.env.EXPO_PUBLIC_FLAG_DIARY_SHARE;
+    expect(flags.diaryShare).toBe(false);
+    process.env.EXPO_PUBLIC_FLAG_DIARY_SHARE = '1';
+    expect(flags.diaryShare).toBe(true);
+    delete process.env.EXPO_PUBLIC_FLAG_DIARY_SHARE;
   });
 
   it('flags links expiring within 3 days', () => {

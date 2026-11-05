@@ -6,6 +6,8 @@ import { backend } from '@/data';
 import { addJournalEntry, journalIdle, resetJournalForRestart, syncJournal } from '@/data/journal';
 import type { PostDraft } from '@/data/types';
 
+const FLAG = 'EXPO_PUBLIC_FLAG_DIARY_SHARE';
+
 const metrics = { frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } };
 jest.mock('react-native-safe-area-context', () => {
   const real = jest.requireActual('react-native-safe-area-context');
@@ -40,6 +42,34 @@ beforeEach(async () => {
   await AsyncStorage.clear();
   resetJournalForRestart();
   jest.restoreAllMocks();
+  process.env[FLAG] = '1';
+});
+
+afterEach(() => {
+  delete process.env[FLAG];
+});
+
+describe('diary share flag off (default)', () => {
+  beforeEach(() => {
+    delete process.env[FLAG];
+  });
+
+  it('opens an entry with no share UI and zero share RPC calls', async () => {
+    const statusSpy = jest.spyOn(backend, 'diaryShareStatus');
+    const createSpy = jest.spyOn(backend, 'createDiaryShareLink');
+    const revokeSpy = jest.spyOn(backend, 'revokeDiaryShareLink');
+
+    const e = await addJournalEntry(draft, me);
+    await syncJournal(backend);
+    await renderRouter('./src/app', { initialUrl: `/diary/${e.id}` });
+
+    expect(await screen.findByTestId('page-privacy')).toBeTruthy();
+    expect(screen.queryByTestId('diary-share-panel')).toBeNull();
+    expect(screen.queryByTestId('diary-share-create')).toBeNull();
+    expect(statusSpy).not.toHaveBeenCalled();
+    expect(createSpy).not.toHaveBeenCalled();
+    expect(revokeSpy).not.toHaveBeenCalled();
+  });
 });
 
 describe('diary share link (sample backend + UI)', () => {
@@ -103,5 +133,23 @@ describe('diary share link (sample backend + UI)', () => {
     expect((await backend.diaryShareStatus(e.clientId)).shared).toBe(true);
     await backend.deleteHuntLogEntry(e.clientId);
     expect(await backend.diaryShareStatus(e.clientId)).toEqual(emptyStatus);
+  });
+
+  it('status RPC errors leave the entry screen intact', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    jest.spyOn(backend, 'diaryShareStatus').mockRejectedValue(
+      new Error('Could not find the function public.diary_share_status without parameters in the schema cache'),
+    );
+
+    const e = await addJournalEntry(draft, me);
+    await syncJournal(backend);
+    await renderRouter('./src/app', { initialUrl: `/diary/${e.id}` });
+
+    expect(await screen.findByTestId('page-privacy')).toBeTruthy();
+    expect(await screen.findByTestId('diary-share-panel')).toBeTruthy();
+    expect(await screen.findByTestId('diary-share-private')).toBeTruthy();
+    expect(screen.getByText('Edit entry')).toBeTruthy();
+    expect(screen.queryByText(/Could not find the function/)).toBeNull();
+    warn.mockRestore();
   });
 });
