@@ -23,6 +23,9 @@ import { BottomSheet, useBottomSheetScroll } from '@/components/BottomSheet';
 import { PlanTripHint } from '@/components/guide/PlanTripHint';
 import { LocateButton } from '@/components/map/LocateButton';
 import { PlaceMap } from '@/components/map/PlaceMap';
+import { SpotForecast } from '@/components/weather/SpotForecast';
+import { WindPanel } from '@/components/weather/WindPanel';
+import { useWindOverlay, type Viewport } from '@/lib/weather/useWeather';
 import { StateParkSheet } from '@/components/StateParkSheet';
 import { BirdSuggestions, SpeciesResults, UnknownBird } from '@/components/SpeciesSearch';
 import {
@@ -139,6 +142,10 @@ export default function MapScreen() {
   const [planner, setPlanner] = useState(false);
   const [fullNotice, setFullNotice] = useState(false);
   const [layersOpen, setLayersOpen] = useState(false);
+  // Wind layer (NWS): off by default so the map never calls the weather service unasked.
+  const [windOn, setWindOn] = useState(false);
+  const [viewport, setViewport] = useState<Viewport | null>(null);
+  const wind = useWindOverlay(windOn, viewport);
   // The sheet's top never rises above the banner block (search, layers, banner, expanded notice).
   const [screenH, setScreenH] = useState(height);
   const [topH, setTopH] = useState(0);
@@ -314,6 +321,8 @@ export default function MapScreen() {
         ranks={bird ? speciesRanks : undefined}
         fit={fit}
         onCenterChange={setMapCenter}
+        onViewportChange={setViewport}
+        wind={wind.samples}
         selectedId={selectedId}
         outline={detail.data?.outline}
         basemap={basemap}
@@ -381,10 +390,21 @@ export default function MapScreen() {
           >
             <Ionicons name="layers-outline" size={20} color={colors.text} />
           </Pressable>
+          <Pressable
+            accessibilityRole="switch"
+            accessibilityLabel="Wind layer"
+            accessibilityState={{ checked: windOn }}
+            onPress={() => setWindOn((v) => !v)}
+            style={[styles.layerButton, windOn && styles.layerButtonOn]}
+            testID="wind-button"
+          >
+            <Ionicons name="flag-outline" size={20} color={windOn ? colors.accent : colors.text} />
+          </Pressable>
         </View>
         {!bird && (searchFocused || query.trim().length >= 2) && (
           <BirdSuggestions query={query} matches={matchBirds(query)} chips={chips} onPick={(b) => runSpecies(b)} />
         )}
+        {windOn && <WindPanel now={wind.now} loading={wind.loading} error={wind.error} />}
         {layersOpen && (
           <View style={styles.layers} testID="layers-panel">
             <Text style={styles.layersTitle}>Map</Text>
@@ -775,6 +795,7 @@ function PlaceDetails({
           <Text style={styles.fine}>Next county release wk</Text>
         </View>
       )}
+      {expanded && <SpotForecast spotId={place.id} center={place.center} />}
       <View style={[ui.row, { gap: space.lg, flexWrap: 'wrap' }]}>
         <Pressable accessibilityRole="button" accessibilityLabel={saved ? 'Saved' : 'Save privately'} onPress={toggleSave} style={styles.linkTap}>
           <Text style={styles.link}>{saved ? '★ Saved' : '☆ Save'}</Text>
