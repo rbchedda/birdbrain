@@ -16,6 +16,14 @@ jest.mock('react-native-safe-area-context', () => {
   return { ...real, SafeAreaProvider: (p: object) => <real.SafeAreaProvider initialMetrics={metrics} {...p} /> };
 });
 
+// Pin the clock (Date only; timers stay real so findBy* polling works). The fixtures below plan for
+// 2026-11-14 in the PGC 2026-27 digest; the Plan grid opens on todayET and disables past days, so an
+// unpinned run fails from Nov 15 on (and in seasons with nothing open, e.g. July).
+const FIXED_NOW = new Date('2026-11-05T17:00:00Z'); // Thu Nov 5, 12:00 PM ET
+const REAL_TIMERS = ['nextTick', 'setImmediate', 'clearImmediate', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'queueMicrotask', 'requestAnimationFrame', 'cancelAnimationFrame', 'requestIdleCallback', 'cancelIdleCallback', 'hrtime', 'performance'] as const;
+beforeAll(() => jest.useFakeTimers({ now: FIXED_NOW, doNotFake: [...REAL_TIMERS] }));
+afterAll(() => jest.useRealTimers());
+
 beforeEach(async () => {
   await AsyncStorage.clear();
   samplePlans.clear();
@@ -75,8 +83,7 @@ describe('Plan a hunt → Profile › Plans', () => {
     expect(await screen.findByTestId('day-chips')).toBeTruthy();
     expect(screen.getByText('Today')).toBeTruthy();
     await fireEvent.press(screen.getByText('Pick a date'));
-    // Grid opens on the current month (todayET). Nov 14 is already visible in November;
-    // do not press Next month or the day leaves the view once today is Nov+.
+    // Grid opens on the pinned month (Nov 2026), so Nov 14 is visible without Next month.
     await fireEvent.press(screen.getByLabelText('2026-11-14'));
     expect(screen.getByTestId('plan-day-card')).toHaveTextContent(/Sat, Nov 14/);
     expect(screen.queryByTestId('plan-forecast')).toBeNull();
