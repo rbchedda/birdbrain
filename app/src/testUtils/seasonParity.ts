@@ -64,8 +64,8 @@ export function snapshotDay(ymd: Ymd) {
   });
   out.search = searchBirds.map((b) => seasonTag(b.key, ymd, { lat: 40.5, lng: -77.5 }));
   out.guide = [inSeasonRows(ymd, 3, noon).map((r) => [r.species, r.badge, r.detail]), comingUp(ymd, 3, noon)];
-  out.segments = allSpecies.map((sp) => segmentsFor(sp).map((s) => [s.label, s.windows]));
-  out.dates = HUNT_SPECIES.map((sp) => seasonDates(sp));
+  out.segments = allSpecies.map((sp) => segmentsFor(sp, ymd).map((s) => [s.label, s.windows]));
+  out.dates = HUNT_SPECIES.map((sp) => seasonDates(sp, ymd));
   out.windows = seasons.map((s) => seasonWindows(s, ymd));
   out.sunday = allSpecies.map((sp) => sundayAllowed(sp, ymd, { county: 'Chester', stateParkOrPreserve: true }));
   return out;
