@@ -11,6 +11,7 @@ import {
   ScrollView,
   type ScrollViewInstance,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   useWindowDimensions,
@@ -23,6 +24,11 @@ import { BottomSheet, useBottomSheetScroll } from '@/components/BottomSheet';
 import { PlanTripHint } from '@/components/guide/PlanTripHint';
 import { LocateButton } from '@/components/map/LocateButton';
 import { PlaceMap } from '@/components/map/PlaceMap';
+import { NWS_SOURCE_URL, SpotForecast } from '@/components/weather/SpotForecast';
+import { WindReadout } from '@/components/weather/WindReadout';
+import { WIND_DEFAULT_ON, WIND_PREF_KEY } from '@/lib/weather/config';
+import { agoLabel } from '@/lib/weather/days';
+import { useWindOverlay, type Viewport } from '@/lib/weather/useWeather';
 import { StateParkSheet } from '@/components/StateParkSheet';
 import { BirdSuggestions, SpeciesResults, UnknownBird } from '@/components/SpeciesSearch';
 import {
@@ -46,6 +52,7 @@ import { Button, Chip, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { accessLabel } from '@/data/access';
 import { distanceKm, pointInGeometry } from '@/lib/geo';
+import { PastSeasonsCard } from '@/components/spot/PastSeasonsCard';
 import { miles, SpotTiles } from '@/components/spot/SpotActions';
 import { openSpecies, openTags, todayRow } from '@/lib/spotPlan';
 import type { AccessType } from '@/data/access';
@@ -139,6 +146,17 @@ export default function MapScreen() {
   const [planner, setPlanner] = useState(false);
   const [fullNotice, setFullNotice] = useState(false);
   const [layersOpen, setLayersOpen] = useState(false);
+  // Wind layer (NWS, spec wind-forecast 01): default from WIND_DEFAULT_ON (off), remembered like the basemap.
+  const [windOn, setWindOnState] = useState(WIND_DEFAULT_ON);
+  useEffect(() => {
+    readJson<boolean>(WIND_PREF_KEY, WIND_DEFAULT_ON).then((v) => setWindOnState(v === true), () => {});
+  }, []);
+  const setWindOn = (v: boolean) => {
+    setWindOnState(v);
+    void writeJson(WIND_PREF_KEY, v);
+  };
+  const [viewport, setViewport] = useState<Viewport | null>(null);
+  const wind = useWindOverlay(windOn, viewport);
   // The sheet's top never rises above the banner block (search, layers, banner, expanded notice).
   const [screenH, setScreenH] = useState(height);
   const [topH, setTopH] = useState(0);
@@ -314,6 +332,9 @@ export default function MapScreen() {
         ranks={bird ? speciesRanks : undefined}
         fit={fit}
         onCenterChange={setMapCenter}
+        onViewportChange={setViewport}
+        wind={wind.samples}
+        windOpacity={wind.opacity}
         selectedId={selectedId}
         outline={detail.data?.outline}
         basemap={basemap}
@@ -385,6 +406,19 @@ export default function MapScreen() {
         {!bird && (searchFocused || query.trim().length >= 2) && (
           <BirdSuggestions query={query} matches={matchBirds(query)} chips={chips} onPick={(b) => runSpecies(b)} />
         )}
+        {windOn && (
+          <WindReadout
+            hour={wind.hour}
+            index={wind.hourIndex}
+            count={wind.hourCount}
+            onStep={wind.setHour}
+            updated={wind.updated}
+            saved={wind.saved}
+            savedAgo={agoLabel(wind.savedAt)}
+            loading={wind.loading}
+            error={wind.error}
+          />
+        )}
         {layersOpen && (
           <View style={styles.layers} testID="layers-panel">
             <Text style={styles.layersTitle}>Map</Text>
@@ -399,6 +433,22 @@ export default function MapScreen() {
                 <Chip key={f.key} label={f.label} active={f.key === filter} onPress={() => setFilter(f.key)} />
               ))}
               <Chip label="Open today" icon="sunny-outline" active={openOnly} onPress={() => setOpenOnly((v) => !v)} />
+            </View>
+            <Text style={styles.layersTitle}>Overlays</Text>
+            <View style={styles.overlayRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.overlayLabel}>{wind.saved ? `Wind · saved ${agoLabel(wind.savedAt)}` : 'Wind'}</Text>
+                <Text style={styles.overlaySub}>{wind.needsSignal && !windOn ? 'Needs signal' : 'NWS forecast · arrows'}</Text>
+              </View>
+              <Switch
+                value={windOn}
+                onValueChange={setWindOn}
+                disabled={wind.needsSignal && !windOn}
+                accessibilityLabel="Wind"
+                trackColor={{ true: colors.accent, false: colors.border }}
+                thumbColor={colors.text}
+                testID="wind-switch"
+              />
             </View>
             <Chip
               label="Stocking planner"
@@ -790,6 +840,8 @@ function PlaceDetails({
         </Pressable>
       </View>
       {saveError && <Notice tone="error">{saveError}</Notice>}
+      {/* Spec wind-forecast 03: below the verdict + buttons, above "More". */}
+      {expanded && <SpotForecast spotId={place.id} center={place.center} onSource={() => Linking.openURL(NWS_SOURCE_URL).catch(() => {})} />}
       <Pressable accessibilityRole="link" onPress={onMore} style={styles.linkTap} testID="more-about-spot">
         <Text style={styles.link}>More about this spot ›</Text>
       </Pressable>
@@ -876,6 +928,8 @@ function PlaceDetails({
         </View>
       )}
 
+      <PastSeasonsCard placeId={place.id} reference={today.date} />
+
       <View style={[ui.row, { gap: space.lg, flexWrap: 'wrap' }]}>
         <Text accessibilityRole="link" style={styles.link} onPress={reportError}>
           Report a map error
@@ -913,6 +967,9 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: space.md,
   },
+  overlayRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 48 },
+  overlayLabel: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text },
+  overlaySub: { fontFamily: fonts.body, fontSize: 12, color: colors.muted },
   layersTitle: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.muted },
   layerButton: {
     width: touchTarget,
