@@ -77,10 +77,11 @@
       var report = document.getElementById('report');
       var cfg = window.BIRDBRAIN_SHARE || {};
 
-      function fail(msg) {
-        // Identical copy for invalid / revoked / expired / flag-off (lawyer).
+      function fail(_msg) {
+        // Identical copy for invalid / revoked / expired / flag-off / misconfig (lawyer).
+        // Do not vary the subtitle by cause — nothing may leak about why.
         title.textContent = "This hunt isn't shared anymore";
-        subtitle.textContent = msg || 'The link may be invalid, revoked, or expired.';
+        subtitle.textContent = '';
         content.innerHTML = '';
         report.classList.add('hidden');
       }

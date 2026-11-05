@@ -327,6 +327,7 @@ returns table (
   caption text,
   hunted_on date,
   county text,
+  place_name text,
   blurred_lng double precision,
   blurred_lat double precision,
   hours numeric,
@@ -346,6 +347,7 @@ declare
   place_uuid uuid;
   blur extensions.geometry;
   cty text;
+  pname text;
   lat_live timestamptz;
 begin
   if uid is null then
@@ -375,7 +377,7 @@ begin
   lat_live := public.diary_share_live_at(e.hunted_on, e.created_at);
   if lat_live > now() then
     return query select
-      false, lat_live, null::public.species, null::text, null::date, null::text,
+      false, lat_live, null::public.species, null::text, null::date, null::text, null::text,
       null::double precision, null::double precision, null::numeric, null::integer,
       null::jsonb, null::text[], null::jsonb, null::boolean;
     return;
@@ -387,8 +389,9 @@ begin
     place_uuid := null;
   end;
   if place_uuid is not null then
-    select p.county, public.blur_point_keyed(p.centroid, sl.owner_id)
-      into cty, blur
+    -- SGL / place name OK for crew; never returned by public.read_shared_diary.
+    select p.county, p.name, public.blur_point_keyed(p.centroid, sl.owner_id)
+      into cty, pname, blur
       from public.places p where p.id = place_uuid;
   end if;
 
@@ -399,6 +402,7 @@ begin
     e.caption,
     e.hunted_on,
     cty,
+    pname,
     case when blur is null then null else extensions.st_x(blur) end,
     case when blur is null then null else extensions.st_y(blur) end,
     case when d is null then null else nullif(d->>'hours', '')::numeric end,

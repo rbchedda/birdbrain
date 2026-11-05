@@ -152,6 +152,7 @@ describe('read_crew_shared_diary', () => {
     assert.equal(r.species, 'pheasant');
     assert.equal(r.caption, 'opening day with Ruby');
     assert.equal(r.county, 'Centre');
+    assert.equal(r.place_name, 'SGL Share Test');
     assert.equal(Number(r.hours), 3.5);
     assert.equal(r.flushes, 6);
     assert.deepEqual(r.birds, [{ species: 'pheasant', count: 2 }]);
@@ -199,6 +200,7 @@ describe('public read_shared_diary (SQL flag defaults OFF)', () => {
     assert.equal(r.species, undefined);
     assert.equal(r.caption, undefined);
     assert.equal(r.dogs, undefined);
+    assert.equal(r.place_name, undefined); // SGL never on public payload
   });
 
   it('pending before midnight ET after hunt; revoked/expired/invalid look the same', async () => {
