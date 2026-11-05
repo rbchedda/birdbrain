@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { ScreenHeader } from "@/components/Screen";
+import { PastSeasonsCard } from "@/components/spot/PastSeasonsCard";
 import { Badge, PlanDayCard } from "@/components/spot/PlanParts";
 import {
   OfflineDirections,
@@ -86,6 +87,7 @@ export default function PlanDetail() {
           </Notice>
         )}
         <PlanDayCard place={plan.place} date={plan.date} />
+        <PastSeasonsCard placeId={plan.place.id} reference={plan.date} />
         <Field
           label="Species"
           value={

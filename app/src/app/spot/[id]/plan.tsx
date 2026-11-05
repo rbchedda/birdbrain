@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from
 import { ScreenHeader } from '@/components/Screen';
 import { SignInSheet } from '@/components/SignInSheet';
 import { DateGrid } from '@/components/spot/DateGrid';
+import { PastSeasonsCard } from '@/components/spot/PastSeasonsCard';
 import { PlanDayCard, useSpot } from '@/components/spot/PlanParts';
 import { Button, Chip, Notice } from '@/components/ui';
 import { useMyCrews } from '@/data/crew';
@@ -137,6 +138,7 @@ export default function PlanAHunt() {
               />
             )}
             <PlanDayCard place={place} date={date} />
+            <PastSeasonsCard placeId={place.id} reference={date} />
             <Text style={styles.section}>Species</Text>
             {nothingOpen ? (
               <View style={styles.none} testID="nothing-open">

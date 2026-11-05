@@ -46,6 +46,7 @@ import { Button, Chip, Notice, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { accessLabel } from '@/data/access';
 import { distanceKm, pointInGeometry } from '@/lib/geo';
+import { PastSeasonsCard } from '@/components/spot/PastSeasonsCard';
 import { miles, SpotTiles } from '@/components/spot/SpotActions';
 import { openSpecies, openTags, todayRow } from '@/lib/spotPlan';
 import type { AccessType } from '@/data/access';
@@ -875,6 +876,8 @@ function PlaceDetails({
           </Text>
         </View>
       )}
+
+      <PastSeasonsCard placeId={place.id} reference={today.date} />
 
       <View style={[ui.row, { gap: space.lg, flexWrap: 'wrap' }]}>
         <Text accessibilityRole="link" style={styles.link} onPress={reportError}>
