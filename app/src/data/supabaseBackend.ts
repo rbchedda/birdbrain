@@ -9,7 +9,7 @@ import { classifyAccess, type AccessType } from './access';
 import { planUpsertCols, plansSelectColumns } from './plansHostedColumns';
 import { crewError, NotSignedInError, postKind, type Backend, type LeaveCrewResult, type PlanReminder, type ServerHuntLog, type Session } from './backend';
 import placeDetailQuery from './placeDetailQuery.json';
-import type { Author, BirdCounts, DiaryDetails, Crew, Comment, Place, PlaceType, Post, Profile, Species, StockingEvent } from './types';
+import type { Author, BirdCounts, DiaryDetails, DiaryShareLink, DiaryShareStatus, Crew, Comment, Place, PlaceType, Post, Profile, Species, StockingEvent } from './types';
 
 // posts -> profiles is ambiguous to PostgREST (likes, saves and comments join
 // them too), so embeds name the foreign key column.
@@ -629,6 +629,71 @@ export function createSupabaseBackend(
       // Photos first (all nested files; a failure keeps the tombstone for retry), then the row; diary_entries cascades. RLS limits both to the owner.
       await removeAllUnder(sb.storage.from('diary-photos') as unknown as StorageBucketApi, `${userId}/${clientId}`);
       check(await sb.from('hunt_log_entries').delete().eq('client_id', clientId));
+    },
+
+    async createDiaryShareLink(clientId, crewId, ttlDays) {
+      if (!flags.diaryShare) throw new Error('diary share is disabled');
+      await me();
+      const payload: Record<string, unknown> = { p_client_id: clientId, p_crew_id: crewId };
+      if (ttlDays != null) payload.p_ttl_days = ttlDays;
+      const rows = check(await sb.rpc('create_diary_share_link', payload)) as Row[] | Row;
+      const r = (Array.isArray(rows) ? rows[0] : rows) as Row | undefined;
+      if (!r?.token) throw new Error('Share link was not created.');
+      return {
+        token: String(r.token),
+        linkId: String(r.link_id),
+        createdAt: String(r.shared_at),
+        expiresAt: String(r.expires_at),
+        liveAt: String(r.live_at),
+      } satisfies DiaryShareLink;
+    },
+
+    async revokeDiaryShareLink(clientId) {
+      if (!flags.diaryShare) return;
+      await me();
+      check(await sb.rpc('revoke_diary_share_link', { p_client_id: clientId }));
+    },
+
+    async diaryShareStatus(clientId) {
+      const empty = {
+        shared: false,
+        linkId: null,
+        createdAt: null,
+        expiresAt: null,
+        liveAt: null,
+        audience: null,
+        crewId: null,
+        viewCount: 0,
+      } satisfies DiaryShareStatus;
+      // Flag off: never hit hosted (fieldtest runs against hosted before migration).
+      if (!flags.diaryShare) return empty;
+      try {
+        await me();
+        const res = await sb.rpc('diary_share_status', { p_client_id: clientId });
+        if (res.error) {
+          // Missing RPC / table must not break the diary entry screen.
+          console.warn(`diaryShareStatus: ${res.error.message}`);
+          return empty;
+        }
+        const rows = res.data as Row[] | Row | null;
+        const r = (Array.isArray(rows) ? rows[0] : rows) as Row | undefined;
+        if (!r || !r.shared) return empty;
+        const aud = r.audience === 'public' || r.audience === 'crew' ? r.audience : null;
+        return {
+          shared: true,
+          linkId: r.link_id ? String(r.link_id) : null,
+          createdAt: r.shared_at ? String(r.shared_at) : null,
+          expiresAt: r.expires_at ? String(r.expires_at) : null,
+          liveAt: r.live_at ? String(r.live_at) : null,
+          audience: aud,
+          crewId: r.crew_id ? String(r.crew_id) : null,
+          viewCount: Number(r.view_count ?? 0),
+        } satisfies DiaryShareStatus;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'unknown error';
+        console.warn(`diaryShareStatus: ${msg}`);
+        return empty;
+      }
     },
 
     async upsertPlan(p) {

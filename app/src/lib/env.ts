@@ -5,6 +5,12 @@
 export const env = {
   supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? '',
   supabaseKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '',
+  /**
+   * Public origin that serves web/share/ (no trailing slash). Used to build
+   * diary share links. Empty until hosting is configured — Share still mints a
+   * token but the copied URL is a path-only placeholder.
+   */
+  shareBaseUrl: (process.env.EXPO_PUBLIC_SHARE_BASE_URL ?? '').replace(/\/$/, ''),
 };
 
 export const hasSupabase = Boolean(env.supabaseUrl && env.supabaseKey);

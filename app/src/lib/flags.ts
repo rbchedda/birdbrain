@@ -37,4 +37,27 @@ export const flags = {
   },
   appleSignIn: process.env.EXPO_PUBLIC_FLAG_APPLE_SIGN_IN === '1',
   plans: process.env.EXPO_PUBLIC_FLAG_PLANS !== '0',
+
+  /**
+   * diaryShare: OFF until hosted has share_links + diary_share_status (and
+   * strip-diary-photo is applied). While off: no Share UI, no share RPCs.
+   */
+  get diaryShare() {
+    return process.env.EXPO_PUBLIC_FLAG_DIARY_SHARE === '1';
+  },
+  /**
+   * publicDiaryShare: OFF until lawyer/product ship the public no-account viewer.
+   * SQL public_diary_share_enabled() also defaults false. App hides "Anyone with the link".
+   * Requires diaryShare on as well.
+   */
+  get publicDiaryShare() {
+    return process.env.EXPO_PUBLIC_FLAG_PUBLIC_DIARY_SHARE === '1';
+  },
+  /**
+   * shareLinkViewCounts: OFF until product turns on owner-only totals.
+   * SQL share_link_view_counts_enabled() also defaults false. Display: "Viewed {n} times".
+   */
+  get shareLinkViewCounts() {
+    return process.env.EXPO_PUBLIC_FLAG_SHARE_LINK_VIEW_COUNTS === '1';
+  },
 };

@@ -1,4 +1,5 @@
 import { readJson, writeJson } from '@/lib/localStore';
+import { flags } from '@/lib/flags';
 import { publicAfterET } from '@/lib/time';
 
 import { blurPoint, crewError, postKind, sumCounts, type Backend, type FeedPage, type HuntLogUpload, type LeaveCrewResult, type ServerPlan, type Session } from './backend';
@@ -57,6 +58,22 @@ const sampleGroups: Omit<Group, 'member'>[] = [
   { id: 'g-grouse', slug: 'pa-grouse', name: 'PA Grouse', description: 'Ruffed grouse cover, flush counts and habitat.', species: 'grouse' },
   { id: 'g-waterfowl', slug: 'pa-waterfowl', name: 'PA Waterfowl', description: 'Ducks and geese: zones, stamps and blinds.', species: 'waterfowl' },
 ];
+
+/** Sample-mode diary share links (token plaintext kept only here; mirrors create returning token once). */
+const sampleDiaryShares = new Map<
+  string,
+  {
+    token: string;
+    linkId: string;
+    createdAt: string;
+    expiresAt: string;
+    liveAt: string;
+    crewId: string;
+    audience: 'crew';
+    viewCount: number;
+    revoked?: boolean;
+  }
+>();
 
 /** Sample-mode stand-in for hosted public.plans. */
 export const samplePlans = new Map<string, ServerPlan>();
@@ -404,6 +421,68 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
       const rows = await readJson<Record<string, unknown>>(HUNT_LOG_KEY, {});
       delete rows[clientId];
       await writeJson(HUNT_LOG_KEY, rows);
+      sampleDiaryShares.delete(clientId);
+    },
+
+    async createDiaryShareLink(clientId, crewId, ttlDays = 30) {
+      if (!flags.diaryShare) throw new Error('diary share is disabled');
+      const rows = await readJson<Record<string, unknown>>(HUNT_LOG_KEY, {});
+      if (!(clientId in rows)) throw new Error('entry not found');
+      if (!crewId) throw new Error('crew not found');
+      const crews = (await this.myCrews()).map((c) => c.id);
+      if (!crews.includes(crewId)) throw new Error('crew not found');
+      const prev = sampleDiaryShares.get(clientId);
+      if (prev) prev.revoked = true;
+      const token = Array.from({ length: 4 }, () => Math.random().toString(36).slice(2, 10)).join('');
+      const linkId = `share-${Date.now().toString(36)}`;
+      const createdAt = new Date().toISOString();
+      const ttl = Math.max(1, Math.min(ttlDays ?? 30, 365));
+      const expiresAt = new Date(Date.now() + ttl * 86400000).toISOString();
+      // Sample: live immediately (midnight ET after hunted_on is applied on the server).
+      const liveAt = createdAt;
+      sampleDiaryShares.set(clientId, {
+        token,
+        linkId,
+        createdAt,
+        expiresAt,
+        liveAt,
+        crewId,
+        audience: 'crew',
+        viewCount: 0,
+      });
+      return { token, linkId, createdAt, expiresAt, liveAt };
+    },
+
+    async revokeDiaryShareLink(clientId) {
+      if (!flags.diaryShare) return;
+      const cur = sampleDiaryShares.get(clientId);
+      if (cur) cur.revoked = true;
+    },
+
+    async diaryShareStatus(clientId) {
+      const empty = {
+        shared: false,
+        linkId: null,
+        createdAt: null,
+        expiresAt: null,
+        liveAt: null,
+        audience: null,
+        crewId: null,
+        viewCount: 0,
+      };
+      if (!flags.diaryShare) return empty;
+      const cur = sampleDiaryShares.get(clientId);
+      if (!cur || cur.revoked) return empty;
+      return {
+        shared: true,
+        linkId: cur.linkId,
+        createdAt: cur.createdAt,
+        expiresAt: cur.expiresAt,
+        liveAt: cur.liveAt,
+        audience: cur.audience,
+        crewId: cur.crewId,
+        viewCount: cur.viewCount,
+      };
     },
 
     // Sample mode: an in-memory "server" so push → pull round-trips behave like hosted (per app run).

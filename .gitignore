@@ -8,3 +8,6 @@ data/raw/
 # Terrain basemap build output (tiles, DEM, glyphs): never commit
 basemap-out/
 *.pmtiles
+
+# Deploy-time share viewer secrets (never commit)
+web/share/config.js

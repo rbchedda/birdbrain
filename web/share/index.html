@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Lawyer: also send these as HTTP headers at the host (X-Robots-Tag, Referrer-Policy). -->
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="referrer" content="no-referrer" />
+  <meta name="description" content="A shared BirdBrain hunt (location approximate)." />
+  <!-- No Open Graph image / map. Generic title only. -->
+  <meta property="og:title" content="BirdBrain · Shared hunt" />
+  <meta property="og:description" content="A shared hunt diary. Exact location is never shown." />
+  <title>BirdBrain · Shared hunt</title>
+  <style>
+    :root { color-scheme: light dark; --ink: #1c1917; --muted: #78716c; --ground: #f5f5f4; --card: #fff; --line: #e7e5e4; --accent: #166534; }
+    @media (prefers-color-scheme: dark) {
+      :root { --ink: #fafaf9; --muted: #a8a29e; --ground: #1c1917; --card: #292524; --line: #44403c; --accent: #86efac; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: var(--ground); color: var(--ink); }
+    main { max-width: 28rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+    h1 { font-size: 1.25rem; margin: 0 0 0.25rem; }
+    .muted { color: var(--muted); font-size: 0.9rem; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1rem; margin-top: 1rem; }
+    .badge { display: inline-block; font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 999px; background: #dcfce7; color: #166534; }
+    label { display: block; margin-top: 0.75rem; font-size: 0.85rem; color: var(--muted); }
+    input, textarea, select, button {
+      width: 100%; margin-top: 0.25rem; padding: 0.6rem 0.7rem; border-radius: 8px;
+      border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit;
+    }
+    button { cursor: pointer; background: var(--accent); color: #fff; border: none; font-weight: 600; margin-top: 1rem; }
+    a.app { color: var(--accent); }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="badge">Shared hunt · area approximate</p>
+    <h1 id="title">Loading…</h1>
+    <p class="muted" id="subtitle"></p>
+    <div id="content"></div>
+    <div id="report" class="card hidden">
+      <h2 style="font-size:1rem;margin:0 0 0.5rem">Report this page</h2>
+      <p class="muted">Tell us what's wrong: it shows private land, someone's exact spot, an illegal hunt or alert, harassment, or something else. You don't need an account. Copyright complaints: see birdbrain.app/copyright.</p>
+      <form id="report-form">
+        <label>Reason
+          <select name="reason" required>
+            <option value="">Choose…</option>
+            <option value="private_land">Shows private land</option>
+            <option value="exact_spot">Someone's exact spot</option>
+            <option value="illegal_or_alert">Illegal hunt or live-game alert</option>
+            <option value="harassment">Harassment</option>
+            <option value="other">Something else</option>
+          </select>
+        </label>
+        <label>Details (optional)
+          <textarea name="details" rows="3" maxlength="1000"></textarea>
+        </label>
+        <label>Email (optional)
+          <input name="email" type="email" maxlength="320" autocomplete="email" />
+        </label>
+        <button type="submit">Submit report</button>
+        <p class="muted" id="report-status"></p>
+      </form>
+    </div>
+    <p class="muted" style="margin-top:2rem">Shared from <a class="app" href="https://birdbrain.app">BirdBrain</a>. Exact pin, bird totals, dogs, photos, and account details are never shown here.</p>
+  </main>
+  <!-- First-party page only: no third-party analytics, scripts, or tracking cookies. -->
+  <script src="./config.js"></script>
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var token = params.get('t') || '';
+      var title = document.getElementById('title');
+      var subtitle = document.getElementById('subtitle');
+      var content = document.getElementById('content');
+      var report = document.getElementById('report');
+      var cfg = window.BIRDBRAIN_SHARE || {};
+
+      function fail(_msg) {
+        // Identical copy for invalid / revoked / expired / flag-off / misconfig (lawyer).
+        // Do not vary the subtitle by cause — nothing may leak about why.
+        title.textContent = "This hunt isn't shared anymore";
+        subtitle.textContent = '';
+        content.innerHTML = '';
+        report.classList.add('hidden');
+      }
+
+      function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, function (c) {
+          return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+        });
+      }
+
+      function coarsenDate(iso) {
+        if (!iso) return null;
+        var d = new Date(iso + (iso.length === 10 ? 'T12:00:00Z' : ''));
+        if (isNaN(d.getTime())) return null;
+        var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        return months[d.getUTCMonth()] + ' ' + d.getUTCFullYear();
+      }
+
+      if (!token) {
+        fail('This share link is missing its token.');
+        return;
+      }
+      if (!cfg.supabaseUrl || !cfg.supabaseAnonKey || cfg.supabaseAnonKey === 'YOUR_ANON_KEY') {
+        fail('Viewer is not configured yet (set supabaseUrl and supabaseAnonKey in config.js at deploy time).');
+        return;
+      }
+
+      var base = cfg.supabaseUrl.replace(/\/$/, '');
+      var headers = {
+        'Content-Type': 'application/json',
+        apikey: cfg.supabaseAnonKey,
+        Authorization: 'Bearer ' + cfg.supabaseAnonKey,
+      };
+
+      // First-party view count (bots/crawlers/previews filtered server-side). No third-party pixels.
+      fetch(base + '/rest/v1/rpc/record_share_link_view', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({
+          p_token: token,
+          p_user_agent: navigator.userAgent || '',
+          p_ip: null
+        }),
+      }).catch(function () { /* ignore; counting is best-effort */ });
+
+      fetch(base + '/rest/v1/rpc/read_shared_diary', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({ p_token: token }),
+      })
+        .then(function (r) {
+          if (!r.ok) throw new Error('Lookup failed (' + r.status + ').');
+          return r.json();
+        })
+        .then(function (rows) {
+          var row = Array.isArray(rows) ? rows[0] : rows;
+          if (!row) {
+            fail();
+            return;
+          }
+          if (row.live === false) {
+            title.textContent = 'This hunt will be viewable tomorrow.';
+            subtitle.textContent = 'Links go live at midnight Eastern after the hunt day.';
+            content.innerHTML = '';
+            report.classList.remove('hidden');
+            return;
+          }
+          title.textContent = 'Shared hunt';
+          var county = row.county ? ('≈ ' + row.county + ' County · area approximate') : '≈ area approximate';
+          subtitle.textContent = county;
+          // No bird counts, no SGL name, no map/OG image, no exact date.
+          var html = '<div class="card"><p class="muted">Location is approximate. Exact pin, start time, track, and bird totals are never included.</p>';
+          if (row.blurred_lng != null && row.blurred_lat != null) {
+            html += '<p class="muted">Blurred point · ' + Number(row.blurred_lat).toFixed(2) + ', ' + Number(row.blurred_lng).toFixed(2) + '</p>';
+          }
+          html += '</div>';
+          content.innerHTML = html;
+          report.classList.remove('hidden');
+        })
+        .catch(function () {
+          fail();
+        });
+
+      document.getElementById('report-form').addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var fd = new FormData(ev.target);
+        var status = document.getElementById('report-status');
+        status.textContent = 'Sending…';
+        fetch(base + '/rest/v1/rpc/report_shared_diary', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({
+            p_token: token,
+            p_reason: fd.get('reason'),
+            p_details: fd.get('details') || null,
+            p_contact_email: fd.get('email') || null,
+          }),
+        })
+          .then(function (r) {
+            if (!r.ok) throw new Error('Report failed');
+            status.textContent = 'Thanks. We review reports within 24 hours.';
+            ev.target.reset();
+          })
+          .catch(function () {
+            status.textContent = 'Could not send the report. Try again later.';
+          });
+      });
+    })();
+  </script>
+</body>
+</html>
