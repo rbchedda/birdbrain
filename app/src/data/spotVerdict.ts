@@ -1,6 +1,6 @@
 import { entryAtPlace } from './pastSeasons';
 import { windowsForCounty, stockingCountyOf, type StockingWindow } from './places';
-import { placeSpecies, speciesStatus, type SpeciesStatus } from './seasons';
+import { placeSpecies, speciesStatus, unpublishedLine, type SpeciesStatus } from './seasons';
 import { flushesOf } from './stats';
 import type { JournalEntry } from './journal';
 import type { Place, Species } from './types';
@@ -195,12 +195,15 @@ function closedLine(
   place: VerdictPlace,
   reference: Ymd,
   huntSpecies: Species[] | undefined,
-): { closed: boolean; line: string } {
+): { closed: boolean; line: string; unpublished?: string } {
   const wanted = (huntSpecies?.length ? huntSpecies : placeSpecies(place)).filter((s) =>
     placeSpecies(place).includes(s),
   );
   const list = wanted.length ? wanted : placeSpecies(place);
   const statuses = list.map((species) => ({ species, status: speciesStatus(species, reference, place.center) }));
+  // Unpublished season: never the Closed verdict; the word comes from history and the line says why.
+  const unpublished = statuses.find((s) => s.status.kind === 'unpublished')?.status;
+  if (unpublished?.kind === 'unpublished') return { closed: false, line: '', unpublished: unpublishedLine(unpublished.year) };
   const anyOpen = statuses.some((s) => s.status.kind === 'open' || s.status.kind === 'sunday' || s.status.kind === 'check');
   if (anyOpen) return { closed: false, line: '' };
   const bits = statuses.map(({ species, status }) => describeClosedBit(species, status));
@@ -325,6 +328,7 @@ export function computeSpotVerdict(opts: ComputeVerdictOpts): SpotVerdict {
     word = wordFromRates(rates, recentFlushes);
     line = ownerLine(word, counted, withHoursAll.length);
   }
+  if (closed.unpublished) line = `${closed.unpublished} ${line}`.trim();
 
   const nForHonest = audience === 'crew' ? eligible.length : allAt.length;
   const honestLine = ownerHonestLine(Math.max(nForHonest, counted.length));

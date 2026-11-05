@@ -6,7 +6,7 @@ import { usePlaces } from '@/data/hooks';
 import { speciesLabel, type Place } from '@/data/types';
 import { getSignal, onSignal } from '@/lib/connectivity';
 import { cachedPlace, type Plan, type PlanPlace } from '@/lib/plans';
-import { formatDay, hoursText, planSeasonClosed, sunText } from '@/lib/spotPlan';
+import { datesUnverified, formatDay, hoursText, planSeasonClosed, sunText } from '@/lib/spotPlan';
 import type { Ymd } from '@/lib/time';
 import { colors, fonts, radius, space } from '@/theme/tokens';
 
@@ -81,6 +81,7 @@ export function PlanRow({ plan }: { plan: Plan }) {
           {plan.crew && plan.shareFailed && <Badge text="Not shared yet" tone="warn" />}
           {waiting && <Badge text="Saved on phone · waiting to sync" tone="tan" testID="badge-waiting" />}
           {closed && <Badge text="Season closed on this date" tone="warn" testID="badge-closed" />}
+          {datesUnverified(plan.date) && <Badge text="Unverified dates" tone="warn" testID="badge-unverified" />}
         </View>
       </View>
     </Pressable>

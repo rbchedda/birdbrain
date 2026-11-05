@@ -15,9 +15,10 @@ import { getPlan, savePlan, updatePlan, type Plan, type PlanDraft } from '@/lib/
 import {
   dayChipLabel,
   formatDay,
-  LICENSE_YEAR_END,
   nextDays,
   nextOpenDate,
+  planMaxDate,
+  unverifiedNote,
   PLAN_NOTES_MAX,
   speciesChoices,
   todayET,
@@ -130,7 +131,7 @@ export default function PlanAHunt() {
               <DateGrid
                 value={date}
                 min={today}
-                max={LICENSE_YEAR_END}
+                max={planMaxDate(today)}
                 onChange={(d) => {
                   setDate(d);
                   setPicker(false);
@@ -140,6 +141,11 @@ export default function PlanAHunt() {
             <PlanDayCard place={place} date={date} />
             <PastSeasonsCard placeId={place.id} reference={date} />
             <Text style={styles.section}>Species</Text>
+            {unverifiedNote(date) ? (
+              <View style={styles.none} testID="plan-unverified">
+                <Text style={styles.text}>{unverifiedNote(date)}</Text>
+              </View>
+            ) : null}
             {nothingOpen ? (
               <View style={styles.none} testID="nothing-open">
                 <Text style={styles.text}>Nothing open here on {formatDay(date)}.</Text>

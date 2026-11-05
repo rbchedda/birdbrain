@@ -1,4 +1,15 @@
-import { legalHours, seasons, speciesStatus, type SpeciesStatus } from '@/data/seasons';
+import {
+  currentSeason,
+  displaySeasonSet,
+  inSeasonYear,
+  latestSeasonSet,
+  nextSeasonYear,
+  seasonBounds,
+  seasonSetsFrom,
+  seasonYearOf,
+  unpublishedLine,
+} from '@/data/seasonRegistry';
+import { legalHours, seasonsOn, speciesStatus, type SpeciesStatus } from '@/data/seasons';
 import { speciesLabel, type LngLat, type Place, type Species } from '@/data/types';
 import { officialDay } from '@/lib/sun';
 import { addDays, formatDay, formatTime, midnightET, todayET, weekdayOf, type Ymd } from '@/lib/time';
@@ -12,11 +23,36 @@ export type SpotLike = Pick<Place, 'id' | 'name' | 'type' | 'species' | 'center'
  * directions targets. Everything is computed on the phone so it works offline.
  */
 
-/** End of the 2026-27 license year (PA licenses run Jul 1 – Jun 30). */
+/** End of the 2026-27 license year (PA licenses run Jul 1 – Jun 30). Prefer planMaxDate(today). */
 export const LICENSE_YEAR_END: Ymd = '2027-06-30';
+
+/**
+ * Last plannable date: the end of the newest published season, or of today's season year when
+ * that is later (unpublished years stay plannable, with an unverified-dates note).
+ */
+export function planMaxDate(today: Ymd): Ymd {
+  const year = [seasonYearOf(today), latestSeasonSet().year].sort().pop()!;
+  return seasonBounds(year as ReturnType<typeof seasonYearOf>).end;
+}
+
+/** True when the date's season rules aren't published, so any plan for it is unverified. */
+export const datesUnverified = (ymd: Ymd) => currentSeason(ymd).kind === 'unpublished';
+
+/** "Unverified dates: 2027-28 dates not published yet. Check the PGC hunting digest." or null. */
+export function unverifiedNote(ymd: Ymd): string | null {
+  const cur = currentSeason(ymd);
+  return cur.kind === 'unpublished' ? `Unverified dates. ${unpublishedLine(cur.year)}` : null;
+}
 export const PLAN_NOTES_MAX = 500;
 export const FORECAST_DAYS = 7;
 export const SEASON_FOOTER = 'Season dates: PGC 2026-27 digest. Check WMU rules before you hunt.';
+
+/** What to hunt footer for a date: the season's digest, or last season's plus the unpublished line. */
+export function seasonFooter(ymd: Ymd): string {
+  const shown = displaySeasonSet(ymd);
+  if (shown.current) return `Season dates: PGC ${shown.set.year} digest. Check WMU rules before you hunt.`;
+  return `Season dates shown: PGC ${shown.label} digest. ${unpublishedLine(seasonYearOf(ymd))}`;
+}
 
 /** Approved upland/dove species shown in What to hunt (waterfowl is out of scope for v1). */
 export const HUNT_SPECIES: Species[] = ['pheasant', 'grouse', 'woodcock', 'dove', 'turkey'];
@@ -82,12 +118,35 @@ export function sunText(place: SpotLike, ymd: Ymd): string | null {
   return d ? `Sunrise ${formatTime(d.sunrise)} · Sunset ${formatTime(d.sunset)}` : null;
 }
 
-/** "Today: 2 species open" row text. */
+/**
+ * Next known opener at a place after ymd ("Next opener: Pheasant · Sat, Oct 24"), or the
+ * unpublished line for the next season year when no published season has one.
+ */
+export function nextOpenerText(place: SpotLike, ymd: Ymd): string {
+  let best: { species: Species; date: Ymd; youth: boolean } | null = null;
+  const wanted = huntSpecies(place);
+  for (const s of seasonSetsFrom(ymd).flatMap((set) => set.seasons)) {
+    if (!wanted.includes(s.species)) continue;
+    for (const [a] of s.windows ?? []) {
+      if (a > ymd && (!best || a < best.date)) best = { species: s.species, date: a, youth: !!s.youth };
+    }
+  }
+  if (best) return `Next opener: ${speciesLabel[best.species]} · ${formatDay(best.date)}${best.youth ? ' (youth)' : ''}`;
+  return unpublishedLine(nextSeasonYear(seasonYearOf(ymd)));
+}
+
+/**
+ * "Today: 2 species open" row text. Legal hours only when something is open; otherwise the
+ * next known opener, or the unpublished line when this season's dates aren't in the app.
+ */
 export function todayRow(place: SpotLike, ymd: Ymd) {
+  const cur = currentSeason(ymd);
+  if (cur.kind === 'unpublished') return { title: 'Today: season dates not published', detail: unpublishedLine(cur.year) };
   const open = openSpecies(place, ymd);
+  if (open.length === 0) return { title: 'Today: nothing open', detail: nextOpenerText(place, ymd) };
   const hours = hoursText(place, ymd);
   return {
-    title: open.length === 0 ? 'Today: nothing open' : `Today: ${open.length} species open`,
+    title: `Today: ${open.length} species open`,
     detail: [open.map((s) => speciesLabel[s]).join(', '), hours && `legal hours ${hours}`].filter(Boolean).join(' · '),
   };
 }
@@ -103,7 +162,7 @@ export { formatDay };
 
 /** Last day of the window containing ymd (null if none). */
 function windowEnd(species: Species, ymd: Ymd): Ymd | null {
-  for (const s of seasons) {
+  for (const s of seasonsOn(ymd)) {
     if (s.species !== species || s.youth) continue;
     for (const [a, b] of s.windows ?? []) if (ymd >= a && ymd <= b) return b;
   }
@@ -113,7 +172,7 @@ function windowEnd(species: Species, ymd: Ymd): Ymd | null {
 /** Next general (non-youth) season start after ymd. */
 function nextGeneralOpen(species: Species, ymd: Ymd): Ymd | null {
   let best: Ymd | null = null;
-  for (const s of seasons) {
+  for (const s of seasonSetsFrom(ymd).flatMap((set) => set.seasons)) {
     if (s.species !== species || s.youth) continue;
     for (const [a] of s.windows ?? []) if (a > ymd && (!best || a < best)) best = a;
   }
@@ -123,6 +182,7 @@ function nextGeneralOpen(species: Species, ymd: Ymd): Ymd | null {
 /** Row tag: Open / Opens Sat / Closes Nov 8 / Closed. Closes shows within 14 days of the end. */
 export function statusTag(species: Species, place: SpotLike, ymd: Ymd): { text: string; tone: 'open' | 'soon' | 'closed' } {
   const st = speciesStatus(species, ymd, place.center);
+  if (st.kind === 'unpublished') return { text: 'Dates not published', tone: 'closed' };
   if (isOpen(st)) {
     const end = windowEnd(species, ymd);
     if (end && end <= addDays(ymd, 14)) return { text: `Closes ${shortDate(end)}`, tone: 'soon' };
@@ -137,20 +197,27 @@ export function statusTag(species: Species, place: SpotLike, ymd: Ymd): { text: 
   return { text: 'Closed', tone: 'closed' };
 }
 
-/** Every general-season segment for a species, e.g. "Oct 24 – Dec 24, Dec 26 – Feb 28". */
-export function seasonDates(species: Species): string {
+/**
+ * Every general-season segment for a species, e.g. "Oct 24 – Dec 24, Dec 26 – Feb 28". When the
+ * date's season is unpublished, last season's segments are labelled ("2026-27 (last season): …")
+ * and every date outside the current season year carries its year.
+ */
+export function seasonDates(species: Species, ymd: Ymd = todayET()): string {
+  const shown = displaySeasonSet(ymd);
+  const day = (d: Ymd) => (inSeasonYear(d, ymd) ? shortDate(d) : `${shortDate(d)}, ${d.slice(0, 4)}`);
   const parts: string[] = [];
-  for (const s of seasons) {
+  for (const s of shown.set.seasons) {
     if (s.species !== species || s.youth) continue;
     if (!s.windows) parts.push('dates vary, check the digest');
-    for (const [a, b] of s.windows ?? []) parts.push(`${shortDate(a)} – ${shortDate(b)}`);
+    for (const [a, b] of s.windows ?? []) parts.push(`${day(a)} – ${day(b)}`);
   }
-  return parts.join(', ');
+  const text = parts.join(', ');
+  return shown.label ? `${shown.label}: ${text}` : text;
 }
 
 /** Season note minus bag/limit sentences (the spec shows no bag limits). */
-const seasonNote = (species: Species) => {
-  const note = seasons.find((s) => s.species === species && !s.youth && s.note)?.note;
+const seasonNote = (species: Species, ymd: Ymd) => {
+  const note = displaySeasonSet(ymd).set.seasons.find((s) => s.species === species && !s.youth && s.note)?.note;
   const kept = (note ?? '').split(/(?<=\.)\s+/).filter((x) => x && !/limit/i.test(x)).join(' ');
   return kept || undefined;
 };
@@ -184,9 +251,9 @@ export function whatToHunt(place: SpotLike, ymd: Ymd): { good: HuntRow[]; possib
   const row = (sp: Species, good: boolean): HuntRow => ({
     species: sp,
     reason: good ? reasons.get(sp)! : possibleReason(place, sp),
-    dates: seasonDates(sp),
+    dates: seasonDates(sp, ymd),
     tag: statusTag(sp, place, ymd),
-    note: seasonNote(sp),
+    note: seasonNote(sp, ymd),
   });
   return {
     good: all.filter((s) => goodSet.has(s)).map((s) => row(s, true)),
@@ -206,12 +273,15 @@ export interface SpeciesChoice {
   open: boolean;
   /** "Opens Nov 21" for disabled chips. */
   hint?: string;
+  /** Selectable because the season's dates aren't published: save with an unverified-dates note. */
+  unverified?: boolean;
 }
 
 /** Species chips for a plan date: only species fitting this spot; closed ones carry their open date. */
 export function speciesChoices(place: SpotLike, ymd: Ymd): SpeciesChoice[] {
   return huntSpecies(place).map((species) => {
     const st = speciesStatus(species, ymd, place.center);
+    if (st.kind === 'unpublished') return { species, open: true, unverified: true };
     if (isOpen(st)) return { species, open: true };
     const next = st.kind === 'closed' ? nextGeneralOpen(species, ymd) : null;
     if (next) return { species, open: false, hint: `Opens ${shortDate(next)}` };
@@ -220,14 +290,20 @@ export function speciesChoices(place: SpotLike, ymd: Ymd): SpeciesChoice[] {
   });
 }
 
-/** Next date on/after ymd when anything here is open (searches to the license year end). */
+/** Next date after ymd when anything here is open (searches to planMaxDate; skips unpublished years). */
 export function nextOpenDate(place: SpotLike, ymd: Ymd): Ymd | null {
-  for (let d = addDays(ymd, 1); d <= LICENSE_YEAR_END; d = addDays(d, 1)) if (openSpecies(place, d).length) return d;
+  const max = planMaxDate(ymd);
+  for (let d = addDays(ymd, 1); d <= max; d = addDays(d, 1)) {
+    if (datesUnverified(d)) return null;
+    if (openSpecies(place, d).length) return d;
+  }
   return null;
 }
 
 /** True when none of the planned species is open on the planned date (season closed / changed). */
 export function planSeasonClosed(place: Pick<Place, 'center'>, ymd: Ymd, species: Species[]): boolean {
+  // Unpublished season: never "closed" (the plan carries an unverified-dates note instead).
+  if (datesUnverified(ymd)) return false;
   return species.length > 0 && !species.some((s) => isOpen(speciesStatus(s, ymd, place.center)));
 }
 

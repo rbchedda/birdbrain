@@ -4,6 +4,7 @@ import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BirdCard } from '@/components/BirdCard';
 import { DigestLink } from '@/components/guide/DigestLink';
 import { OpenToday } from '@/components/OpenToday';
+import { SeasonUnpublishedNotice } from '@/components/SeasonNotice';
 import { Tag } from '@/components/Tag';
 import { Chip, SectionTitle, ui } from '@/components/ui';
 import { birds, type BirdKey } from '@/data/birds';
@@ -63,6 +64,7 @@ export function RegsSection({ buyUrl = HUNTFISHPA_URL }: { buyUrl?: string | nul
   return (
     <View style={styles.section}>
       <Header title="Regulations" testID="guide-regs" />
+      <SeasonUnpublishedNotice />
       {regTopics.map((t) => (
         <View key={t.key} style={ui.card} testID={`reg-${t.key}`}>
           <Text style={styles.name}>{t.title}</Text>
@@ -150,6 +152,7 @@ export function HoursSection({ ymd, zone, picked = true }: { ymd: Ymd; zone: num
     <View style={styles.section}>
       <Header title={picked ? `Shooting times · PGC hours zone ${zone}` : `Shooting times · PGC hours zone ${zone} (default), pick yours`} testID="guide-hours" />
       <Text style={ui.muted}>From the official PGC hunting-hours table ({officialHours.version}). Never computed.</Text>
+      <SeasonUnpublishedNotice ymd={ymd} testID="hours-unpublished" />
       <Text style={ui.body} testID="hours-spring-gobbler">{SPRING_GOBBLER_HOURS}</Text>
       {rows.map((r, i) => (
         <View key={r.ymd} style={ui.card} testID={`hours-${r.ymd}`}>
