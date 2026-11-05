@@ -75,7 +75,8 @@ describe('Plan a hunt → Profile › Plans', () => {
     expect(await screen.findByTestId('day-chips')).toBeTruthy();
     expect(screen.getByText('Today')).toBeTruthy();
     await fireEvent.press(screen.getByText('Pick a date'));
-    await fireEvent.press(screen.getByLabelText('Next month'));
+    // Grid opens on the current month (todayET). Nov 14 is already visible in November;
+    // do not press Next month or the day leaves the view once today is Nov+.
     await fireEvent.press(screen.getByLabelText('2026-11-14'));
     expect(screen.getByTestId('plan-day-card')).toHaveTextContent(/Sat, Nov 14/);
     expect(screen.queryByTestId('plan-forecast')).toBeNull();
