@@ -16,6 +16,7 @@ import {
   type StockingWindow,
   stockingCountyOf,
 } from '@/data/places';
+import { seasonYearOf, unpublishedLine } from '@/data/seasonRegistry';
 import { describeStatus, placeToday } from '@/data/seasons';
 import type { Place } from '@/data/types';
 import { formatDay, todayET } from '@/lib/time';
@@ -47,6 +48,8 @@ export function StockingList({
 }) {
   const sheetScroll = useBottomSheetScroll();
   const today = todayET(now);
+  // The bundled allocation covers one season; in another season year say its weeks aren't published.
+  const stale = STOCKING_SOURCE.season !== seasonYearOf(today) ? unpublishedLine(seasonYearOf(today)) : null;
   const { canUse } = useEntitlements();
   const fullCalendar = canUse('stockingCalendar');
   const [sort, setSort] = useState<PlannerSort>('window');
@@ -75,6 +78,11 @@ export function StockingList({
         <Ionicons name="open-outline" size={16} color={colors.accent} />
         <Text style={styles.linkText}>PGC pheasant allocation ({STOCKING_SOURCE.season})</Text>
       </Pressable>
+      {stale && (
+        <Text style={ui.body} testID="stocking-unpublished">
+          {stale}
+        </Text>
+      )}
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
         <Chip label="By window" active={sort === 'window' || !origin} onPress={() => setSort('window')} />
@@ -97,7 +105,7 @@ export function StockingList({
       <Text style={styles.section}>Stocking points</Text>
       {rows.length === 0 && <Text style={ui.muted}>{savedOnly ? 'No saved stocking points yet.' : 'No stocking points loaded.'}</Text>}
       {rows.map((r) => (
-        <StockingRow key={r.place.id} row={r} locked={!fullCalendar && !r.current} onPress={() => onPick(r.place)} />
+        <StockingRow key={r.place.id} row={r} stale={stale} locked={!fullCalendar && !r.current} onPress={() => onPick(r.place)} />
       ))}
       {!fullCalendar && rows.some((r) => !r.current && r.next) && <Gated feature="stockingCalendar">{null}</Gated>}
 
@@ -129,7 +137,7 @@ export function StockingList({
   );
 }
 
-function StockingRow({ row, locked, onPress }: { row: PlannerRow; locked: boolean; onPress: () => void }) {
+function StockingRow({ row, locked, stale, onPress }: { row: PlannerRow; locked: boolean; stale: string | null; onPress: () => void }) {
   const { place, next, current, saved } = row;
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={place.name} onPress={onPress} style={styles.row} testID={`stocking-row-${place.id}`}>
@@ -149,6 +157,8 @@ function StockingRow({ row, locked, onPress }: { row: PlannerRow; locked: boolea
           ? 'Later release weeks: Season Pass. This week’s stocking is always free.'
           : next
           ? `${windowText(next)} · ${next.cocks} roosters, ${next.hens} hens (county total)`
+          : stale
+            ? stale
           : stockingCountyOf(place)
             ? 'No more PGC release weeks this season.'
             : 'Release weeks are listed by county; check PGC’s allocation page.'}

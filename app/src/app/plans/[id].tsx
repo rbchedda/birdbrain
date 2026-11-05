@@ -28,7 +28,7 @@ import {
   toCrewSnapshot,
 } from "@/data/spotVerdict";
 import { samplePlaces } from "@/data/places";
-import { planSeasonClosed } from "@/lib/spotPlan";
+import { planSeasonClosed, unverifiedNote } from "@/lib/spotPlan";
 import { flags } from "@/lib/flags";
 import { colors, fonts, space } from "@/theme/tokens";
 
@@ -129,6 +129,7 @@ export default function PlanDetail() {
             pick another day.
           </Notice>
         )}
+        {unverifiedNote(plan.date) && <Notice>{unverifiedNote(plan.date)}</Notice>}
         <PlanDayCard place={plan.place} date={plan.date} />
         <PastSeasonsCard placeId={plan.place.id} reference={plan.date} />
         {!plan.readOnly && (

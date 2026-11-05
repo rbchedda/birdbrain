@@ -7,9 +7,11 @@ import { ScreenHeader } from '@/components/Screen';
 import { SectionTitle, ui } from '@/components/ui';
 import { birdByKey } from '@/data/birds';
 import { gear } from '@/data/gear';
-import { segmentsFor } from '@/data/guide';
+import { SeasonUnpublishedNotice } from '@/components/SeasonNotice';
+import { segmentsFor, segmentsHeading } from '@/data/guide';
+import { rangeLabel } from '@/data/seasons';
 import { regsFor } from '@/data/regs';
-import { formatDay } from '@/lib/time';
+import { todayET } from '@/lib/time';
 import { colors, space } from '@/theme/tokens';
 
 /** Guide › Bird ID › species: photos (placeholders for now), field marks, look-alikes, limits and gear. */
@@ -25,6 +27,7 @@ export default function BirdScreen() {
     );
   }
   const regs = bird.species ? regsFor(bird.species) : null;
+  const today = todayET();
   return (
     <View style={styles.root}>
       <ScreenHeader title={bird.name} back />
@@ -34,11 +37,13 @@ export default function BirdScreen() {
         {bird.species && (
           <>
             <SectionTitle>Seasons</SectionTitle>
+            <SeasonUnpublishedNotice ymd={today} />
             <View style={ui.card} testID="bird-seasons">
-              {segmentsFor(bird.species).map((seg) => (
+              {segmentsHeading(today) && <Text style={ui.muted}>{segmentsHeading(today)}</Text>}
+              {segmentsFor(bird.species, today).map((seg) => (
                 <Text key={seg.label} style={ui.body}>
                   {seg.label}:{' '}
-                  {seg.windows ? seg.windows.map(([a, b]) => `${formatDay(a)} – ${formatDay(b)}`).join('; ') : 'dates vary, check the digest'}
+                  {seg.windows ? seg.windows.map((w) => rangeLabel(w, today)).join('; ') : 'dates vary, check the digest'}
                 </Text>
               ))}
             </View>

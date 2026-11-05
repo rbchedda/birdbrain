@@ -6,7 +6,7 @@ import { EmptyState } from '@/components/States';
 import { useSpot } from '@/components/spot/PlanParts';
 import { birdByKey } from '@/data/birds';
 import { speciesLabel } from '@/data/types';
-import { formatDay, hoursText, SEASON_FOOTER, sunText, todayET, whatToHunt, type HuntRow } from '@/lib/spotPlan';
+import { formatDay, hoursText, seasonFooter, sunText, todayET, whatToHunt, type HuntRow } from '@/lib/spotPlan';
 import { colors, fonts, radius, space } from '@/theme/tokens';
 
 
@@ -47,7 +47,7 @@ export default function WhatToHunt() {
         <Group title="Good fit here" rows={groups.good} testID="group-good" />
         <Group title="Possible" rows={groups.possible} testID="group-possible" />
         <Text style={styles.muted} testID="season-footer">
-          {SEASON_FOOTER}
+          {seasonFooter(today)}
         </Text>
       </ScrollView>
     </View>

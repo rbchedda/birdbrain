@@ -36,7 +36,11 @@ export function useMapBridge(post: (m: Outbound) => void, props: PlaceMapProps) 
         type: 'FeatureCollection',
         features: places.map((p) => ({
           type: 'Feature',
-          properties: { id: p.id, type: p.type, open: placeToday(p, now).open, rank: ranks?.[p.id] ?? 0 },
+          properties: (() => {
+            const t = placeToday(p, now);
+            // unknown: season dates unpublished, so the pin is neither open nor definitely closed.
+            return { id: p.id, type: p.type, open: t.open, unknown: !!t.unpublished, rank: ranks?.[p.id] ?? 0 };
+          })(),
           geometry: { type: 'Point', coordinates: [p.center.lng, p.center.lat] },
         })),
       },

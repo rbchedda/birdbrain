@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { SeasonUnpublishedNotice } from '@/components/SeasonNotice';
 import { Tag } from '@/components/Tag';
 import { ui } from '@/components/ui';
 import { PGC_DIGEST_URL, REGS, regsFor, SE_PARK_SUNDAY_NOTE } from '@/data/regs';
@@ -46,6 +47,7 @@ export function OpenToday({
         <Text style={styles.linkText}>PGC Hunting & Trapping Digest</Text>
       </Pressable>
       <Text style={styles.title}>Open today?</Text>
+      <SeasonUnpublishedNotice ymd={ymd} testID="open-today-unpublished" />
       <Text style={ui.muted}>
         {formatDay(ymd)}
         {sunday ? ' (Sunday)' : ''} ·{' '}

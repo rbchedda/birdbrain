@@ -89,9 +89,10 @@ import { useOfflineMapSource, withOfflineOutline } from '@/offline';
 import { STOCKING_SOURCE, stockingCountyOf, windowsForCounty } from '@/data/places';
 import { PGC_DIGEST_URL } from '@/data/regs';
 import { STATE_PARKS } from '@/data/stateParks';
-import { describeStatus, placeToday, SEASON_YEAR, type PlaceToday } from '@/data/seasons';
+import { currentSeason, displaySeasonSet, prevSeasonYear, seasonYearOf, unpublishedLine } from '@/data/seasonRegistry';
+import { describeStatus, placeToday, rangeLabel, type PlaceToday } from '@/data/seasons';
 import { migratory, placeTypeLabel, speciesLabel, type LngLat, type Place, type PlaceType } from '@/data/types';
-import { formatDay, formatTime, todayET } from '@/lib/time';
+import { addDays, formatDay, formatTime, todayET } from '@/lib/time';
 import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
 
 const filters: { key: PlaceType | 'all'; label: string }[] = [
@@ -603,7 +604,9 @@ export default function MapScreen() {
             {expanded && (
               <>
             <Text style={ui.muted}>
-              {openIds.size} with a season open today ({formatDay(today)}).{' '}
+              {currentSeason(today).kind === 'unpublished'
+                ? `${unpublishedLine(seasonYearOf(today))} `
+                : `${openIds.size} with a season open today (${formatDay(today)}). `}
               {backend.mode === 'sample'
                 ? 'Sample data (dev flag).'
                 : backend.mode === 'unconfigured'
@@ -736,7 +739,14 @@ function PlaceDetails({
   const stockingCounty = stockingCountyOf(place);
   const stocking = place.type === 'stocking' ? windowsForCounty(stockingCounty) : [];
   const today = placeToday(place);
-  const needsMigratory = today.statuses.some((s) => migratory.includes(s.species) && s.status.kind !== 'closed');
+  // Open, Sunday-closed or dates-vary only: an unpublished season makes no migratory claim.
+  const needsMigratory = today.statuses.some(
+    (s) => migratory.includes(s.species) && (s.status.kind === 'open' || s.status.kind === 'sunday' || s.status.kind === 'check'),
+  );
+  const shownSeason = displaySeasonSet(today.date);
+  // Stocking weeks come from one PGC allocation year; another year's weeks are labelled and dated.
+  const stockingStale = STOCKING_SOURCE.season !== seasonYearOf(today.date);
+  const stockingLabel = STOCKING_SOURCE.season === prevSeasonYear(seasonYearOf(today.date)) ? `${STOCKING_SOURCE.season} (last season)` : STOCKING_SOURCE.season;
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string>();
   const layerDate = layerDateFor(place.type, useDataSources());
@@ -765,7 +775,7 @@ function PlaceDetails({
     }
   };
 
-  const nextRelease = stocking.find((w) => w.windowEnd >= today.date);
+  const nextRelease = stockingStale ? undefined : stocking.find((w) => w.windowEnd >= today.date);
 
   return (
     <ScrollView ref={scrollRef} contentContainerStyle={{ gap: space.md, paddingBottom: space.xl }} {...sheetScroll}>
@@ -823,7 +833,7 @@ function PlaceDetails({
       </View>
       {place.type === 'stocking' && expanded && (
         <View style={styles.stat} testID="release-card">
-          <Text style={[styles.statValue, { color: colors.dove }]}>{nextRelease ? formatDay(nextRelease.windowStart) : 'None listed'}</Text>
+          <Text style={[styles.statValue, { color: colors.dove }]}>{nextRelease ? formatDay(nextRelease.windowStart) : stockingStale ? 'Not published' : 'None listed'}</Text>
           <Text style={styles.fine}>Next county release wk</Text>
         </View>
       )}
@@ -865,12 +875,18 @@ function PlaceDetails({
       {place.note && <Text style={ui.body}>{place.note}</Text>}
       <View style={styles.callout}>
         <Text style={styles.calloutTitle}>
-          {today.open ? 'Season open today' : 'No season open today'} · {formatDay(today.date)}
+          {today.unpublished ? 'Season dates not published' : today.open ? 'Season open today' : 'No season open today'} ·{' '}
+          {formatDay(today.date)}
         </Text>
         <Text style={styles.fine} testID="season-only-note">
           {SEASON_ONLY_NOTE}
         </Text>
-        {today.statuses.map(({ species, status }) => (
+        {today.unpublished ? (
+          <Text style={ui.muted} testID="season-unpublished-line">
+            {unpublishedLine(today.unpublished)}
+          </Text>
+        ) : null}
+        {!today.unpublished && today.statuses.map(({ species, status }) => (
           <View key={species} style={styles.statusRow}>
             <Text style={styles.statusSpecies}>{speciesLabel[species]}</Text>
             <Text style={[ui.muted, status.kind === 'open' && { color: colors.text }]}>{describeStatus(status)}</Text>
@@ -878,8 +894,8 @@ function PlaceDetails({
         ))}
         <Text style={styles.fine} testID="place-hours-note">
           Legal hours come from the official PGC hunting-hours table for this spot’s zone, with each species’ rules (the
-          same as the Open today card on Plan). Where the table has no time, check the digest. {SEASON_YEAR} statewide
-          dates; WMU and zone rules vary.
+          same as the Open today card on Plan). Where the table has no time, check the digest. {shownSeason.current ? `${shownSeason.set.year} statewide
+          dates; WMU and zone rules vary.` : unpublishedLine(seasonYearOf(today.date))}
         </Text>
         <Pressable
           accessibilityRole="link"
@@ -898,10 +914,14 @@ function PlaceDetails({
           </View>
           {stocking.length ? (
             <>
-              <Text style={ui.muted}>{stockingCounty} County release weeks (county totals, not this spot):</Text>
+              <Text style={ui.muted}>
+                {stockingStale
+                  ? `${stockingCounty} County release weeks, ${stockingLabel} (county totals, not this spot). ${unpublishedLine(seasonYearOf(today.date))}`
+                  : `${stockingCounty} County release weeks (county totals, not this spot):`}
+              </Text>
               {stocking.map((w) => (
                 <Text key={w.id} style={ui.body}>
-                  {windowText(w)} · {w.cocks} roosters · {w.hens} hens
+                  {stockingStale ? rangeLabel([w.windowStart, w.windowEnd], today.date) : windowText(w)} · {w.cocks} roosters · {w.hens} hens
                 </Text>
               ))}
             </>
@@ -925,7 +945,7 @@ function PlaceDetails({
           </View>
           <Text style={ui.body}>
             PA migratory bird license required (plus a federal duck stamp for waterfowl). No Sunday hunting for migratory
-            game birds in {SEASON_YEAR}. Verify with PGC.
+            game birds in {currentSeason(today.date).year}. Verify with PGC.
           </Text>
         </View>
       )}
