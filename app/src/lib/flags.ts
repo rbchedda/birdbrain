@@ -17,6 +17,12 @@
  * woodcockLog: OFF until the hosted `public.species` enum and the diary
  * validator accept 'woodcock' (hosted-changes-needed.md). While off, woodcock
  * cannot be picked when logging and Stats groups it with grouse.
+ *
+ * crewSpotVerdict: OFF until hosted has plans.show_spot_verdict_to_crew and
+ * plans.spot_verdict_snapshot (hosted-changes-needed.md; migration
+ * 20261105000100_plans_show_spot_verdict.sql). While off, the crew toggle and
+ * crew card are hidden, and supabase plans upsert/select never mention those
+ * columns (fieldtest against hosted stays safe). Owner-only verdict still shows.
  */
 export const flags = {
   /** Read on each access so tests can flip them; builds still inline the env var. */
@@ -25,6 +31,9 @@ export const flags = {
   },
   get woodcockLog() {
     return process.env.EXPO_PUBLIC_FLAG_WOODCOCK_LOG === '1';
+  },
+  get crewSpotVerdict() {
+    return process.env.EXPO_PUBLIC_FLAG_CREW_SPOT_VERDICT === '1';
   },
   appleSignIn: process.env.EXPO_PUBLIC_FLAG_APPLE_SIGN_IN === '1',
   plans: process.env.EXPO_PUBLIC_FLAG_PLANS !== '0',

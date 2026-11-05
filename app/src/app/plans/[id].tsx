@@ -1,9 +1,10 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 
 import { ScreenHeader } from "@/components/Screen";
 import { PastSeasonsCard } from "@/components/spot/PastSeasonsCard";
+import { CrewSpotVerdictCard, SpotVerdictCard } from "@/components/spot/SpotVerdictCard";
 import { Badge, PlanDayCard } from "@/components/spot/PlanParts";
 import {
   OfflineDirections,
@@ -11,7 +12,7 @@ import {
 } from "@/components/spot/SpotActions";
 import { Button, Notice } from "@/components/ui";
 import { useMyCrews } from "@/data/crew";
-import { startPlansSyncOnce } from "@/data/hooks";
+import { startPlansSyncOnce, useJournal } from "@/data/hooks";
 import { speciesLabel } from "@/data/types";
 import {
   deletePlan,
@@ -21,7 +22,14 @@ import {
   updatePlan,
   type Plan,
 } from "@/lib/plans";
+import {
+  CREW_TOGGLE_COPY,
+  computeSpotVerdict,
+  toCrewSnapshot,
+} from "@/data/spotVerdict";
+import { samplePlaces } from "@/data/places";
 import { planSeasonClosed } from "@/lib/spotPlan";
+import { flags } from "@/lib/flags";
 import { colors, fonts, space } from "@/theme/tokens";
 
 /** Plan detail (spec 07): step 1 card, species, notes, reminder, share; Edit, Directions, Share/Unshare, Delete. */
@@ -30,12 +38,46 @@ export default function PlanDetail() {
   const [plan, setPlan] = useState<Plan | null | undefined>(undefined);
   const [offline, setOffline] = useState(false);
   const { crews } = useMyCrews();
+  const { data: journal } = useJournal();
   useEffect(() => {
     startPlansSyncOnce();
     const load = () => getPlan(id).then(setPlan);
     load();
     return onPlansChange(load);
   }, [id]);
+
+  const resolvePlace = (p: Plan) =>
+    samplePlaces.find((x) => x.id === p.place.id) ??
+    ({
+      ...p.place,
+      county: null,
+      stockingCounty: null,
+      acres: null,
+      note: undefined,
+      species: p.place.species,
+    } as unknown as import("@/data/types").Place);
+
+  const toggleCrewVerdict = async (on: boolean) => {
+    if (!plan || plan.readOnly) return;
+    if (!on) {
+      await updatePlan(plan.id, { showSpotVerdictToCrew: false, spotVerdictSnapshot: null });
+      return;
+    }
+    const place = resolvePlace(plan);
+    const v = computeSpotVerdict({
+      place,
+      entries: journal ?? [],
+      reference: plan.date,
+      species: plan.species,
+      audience: "crew",
+      ownerDisplayName: "You",
+      planDate: plan.date,
+    });
+    await updatePlan(plan.id, {
+      showSpotVerdictToCrew: true,
+      spotVerdictSnapshot: toCrewSnapshot(v, plan.date),
+    });
+  };
 
   if (plan === undefined) return <View style={styles.root} />;
   if (!plan) {
@@ -49,6 +91,7 @@ export default function PlanDetail() {
     );
   }
   const crew = crews?.[0] ?? null;
+
   const confirmDelete = () =>
     Alert.alert(
       "Delete this plan?",
@@ -88,6 +131,37 @@ export default function PlanDetail() {
         )}
         <PlanDayCard place={plan.place} date={plan.date} />
         <PastSeasonsCard placeId={plan.place.id} reference={plan.date} />
+        {!plan.readOnly && (
+          <SpotVerdictCard place={resolvePlace(plan)} reference={plan.date} species={plan.species} />
+        )}
+        {flags.crewSpotVerdict && plan.readOnly && (
+          <CrewSpotVerdictCard
+            snapshot={plan.spotVerdictSnapshot}
+            showToCrew={plan.showSpotVerdictToCrew}
+          />
+        )}
+        {flags.crewSpotVerdict && !plan.readOnly && !!plan.crew && (
+          <Pressable
+            accessibilityRole="switch"
+            accessibilityState={{ checked: plan.showSpotVerdictToCrew }}
+            accessibilityLabel={CREW_TOGGLE_COPY}
+            onPress={() =>
+              toggleCrewVerdict(!plan.showSpotVerdictToCrew)
+            }
+            style={styles.toggleRow}
+            testID="crew-verdict-toggle"
+          >
+            <View style={{ flex: 1, gap: 4 }}>
+              <Text style={styles.toggleLabel}>Spot verdict for crew</Text>
+              <Text style={styles.muted}>{CREW_TOGGLE_COPY}</Text>
+            </View>
+            <Switch
+              value={plan.showSpotVerdictToCrew}
+              onValueChange={(v) => toggleCrewVerdict(v)}
+              testID="crew-verdict-switch"
+            />
+          </Pressable>
+        )}
         <Field
           label="Species"
           value={
@@ -185,4 +259,11 @@ const styles = StyleSheet.create({
   text: { fontFamily: fonts.body, fontSize: 15, color: colors.text },
   muted: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
   badges: { flexDirection: "row", flexWrap: "wrap", gap: 4 },
+  toggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.md,
+    paddingVertical: space.sm,
+  },
+  toggleLabel: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text },
 });
