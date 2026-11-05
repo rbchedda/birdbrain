@@ -73,8 +73,9 @@ export function DiarySharePanel({ clientId, synced, hasPhotos }: { clientId: str
   const [ttlDays, setTtlDays] = useState(DIARY_SHARE_DEFAULT_TTL_DAYS);
 
   const refresh = useCallback(async () => {
-    if (!session) {
+    if (!session || !flags.diaryShare) {
       setStatus(emptyStatus());
+      setToken(null);
       return;
     }
     try {
@@ -82,23 +83,26 @@ export function DiarySharePanel({ clientId, synced, hasPhotos }: { clientId: str
       setStatus(s);
       if (!s.shared) setToken(null);
     } catch {
-      // Keep last known; status is best-effort.
+      // Soft-fail: missing RPC / network must not break the entry screen.
+      setStatus(emptyStatus());
+      setToken(null);
     }
   }, [clientId, session]);
 
   useEffect(() => {
+    if (!flags.diaryShare) return;
     void refresh();
   }, [refresh]);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session || !flags.diaryShare) return;
     void backend.myCrews().then((list) => {
       setCrews(list);
       setCrewId((prev) => prev ?? list[0]?.id ?? null);
     });
   }, [session]);
 
-  if (!session) return null;
+  if (!session || !flags.diaryShare) return null;
 
   const shared = status.shared;
   const showViews = flags.shareLinkViewCounts && shared;
@@ -359,7 +363,9 @@ export default function DiaryEntryScreen() {
             {e.caption ? <Text style={ui.body}>{e.caption}</Text> : null}
             {d?.photos.length ? <Row label="Photos" value={`${d.photos.length} private`} /> : null}
 
-            <DiarySharePanel clientId={e.clientId} synced={e.sync.status === 'synced'} hasPhotos={!!d?.photos.length} />
+            {flags.diaryShare ? (
+              <DiarySharePanel clientId={e.clientId} synced={e.sync.status === 'synced'} hasPhotos={!!d?.photos.length} />
+            ) : null}
 
             <Button label="Edit entry" icon="create-outline" onPress={() => setEditing(true)} />
             {!confirmDelete ? (

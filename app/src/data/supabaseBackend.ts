@@ -2,6 +2,7 @@ import { authRedirectUrl } from '@/lib/authRedirect';
 import type { Session as AuthSession, SupabaseClient } from '@supabase/supabase-js';
 
 import { parseGeometry, parsePoint, toEwkt } from '@/lib/geo';
+import { flags } from '@/lib/flags';
 import { removeAllUnder, type StorageBucketApi } from '@/lib/storageCleanup';
 
 import { classifyAccess, type AccessType } from './access';
@@ -630,6 +631,7 @@ export function createSupabaseBackend(
     },
 
     async createDiaryShareLink(clientId, crewId, ttlDays) {
+      if (!flags.diaryShare) throw new Error('diary share is disabled');
       await me();
       const payload: Record<string, unknown> = { p_client_id: clientId, p_crew_id: crewId };
       if (ttlDays != null) payload.p_ttl_days = ttlDays;
@@ -646,12 +648,12 @@ export function createSupabaseBackend(
     },
 
     async revokeDiaryShareLink(clientId) {
+      if (!flags.diaryShare) return;
       await me();
       check(await sb.rpc('revoke_diary_share_link', { p_client_id: clientId }));
     },
 
     async diaryShareStatus(clientId) {
-      await me();
       const empty = {
         shared: false,
         linkId: null,
@@ -662,20 +664,35 @@ export function createSupabaseBackend(
         crewId: null,
         viewCount: 0,
       } satisfies DiaryShareStatus;
-      const rows = check(await sb.rpc('diary_share_status', { p_client_id: clientId })) as Row[] | Row;
-      const r = (Array.isArray(rows) ? rows[0] : rows) as Row | undefined;
-      if (!r || !r.shared) return empty;
-      const aud = r.audience === 'public' || r.audience === 'crew' ? r.audience : null;
-      return {
-        shared: true,
-        linkId: r.link_id ? String(r.link_id) : null,
-        createdAt: r.shared_at ? String(r.shared_at) : null,
-        expiresAt: r.expires_at ? String(r.expires_at) : null,
-        liveAt: r.live_at ? String(r.live_at) : null,
-        audience: aud,
-        crewId: r.crew_id ? String(r.crew_id) : null,
-        viewCount: Number(r.view_count ?? 0),
-      } satisfies DiaryShareStatus;
+      // Flag off: never hit hosted (fieldtest runs against hosted before migration).
+      if (!flags.diaryShare) return empty;
+      try {
+        await me();
+        const res = await sb.rpc('diary_share_status', { p_client_id: clientId });
+        if (res.error) {
+          // Missing RPC / table must not break the diary entry screen.
+          console.warn(`diaryShareStatus: ${res.error.message}`);
+          return empty;
+        }
+        const rows = res.data as Row[] | Row | null;
+        const r = (Array.isArray(rows) ? rows[0] : rows) as Row | undefined;
+        if (!r || !r.shared) return empty;
+        const aud = r.audience === 'public' || r.audience === 'crew' ? r.audience : null;
+        return {
+          shared: true,
+          linkId: r.link_id ? String(r.link_id) : null,
+          createdAt: r.shared_at ? String(r.shared_at) : null,
+          expiresAt: r.expires_at ? String(r.expires_at) : null,
+          liveAt: r.live_at ? String(r.live_at) : null,
+          audience: aud,
+          crewId: r.crew_id ? String(r.crew_id) : null,
+          viewCount: Number(r.view_count ?? 0),
+        } satisfies DiaryShareStatus;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'unknown error';
+        console.warn(`diaryShareStatus: ${msg}`);
+        return empty;
+      }
     },
 
     async upsertPlan(p) {

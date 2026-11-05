@@ -1,4 +1,5 @@
 import { readJson, writeJson } from '@/lib/localStore';
+import { flags } from '@/lib/flags';
 import { publicAfterET } from '@/lib/time';
 
 import { blurPoint, crewError, postKind, sumCounts, type Backend, type FeedPage, type HuntLogUpload, type LeaveCrewResult, type ServerPlan, type Session } from './backend';
@@ -424,6 +425,7 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
     },
 
     async createDiaryShareLink(clientId, crewId, ttlDays = 30) {
+      if (!flags.diaryShare) throw new Error('diary share is disabled');
       const rows = await readJson<Record<string, unknown>>(HUNT_LOG_KEY, {});
       if (!(clientId in rows)) throw new Error('entry not found');
       if (!crewId) throw new Error('crew not found');
@@ -452,6 +454,7 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
     },
 
     async revokeDiaryShareLink(clientId) {
+      if (!flags.diaryShare) return;
       const cur = sampleDiaryShares.get(clientId);
       if (cur) cur.revoked = true;
     },
@@ -467,6 +470,7 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
         crewId: null,
         viewCount: 0,
       };
+      if (!flags.diaryShare) return empty;
       const cur = sampleDiaryShares.get(clientId);
       if (!cur || cur.revoked) return empty;
       return {
