@@ -124,10 +124,12 @@ export function sunText(place: SpotLike, ymd: Ymd): string | null {
  */
 export function nextOpenerText(place: SpotLike, ymd: Ymd): string {
   let best: { species: Species; date: Ymd; youth: boolean } | null = null;
-  for (const species of huntSpecies(place)) {
-    const st = speciesStatus(species, ymd, place.center);
-    if (st.kind !== 'closed' || !st.nextOpen) continue;
-    if (!best || st.nextOpen.date < best.date) best = { species, date: st.nextOpen.date, youth: !!st.nextOpen.season.youth };
+  const wanted = huntSpecies(place);
+  for (const s of seasonSetsFrom(ymd).flatMap((set) => set.seasons)) {
+    if (!wanted.includes(s.species)) continue;
+    for (const [a] of s.windows ?? []) {
+      if (a > ymd && (!best || a < best.date)) best = { species: s.species, date: a, youth: !!s.youth };
+    }
   }
   if (best) return `Next opener: ${speciesLabel[best.species]} · ${formatDay(best.date)}${best.youth ? ' (youth)' : ''}`;
   return unpublishedLine(nextSeasonYear(seasonYearOf(ymd)));
