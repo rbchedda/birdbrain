@@ -254,6 +254,7 @@ ${terrain ? `<script>${pmtilesJs}</script>\n<script>${contourJs}</script>` : ''}
       map.fitBounds(m.bounds, { padding: m.padding || { top: 140, bottom: 200, left: 40, right: 40 }, maxZoom: 14, duration: 600 });
     }
     if (m.type === 'places') drawRanks(m.data);
+    if (m.type === 'wind') drawWind(m.samples, m.opacity);
     if (m.type === 'focus') map.easeTo({ center: m.center, zoom: Math.max(map.getZoom(), m.zoom || 11), duration: 600 });
   }
   // Species search: numbered pins (rank 1-10) as DOM markers, so they need no glyphs and work offline.
@@ -270,6 +271,40 @@ ${terrain ? `<script>${pmtilesJs}</script>\n<script>${contourJs}</script>` : ''}
       el.setAttribute('data-rank', String(r));
       rankMarkers.push(new maplibregl.Marker({ element: el }).setLngLat(f.geometry.coordinates).addTo(map));
     });
+  }
+  // Wind layer: DOM markers (no glyphs, no tiles). The arrow points where the wind
+  // is going (NWS gives the direction it comes FROM, so rotate by from + 180).
+  // Wind layer (spec wind-forecast 02): white arrows pointing where the wind blows TO,
+  // a GeoJSON symbol layer below parks/outlines/pins. 85% opacity live, 50% when saved.
+  function ensureWindLayer() {
+    if (map.getLayer('wind-arrows')) return;
+    if (!map.hasImage('bb-arrow')) {
+      var c = document.createElement('canvas'); c.width = 28; c.height = 28;
+      var g = c.getContext('2d');
+      g.strokeStyle = '#ffffff'; g.lineWidth = 3; g.lineCap = 'round'; g.lineJoin = 'round';
+      g.beginPath(); g.moveTo(14, 25); g.lineTo(14, 4); g.moveTo(7, 11); g.lineTo(14, 4); g.lineTo(21, 11); g.stroke();
+      map.addImage('bb-arrow', g.getImageData(0, 0, 28, 28));
+    }
+    map.addSource('wind', { type: 'geojson', data: empty });
+    map.addLayer({ id: 'wind-arrows', type: 'symbol', source: 'wind', layout: {
+      'icon-image': 'bb-arrow', 'icon-size': 0.8, 'icon-rotate': ['get', 'to'], 'icon-rotation-alignment': 'map',
+      'icon-allow-overlap': true, 'icon-ignore-placement': true
+    }, paint: { 'icon-opacity': 0.85 } }, map.getLayer('parks-fill') ? 'parks-fill' : undefined);
+  }
+  function drawWind(samples, opacity) {
+    ensureWindLayer();
+    var feats = [];
+    (Array.isArray(samples) ? samples : []).forEach(function (w) {
+      if (typeof w.lng !== 'number' || typeof w.lat !== 'number') return;
+      if (w.mph === 0 || typeof w.fromDeg !== 'number') return;
+      feats.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [w.lng, w.lat] }, properties: { to: (w.fromDeg + 180) % 360 } });
+    });
+    map.getSource('wind').setData({ type: 'FeatureCollection', features: feats });
+    map.setPaintProperty('wind-arrows', 'icon-opacity', typeof opacity === 'number' ? opacity : 0.85);
+  }
+  function sendViewport() {
+    var b = map.getBounds(), c = map.getCenter();
+    send({ type: 'viewport', bounds: [[b.getWest(), b.getSouth()], [b.getEast(), b.getNorth()]], zoom: map.getZoom(), center: [c.lng, c.lat] });
   }
   // Accuracy ring as a 64-point polygon, meters to degrees on a sphere.
   function circle(c, meters) {
@@ -343,10 +378,12 @@ ${terrain ? `<script>${pmtilesJs}</script>\n<script>${contourJs}</script>` : ''}
     map.on('moveend', function () {
       var c = map.getCenter();
       send({ type: 'center', center: [c.lng, c.lat] });
+      sendViewport();
     });
     loaded = true;
     queue.splice(0).forEach(apply);
     send({ type: 'ready', terrain: terrainOk });
+    sendViewport();
     // Fallback if the app never sends a basemap: show topo.
     setTimeout(function () { if (!basemapChosen) showBasemap(current); }, 1500);
   });

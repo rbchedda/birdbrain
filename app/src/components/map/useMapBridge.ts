@@ -13,6 +13,7 @@ type Inbound =
   | { type: 'selectPark'; id: string }
   | { type: 'emptyTap'; lngLat?: unknown }
   | { type: 'center'; center?: unknown }
+  | { type: 'viewport'; bounds?: unknown; zoom?: unknown; center?: unknown }
   | { type: 'error'; message: string }
   | { type: 'tile'; id: number; url: string };
 
@@ -21,7 +22,7 @@ type Inbound =
  * page; the returned `receive` handles messages coming back.
  */
 export function useMapBridge(post: (m: Outbound) => void, props: PlaceMapProps) {
-  const { places, selectedId, outline, basemap, focus, onSelect, onSelectPark, onEmptyTap, me, offline, ranks, fit, onCenterChange } = props;
+  const { places, selectedId, outline, basemap, focus, onSelect, onSelectPark, onEmptyTap, me, offline, ranks, fit, onCenterChange, onViewportChange, wind, windOpacity } = props;
   const offlineKey = (offline?.basemaps ?? []).join(',');
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string>();
@@ -74,6 +75,10 @@ export function useMapBridge(post: (m: Outbound) => void, props: PlaceMapProps) 
     if (ready) post(meMessage(me));
   }, [ready, me, post]);
 
+  useEffect(() => {
+    if (ready) post(windMessage(wind, windOpacity));
+  }, [ready, wind, windOpacity, post]);
+
   const receive = useCallback(
     (raw: string) => {
       let m: Inbound;
@@ -97,6 +102,11 @@ export function useMapBridge(post: (m: Outbound) => void, props: PlaceMapProps) 
         const c = isLngLat(m.center) ? m.center : null;
         if (c) onCenterChange?.({ lng: c[0], lat: c[1] });
       }
+      if (m.type === 'viewport') {
+        const b = Array.isArray(m.bounds) && m.bounds.length === 2 && m.bounds.every(isLngLat) ? (m.bounds as [[number, number], [number, number]]) : null;
+        const c = isLngLat(m.center) ? m.center : null;
+        if (b && c && typeof m.zoom === 'number' && Number.isFinite(m.zoom)) onViewportChange?.({ bounds: b, zoom: m.zoom, center: { lng: c[0], lat: c[1] } });
+      }
       if (m.type === 'error') setError(m.message);
       if (m.type === 'tile') {
         const get = offline?.getTile ?? (async () => null);
@@ -106,7 +116,7 @@ export function useMapBridge(post: (m: Outbound) => void, props: PlaceMapProps) 
         );
       }
     },
-    [onSelect, onSelectPark, onEmptyTap, onCenterChange, outline, offline, post],
+    [onSelect, onSelectPark, onEmptyTap, onCenterChange, onViewportChange, outline, offline, post],
   );
 
   return { receive, error, ready };
@@ -125,4 +135,17 @@ export function meMessage(me: PlaceMapProps['me']) {
   return me
     ? { type: 'me', center: [me.lng, me.lat], accuracy: Math.max(0, me.accuracy ?? 0) }
     : { type: 'me', center: null, accuracy: 0 };
+}
+
+/** Bridge message for the wind layer: finite points only; null/empty clears it. */
+export function windMessage(wind: PlaceMapProps['wind'], opacity = 0.85) {
+  const samples = (wind ?? [])
+    .filter((w) => isLngLat([w.lng, w.lat]))
+    .map((w) => ({
+      lng: w.lng,
+      lat: w.lat,
+      fromDeg: typeof w.fromDeg === 'number' && Number.isFinite(w.fromDeg) ? w.fromDeg : null,
+      mph: typeof w.mph === 'number' && Number.isFinite(w.mph) ? Math.round(w.mph) : null,
+    }));
+  return { type: 'wind', samples, opacity: Number.isFinite(opacity) ? Math.min(1, Math.max(0, opacity)) : 0.85 };
 }
