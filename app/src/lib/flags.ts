@@ -28,4 +28,19 @@ export const flags = {
   },
   appleSignIn: process.env.EXPO_PUBLIC_FLAG_APPLE_SIGN_IN === '1',
   plans: process.env.EXPO_PUBLIC_FLAG_PLANS !== '0',
+
+  /**
+   * publicDiaryShare: OFF until lawyer/product ship the public no-account viewer.
+   * SQL public_diary_share_enabled() also defaults false. App hides "Anyone with the link".
+   */
+  get publicDiaryShare() {
+    return process.env.EXPO_PUBLIC_FLAG_PUBLIC_DIARY_SHARE === '1';
+  },
+  /**
+   * shareLinkViewCounts: OFF until product turns on owner-only totals.
+   * SQL share_link_view_counts_enabled() also defaults false. Display: "Viewed {n} times".
+   */
+  get shareLinkViewCounts() {
+    return process.env.EXPO_PUBLIC_FLAG_SHARE_LINK_VIEW_COUNTS === '1';
+  },
 };

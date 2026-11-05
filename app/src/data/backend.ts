@@ -6,6 +6,8 @@ import type {
   Comment,
   DataSource,
   DiaryDetails,
+  DiaryShareLink,
+  DiaryShareStatus,
   Group,
   Place,
   PlaceCount,
@@ -175,6 +177,13 @@ export interface Backend {
   listHuntLogEntries(): Promise<ServerHuntLog[]>;
   /** Delete a private hunt log entry (and its diary details and photos) by client UUID. Idempotent; owner-only. */
   deleteHuntLogEntry(clientId: string): Promise<void>;
+
+  /** Mint a CREW diary share link (token shown once). ttlDays defaults to 30, capped 1..365. */
+  createDiaryShareLink(clientId: string, crewId: string, ttlDays?: number): Promise<DiaryShareLink>;
+  /** Revoke the active diary share link for an entry (idempotent). */
+  revokeDiaryShareLink(clientId: string): Promise<void>;
+  /** Whether the entry currently has an active share link (no token). */
+  diaryShareStatus(clientId: string): Promise<DiaryShareStatus>;
 
   /**
    * Idempotent push of a hunt plan to public.plans (hosted-changes-needed.md §2-3):

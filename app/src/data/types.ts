@@ -320,3 +320,32 @@ export const emptyDiaryDetails = (): DiaryDetails => ({
   weather: null,
   photos: [],
 });
+
+/** Owner-facing status for a diary share link (token is returned only at create time). */
+export interface DiaryShareStatus {
+  shared: boolean;
+  linkId: string | null;
+  createdAt: string | null;
+  expiresAt: string | null;
+  liveAt: string | null;
+  audience: 'crew' | 'public' | null;
+  crewId: string | null;
+  /** Owner-only total when share_link_view_counts_enabled; else 0. Never who/IP/time. */
+  viewCount: number;
+}
+
+/** Freshly minted diary share link; token is shown once. */
+export interface DiaryShareLink {
+  token: string;
+  linkId: string;
+  createdAt: string;
+  expiresAt: string;
+  liveAt: string;
+}
+
+/** Public reader payload: county + blur only (read_shared_diary). */
+export interface SharedDiaryView {
+  live: boolean;
+  county: string | null;
+  blurred: LngLat | null;
+}

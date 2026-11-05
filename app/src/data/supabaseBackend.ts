@@ -7,7 +7,7 @@ import { removeAllUnder, type StorageBucketApi } from '@/lib/storageCleanup';
 import { classifyAccess, type AccessType } from './access';
 import { crewError, NotSignedInError, postKind, type Backend, type LeaveCrewResult, type PlanReminder, type ServerHuntLog, type Session } from './backend';
 import placeDetailQuery from './placeDetailQuery.json';
-import type { Author, BirdCounts, DiaryDetails, Crew, Comment, Place, PlaceType, Post, Profile, Species, StockingEvent } from './types';
+import type { Author, BirdCounts, DiaryDetails, DiaryShareLink, DiaryShareStatus, Crew, Comment, Place, PlaceType, Post, Profile, Species, StockingEvent } from './types';
 
 // posts -> profiles is ambiguous to PostgREST (likes, saves and comments join
 // them too), so embeds name the foreign key column.
@@ -627,6 +627,55 @@ export function createSupabaseBackend(
       // Photos first (all nested files; a failure keeps the tombstone for retry), then the row; diary_entries cascades. RLS limits both to the owner.
       await removeAllUnder(sb.storage.from('diary-photos') as unknown as StorageBucketApi, `${userId}/${clientId}`);
       check(await sb.from('hunt_log_entries').delete().eq('client_id', clientId));
+    },
+
+    async createDiaryShareLink(clientId, crewId, ttlDays) {
+      await me();
+      const payload: Record<string, unknown> = { p_client_id: clientId, p_crew_id: crewId };
+      if (ttlDays != null) payload.p_ttl_days = ttlDays;
+      const rows = check(await sb.rpc('create_diary_share_link', payload)) as Row[] | Row;
+      const r = (Array.isArray(rows) ? rows[0] : rows) as Row | undefined;
+      if (!r?.token) throw new Error('Share link was not created.');
+      return {
+        token: String(r.token),
+        linkId: String(r.link_id),
+        createdAt: String(r.shared_at),
+        expiresAt: String(r.expires_at),
+        liveAt: String(r.live_at),
+      } satisfies DiaryShareLink;
+    },
+
+    async revokeDiaryShareLink(clientId) {
+      await me();
+      check(await sb.rpc('revoke_diary_share_link', { p_client_id: clientId }));
+    },
+
+    async diaryShareStatus(clientId) {
+      await me();
+      const empty = {
+        shared: false,
+        linkId: null,
+        createdAt: null,
+        expiresAt: null,
+        liveAt: null,
+        audience: null,
+        crewId: null,
+        viewCount: 0,
+      } satisfies DiaryShareStatus;
+      const rows = check(await sb.rpc('diary_share_status', { p_client_id: clientId })) as Row[] | Row;
+      const r = (Array.isArray(rows) ? rows[0] : rows) as Row | undefined;
+      if (!r || !r.shared) return empty;
+      const aud = r.audience === 'public' || r.audience === 'crew' ? r.audience : null;
+      return {
+        shared: true,
+        linkId: r.link_id ? String(r.link_id) : null,
+        createdAt: r.shared_at ? String(r.shared_at) : null,
+        expiresAt: r.expires_at ? String(r.expires_at) : null,
+        liveAt: r.live_at ? String(r.live_at) : null,
+        audience: aud,
+        crewId: r.crew_id ? String(r.crew_id) : null,
+        viewCount: Number(r.view_count ?? 0),
+      } satisfies DiaryShareStatus;
     },
 
     async upsertPlan(p) {
