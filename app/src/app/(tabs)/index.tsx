@@ -894,8 +894,9 @@ function PlaceDetails({
         ))}
         <Text style={styles.fine} testID="place-hours-note">
           Legal hours come from the official PGC hunting-hours table for this spot’s zone, with each species’ rules (the
-          same as the Open today card on Plan). Where the table has no time, check the digest. {shownSeason.current ? `${shownSeason.set.year} statewide
-          dates; WMU and zone rules vary.` : unpublishedLine(seasonYearOf(today.date))}
+          same as the Open today card on Plan). Where the table has no time, check the digest. {shownSeason.current
+            ? `${shownSeason.set.year} statewide dates; WMU and zone rules vary.`
+            : unpublishedLine(seasonYearOf(today.date))}
         </Text>
         <Pressable
           accessibilityRole="link"
