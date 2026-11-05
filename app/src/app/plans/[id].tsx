@@ -29,6 +29,7 @@ import {
 } from "@/data/spotVerdict";
 import { samplePlaces } from "@/data/places";
 import { planSeasonClosed } from "@/lib/spotPlan";
+import { flags } from "@/lib/flags";
 import { colors, fonts, space } from "@/theme/tokens";
 
 /** Plan detail (spec 07): step 1 card, species, notes, reminder, share; Edit, Directions, Share/Unshare, Delete. */
@@ -133,13 +134,13 @@ export default function PlanDetail() {
         {!plan.readOnly && (
           <SpotVerdictCard place={resolvePlace(plan)} reference={plan.date} species={plan.species} />
         )}
-        {plan.readOnly && (
+        {flags.crewSpotVerdict && plan.readOnly && (
           <CrewSpotVerdictCard
             snapshot={plan.spotVerdictSnapshot}
             showToCrew={plan.showSpotVerdictToCrew}
           />
         )}
-        {!plan.readOnly && !!plan.crew && (
+        {flags.crewSpotVerdict && !plan.readOnly && !!plan.crew && (
           <Pressable
             accessibilityRole="switch"
             accessibilityState={{ checked: plan.showSpotVerdictToCrew }}

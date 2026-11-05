@@ -2,9 +2,11 @@ import { authRedirectUrl } from '@/lib/authRedirect';
 import type { Session as AuthSession, SupabaseClient } from '@supabase/supabase-js';
 
 import { parseGeometry, parsePoint, toEwkt } from '@/lib/geo';
+import { flags } from '@/lib/flags';
 import { removeAllUnder, type StorageBucketApi } from '@/lib/storageCleanup';
 
 import { classifyAccess, type AccessType } from './access';
+import { planUpsertCols, plansSelectColumns } from './plansHostedColumns';
 import { crewError, NotSignedInError, postKind, type Backend, type LeaveCrewResult, type PlanReminder, type ServerHuntLog, type Session } from './backend';
 import placeDetailQuery from './placeDetailQuery.json';
 import type { Author, BirdCounts, DiaryDetails, Crew, Comment, Place, PlaceType, Post, Profile, Species, StockingEvent } from './types';
@@ -631,16 +633,7 @@ export function createSupabaseBackend(
 
     async upsertPlan(p) {
       const userId = await me();
-      const cols = {
-        place_id: p.placeId,
-        place_name: p.placeName.slice(0, 200),
-        plan_date: p.planDate,
-        species: p.species.slice(0, 20),
-        notes: p.notes ? p.notes.slice(0, 500) : null,
-        reminder: p.reminder,
-        show_spot_verdict_to_crew: p.showSpotVerdictToCrew === true,
-        spot_verdict_snapshot: p.showSpotVerdictToCrew ? p.spotVerdictSnapshot : null,
-      };
+      const cols = planUpsertCols(p);
       // Insert-or-ignore keeps replays of the offline queue idempotent (unique user_id, client_id).
       check(await sb.from('plans').upsert({ user_id: userId, client_id: p.clientId, ...cols, crew_id: null }, { onConflict: 'user_id,client_id', ignoreDuplicates: true }));
       // Then apply edits; only the granted update columns are sent. Unsharing (crew_id null) is always allowed.
@@ -663,12 +656,13 @@ export function createSupabaseBackend(
       await me();
       const res = await sb
         .from('plans')
-        .select('user_id, client_id, place_id, place_name, plan_date, species, notes, reminder, crew_id, show_spot_verdict_to_crew, spot_verdict_snapshot, created_at, updated_at')
+        .select(plansSelectColumns())
         .limit(1000);
       check(res);
-      const rows = (res.data ?? []) as {
+      const rows = (res.data ?? []) as unknown as {
         user_id: string; client_id: string; place_id: string; place_name: string; plan_date: string; species: string[] | null;
-        notes: string | null; reminder: PlanReminder; crew_id: string | null; show_spot_verdict_to_crew: boolean | null; spot_verdict_snapshot: unknown;
+        notes: string | null; reminder: PlanReminder; crew_id: string | null;
+        show_spot_verdict_to_crew?: boolean | null; spot_verdict_snapshot?: unknown;
         created_at: string; updated_at: string;
       }[];
       // Crew names are a nicety; if groups can't be read the plan still shows as "crew".
@@ -689,8 +683,10 @@ export function createSupabaseBackend(
         reminder: r.reminder,
         crewId: r.crew_id,
         crewName: r.crew_id ? (names.get(r.crew_id) ?? null) : null,
-        showSpotVerdictToCrew: r.show_spot_verdict_to_crew === true,
-        spotVerdictSnapshot: (r.spot_verdict_snapshot as import('@/data/spotVerdict').SpotVerdictSnapshot | null) ?? null,
+        showSpotVerdictToCrew: flags.crewSpotVerdict && r.show_spot_verdict_to_crew === true,
+        spotVerdictSnapshot: flags.crewSpotVerdict
+          ? ((r.spot_verdict_snapshot as import('@/data/spotVerdict').SpotVerdictSnapshot | null) ?? null)
+          : null,
         createdAt: r.created_at,
         updatedAt: r.updated_at,
       }));
