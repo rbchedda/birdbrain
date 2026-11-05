@@ -12,10 +12,13 @@ import type { Crew, DiaryShareStatus } from '@/data/types';
 import { coverLabel, speciesLabel } from '@/data/types';
 import {
   DIARY_SHARE_DEFAULT_TTL_DAYS,
+  DIARY_SHARE_DELAY_NOTE,
   DIARY_SHARE_MAX_TTL_DAYS,
+  DIARY_SHARE_NEVER_SHARED,
   DIARY_SHARE_PHOTO_WARNING,
   DIARY_SHARE_TTL_OPTIONS,
   DIARY_SHARE_VIEW_COUNT_DISCLOSE,
+  DIARY_SHARE_WHATS_SHARED,
   diaryShareExpiringSoon,
   diaryShareUrl,
   formatViewedTimes,
@@ -227,7 +230,12 @@ export function DiarySharePanel({ clientId, synced, hasPhotos }: { clientId: str
         <View style={styles.sheet} testID="diary-share-sheet">
           <ScrollView contentContainerStyle={styles.sheetBody} keyboardShouldPersistTaps="handled">
             <SectionTitle>Share this hunt</SectionTitle>
-            <Text style={ui.muted}>Audience: My crew (default). Exact location, start time and your track are never included.</Text>
+            <Text style={ui.muted}>Audience: My crew (default).</Text>
+            <View style={styles.disclose} testID="diary-share-disclose">
+              <Text style={ui.muted}>{DIARY_SHARE_WHATS_SHARED}</Text>
+              <Text style={ui.muted}>{DIARY_SHARE_NEVER_SHARED}</Text>
+              <Text style={ui.muted}>{DIARY_SHARE_DELAY_NOTE}</Text>
+            </View>
             {crews.length === 0 ? (
               <Notice tone="error">You need a crew before you can share. Create one under Crews.</Notice>
             ) : (
@@ -404,4 +412,5 @@ const styles = StyleSheet.create({
   },
   chipOn: { borderColor: colors.accent, backgroundColor: colors.tile },
   chipText: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.text },
+  disclose: { gap: space.sm, paddingVertical: space.sm },
 });

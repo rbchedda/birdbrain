@@ -1,6 +1,11 @@
 import {
   DIARY_SHARE_DEFAULT_TTL_DAYS,
+  DIARY_SHARE_DELAY_NOTE,
   DIARY_SHARE_MAX_TTL_DAYS,
+  DIARY_SHARE_NEVER_SHARED,
+  DIARY_SHARE_PHOTO_WARNING,
+  DIARY_SHARE_VIEW_COUNT_DISCLOSE,
+  DIARY_SHARE_WHATS_SHARED,
   diaryShareExpiringSoon,
   diaryShareUrl,
   formatViewedTimes,
@@ -50,5 +55,15 @@ describe('diaryShare helpers', () => {
     expect(diaryShareExpiringSoon(new Date(now + 2 * 86400000).toISOString(), now)).toBe(true);
     expect(diaryShareExpiringSoon(new Date(now + 10 * 86400000).toISOString(), now)).toBe(false);
     expect(diaryShareExpiringSoon(new Date(now - 1000).toISOString(), now)).toBe(false);
+  });
+
+  it("exposes What's shared / Never / Delay and lawyer photo/view copy", () => {
+    expect(DIARY_SHARE_WHATS_SHARED).toMatch(/What's shared/);
+    expect(DIARY_SHARE_NEVER_SHARED).toMatch(/Never shared/);
+    expect(DIARY_SHARE_DELAY_NOTE).toMatch(/midnight Eastern/);
+    expect(DIARY_SHARE_PHOTO_WARNING).toMatch(/^Photos can give away a spot/);
+    expect(DIARY_SHARE_VIEW_COUNT_DISCLOSE).toBe(
+      "You'll see how many times your link is viewed, not who viewed it.",
+    );
   });
 });

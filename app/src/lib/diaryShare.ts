@@ -22,6 +22,14 @@ export const DIARY_SHARE_VIEW_COUNT_DISCLOSE =
 export const DIARY_SHARE_PHOTO_WARNING =
   'Photos can give away a spot. Signs, gates, parking areas and license plates can show where you were. Crop them out before sharing. We remove location data from the file.';
 
+/** Share-sheet "What's shared / Never / Delay" box (designer + lawyer). Crew default. */
+export const DIARY_SHARE_WHATS_SHARED =
+  "What's shared: date, species, flushes, hours, birds, dog name, note, and photos with location data removed. Game-land names stay in the app and with your crew.";
+export const DIARY_SHARE_NEVER_SHARED =
+  'Never shared: exact location or coordinates, start time, or your track.';
+export const DIARY_SHARE_DELAY_NOTE =
+  'Delay: the link goes live at midnight Eastern the day after the hunt.';
+
 /** Days before expires_at to surface an in-app reminder. */
 export const DIARY_SHARE_EXPIRY_REMIND_WITHIN_DAYS = 3;
 
