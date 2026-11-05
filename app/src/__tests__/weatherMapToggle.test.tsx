@@ -24,7 +24,14 @@ jest.mock('@/components/map/PlaceMap', () => {
 
 const ok = (body: unknown) => ({ ok: true, status: 200, json: async () => body }) as unknown as Response;
 const H = 3600_000;
-const t0 = Math.floor(Date.now() / H) * H;
+// Pin the clock (Date only; timers stay real so findBy* polling works). The hourly fixture and the hook's "now" must share one clock;
+// t0 was read from the real clock at import, so a different system time put "now" outside the 48 h fixture.
+const FIXED_NOW = new Date('2026-11-05T17:00:00Z'); // Thu Nov 5 2026, 12:00 PM ET
+const REAL_TIMERS = ['nextTick', 'setImmediate', 'clearImmediate', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'queueMicrotask', 'requestAnimationFrame', 'cancelAnimationFrame', 'requestIdleCallback', 'cancelIdleCallback', 'hrtime', 'performance'] as const;
+beforeAll(() => jest.useFakeTimers({ now: FIXED_NOW, doNotFake: [...REAL_TIMERS] }));
+afterAll(() => jest.useRealTimers());
+
+const t0 = Math.floor(FIXED_NOW.getTime() / H) * H;
 const hourly = {
   properties: {
     updateTime: new Date(t0).toISOString(),

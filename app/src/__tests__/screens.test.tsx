@@ -30,6 +30,13 @@ it('falls back to sample data when Supabase env vars are unset', () => {
   expect(backend.mode).toBe('sample');
 });
 
+// Pin the clock (Date only; timers stay real so findBy* polling works). The Map test expects the migratory-bird callout, which shows only while dove/waterfowl are open
+// (Nov 2026 in the PGC 2026-27 digest); in Feb or July it is correctly hidden.
+const FIXED_NOW = new Date('2026-11-05T17:00:00Z'); // Thu Nov 5 2026, 12:00 PM ET
+const REAL_TIMERS = ['nextTick', 'setImmediate', 'clearImmediate', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'queueMicrotask', 'requestAnimationFrame', 'cancelAnimationFrame', 'requestIdleCallback', 'cancelIdleCallback', 'hrtime', 'performance'] as const;
+beforeAll(() => jest.useFakeTimers({ now: FIXED_NOW, doNotFake: [...REAL_TIMERS] }));
+afterAll(() => jest.useRealTimers());
+
 describe('Map (Pheasant Planner)', () => {
   it('lists places and shows land info and today’s status for a selection', async () => {
     await open('/');
