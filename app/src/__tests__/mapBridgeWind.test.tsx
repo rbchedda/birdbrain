@@ -33,10 +33,16 @@ describe('map bridge: wind layer', () => {
     const { result, rerender } = await renderHook(() => useMapBridge(post, { ...base, wind } as unknown as PlaceMapProps));
     expect(post.mock.calls.some((c) => c[0].type === 'wind')).toBe(false);
     await act(async () => result.current.receive(JSON.stringify({ type: 'ready' })));
-    expect(post).toHaveBeenCalledWith({ type: 'wind', samples: [{ lng: -77, lat: 41, fromDeg: 315, mph: 12 }] });
+    expect(post).toHaveBeenCalledWith({ type: 'wind', samples: [{ lng: -77, lat: 41, fromDeg: 315, mph: 12 }], opacity: 0.85 });
     wind = null;
     await rerender({});
-    expect(post).toHaveBeenLastCalledWith({ type: 'wind', samples: [] });
+    expect(post).toHaveBeenLastCalledWith({ type: 'wind', samples: [], opacity: 0.85 });
+  });
+
+  it('clamps opacity (0.5 for a saved forecast)', () => {
+    expect(windMessage([], 0.5).opacity).toBe(0.5);
+    expect(windMessage([], 7).opacity).toBe(1);
+    expect(windMessage([], NaN).opacity).toBe(0.85);
   });
 
   it('drops non-finite samples', () => {
@@ -47,7 +53,9 @@ describe('map bridge: wind layer', () => {
 
   it('page draws wind markers and reports the viewport', () => {
     expect(mapHtml).toContain("m.type === 'wind'");
-    expect(mapHtml).toContain('bb-wind');
+    expect(mapHtml).toContain("id: 'wind-arrows', type: 'symbol'");
+    // Below parks/outlines/pins (spec 02).
+    expect(mapHtml).toContain("'parks-fill' : undefined");
     expect(mapHtml).toContain("type: 'viewport'");
     expect(mapHtml).toContain('(w.fromDeg + 180) % 360');
   });
