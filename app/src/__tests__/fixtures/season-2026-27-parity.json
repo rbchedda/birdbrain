@@ -1,0 +1,8429 @@
+{
+ "capturedFrom": "aed0ffd",
+ "hashes": {
+  "2026-07-01": "af13272ba4828bf96ae33729864f231e9ddd4e63",
+  "2026-07-02": "1349f1457572509695b80d8502ac3cf1a0d54dbc",
+  "2026-07-03": "8fb43defae6a42e4bb580d514f80a91ae264c0cd",
+  "2026-07-04": "0615c28c9a4539337caee89e84cad1e13fae320f",
+  "2026-07-05": "2b33a2ba28143b539bfdfacb80b34ea2a27fa673",
+  "2026-07-06": "9d2e2d68b8f1a80e1673ae11316d4c8857dc73db",
+  "2026-07-07": "54eb0fa7c5e5abc26d5cdbaae88419a151ed761b",
+  "2026-07-08": "40c365093db147dfdf630dd632422ea7fff550d3",
+  "2026-07-09": "cd6de93df9860903575682dfefc6c992e99e41b0",
+  "2026-07-10": "d6df048f98cf51c9a04b2ccbd4b2dad874e8608e",
+  "2026-07-11": "2656c3e601ec4686fa73ebe639b27a2a81c0c30e",
+  "2026-07-12": "219364fd4cdc786968f39537b67d46e295f6bbc8",
+  "2026-07-13": "25ad8c60b2969ea4f5a7f9c1aba3008dd6f6af3e",
+  "2026-07-14": "b50024d6bbe4ccd58ced60d97571b26cbd91bfcf",
+  "2026-07-15": "b2b0649ed6556a657b4615b7c3748cff3b41c01b",
+  "2026-07-16": "9d5da234a13306838eda9c50094f83c0018424aa",
+  "2026-07-17": "18503c9a9bf335a0759738d6ab98c915181f86e4",
+  "2026-07-18": "531cd2f98313aa187fa379692572afc2bb7483cf",
+  "2026-07-19": "cdc5ce42b65c4cf4bb681407e9ce795a3b3b5003",
+  "2026-07-20": "448b839b422c60be6e47fb3e0b1dff4b4c005735",
+  "2026-07-21": "6e1e05158eec8a7659f79aa46750b38f69617890",
+  "2026-07-22": "a6fea60f7b021ed0150aa908cae6907a3986ea77",
+  "2026-07-23": "a2b5c8b09ba71125bf77e6f5a70787377f89b858",
+  "2026-07-24": "da8f3e2a48c0a039f5696a9b8124efa5c5a45f9a",
+  "2026-07-25": "87584b35e8499860a9284df78a736f5c0e11df35",
+  "2026-07-26": "cc434b810b75630229f317397673f58a36456e41",
+  "2026-07-27": "cd25539b1d34709fbe825b66edbe38501d95a67e",
+  "2026-07-28": "bf00240a71f003248f7027bcf84171df974acff1",
+  "2026-07-29": "1e86da216bb8cc14e388598b313c49028359eaae",
+  "2026-07-30": "7215f7beb302d583de1f1d44fd19ace71ef9498a",
+  "2026-07-31": "33f4ddfbab8428f97b8b4dc6aa11c746776d5e79",
+  "2026-08-01": "84ff69a331330b21ee005bba62cf76c33b042eb1",
+  "2026-08-02": "5839b35c343bcf603b308f36af4becde8a00a476",
+  "2026-08-03": "7994ac38bbaddaeeeb9a4b9edf901ee2c3d97569",
+  "2026-08-04": "7f3d007bcca27e06a54d7a07d2bc5f8b8575b7b7",
+  "2026-08-05": "1bc6dd0229b927cfc1bdda463d2e72948ec15497",
+  "2026-08-06": "a6c1525dce67b0674dd27f6579ef9c9d8ff15c57",
+  "2026-08-07": "594671a8129c5312531fdfc998c6e84ced4f67c5",
+  "2026-08-08": "19a514cd1741d3a7f06c8058bcf801785351ca34",
+  "2026-08-09": "6e9f11f3ccc37aa40043798dcb4012f4900fba20",
+  "2026-08-10": "91ca9b9ab6a765dee30312e679f69a0b38abddf5",
+  "2026-08-11": "833b980e06debd64f04c89bafcdc419c719aa005",
+  "2026-08-12": "ab5811bf40bd0ad9bfc89ba917faf3b6f95933de",
+  "2026-08-13": "c4ce90857f1afd20c5546e5be4cd91548bcd6214",
+  "2026-08-14": "d28057cefb7d526c8573bca2cf98967c49f1805a",
+  "2026-08-15": "7042e7e50959ef46311881cf0d68b70a9151598f",
+  "2026-08-16": "1c9683c10a7e706230a1fd004be278579e2bfa99",
+  "2026-08-17": "d159c4419b5e38179a1f2715b6c772c9579e83e7",
+  "2026-08-18": "c5698c3e7eae3183ab07112c5ad8befb433abf66",
+  "2026-08-19": "5b7f628f48e89c762b3d6ddccad327e5f050bb92",
+  "2026-08-20": "0348909ef15d797c51b6262c4bdfe7ad09027d60",
+  "2026-08-21": "ac2fc00ae6bd21833e315d9a54ce4648d8b3deb6",
+  "2026-08-22": "8139a9fc68194a593c610fab5ecad5f54e84e6ce",
+  "2026-08-23": "9b20305dd06fd75012349c8022da51611490d065",
+  "2026-08-24": "b931978c9a4f3102fa30a14bc1b01b21751da529",
+  "2026-08-25": "9e2f921d84be212d62393d2ad2ebcdd6fbb9557b",
+  "2026-08-26": "a70cbee78652e360586ca2a1d291cd04745ddfb4",
+  "2026-08-27": "317b1aba9a6f9419dd89cef72b7106658488bb23",
+  "2026-08-28": "77af63a035450d6c755c41c929602e4a9cb8c7db",
+  "2026-08-29": "1847c2f6fc7a1cd322dadddc33dadfc9b4f4cacf",
+  "2026-08-30": "419a7c5d70563f9279e7762f6c05a31f010c0e07",
+  "2026-08-31": "cd3cba484bb0c2a47f687ad2b7d6dd84ca2f67d5",
+  "2026-09-01": "58bb3dcfdab9ee1e90b610aba56dc05e508c0d86",
+  "2026-09-02": "88406015e8b9b116919dca53fec585210e6fcc86",
+  "2026-09-03": "c22724d0745135ab08d44a5056e1376e1bdb966e",
+  "2026-09-04": "ef5a06497c57f370ff15a51580fe67ae730c4462",
+  "2026-09-05": "c11f0802ca9adc3ed85f19a577c8e4a6f389c3b3",
+  "2026-09-06": "902bf6fecd3916b52c869f25a2da9404a5be04d2",
+  "2026-09-07": "b740ac0eb344c5f061ebbcc7cdec4c309447fb64",
+  "2026-09-08": "0221bfeb31f10403d12cb63e39d069a5e5d79017",
+  "2026-09-09": "4cab96176d28ac91b8973d3c3687eafd95e909ac",
+  "2026-09-10": "91b9090138b45d15fba449114796da506480ed18",
+  "2026-09-11": "1954782f213868caf120a29be54928039bece9c2",
+  "2026-09-12": "011174c8e5310c686d40d0c472210bf51fc8329c",
+  "2026-09-13": "19f0b3db2cb678cdf977f0d9ae360019a2b04132",
+  "2026-09-14": "570717ccf33317fd744957b6886605b472f992c6",
+  "2026-09-15": "e744e3bfe59ab28e5700d99ff4d193e5320c3850",
+  "2026-09-16": "64d54527c642244c9bb8e4c114d07da481f75ab4",
+  "2026-09-17": "e6b6b0c6c4bf9a09f2179640a20c7dbe6ea76c82",
+  "2026-09-18": "7601a7e61b8e104891583a69c889670b055b009f",
+  "2026-09-19": "c53159ada3cdebae7949fb149676c6e8fbac31fc",
+  "2026-09-20": "de9ec04529f87c65b473a0c56611003a2321e5c9",
+  "2026-09-21": "b914d9144fa1747154456439156263ada1296ca7",
+  "2026-09-22": "2bf49fde688bbce09fcd3f1d8c9ca19ace97fdac",
+  "2026-09-23": "534618f0c84fbe697a31128f757a0632106cfe5d",
+  "2026-09-24": "3b392f285f82bb38dff74ce3b8a547ba49cb8661",
+  "2026-09-25": "5a40615ebfe3765cc3fe7942d3e2773b15e3f87e",
+  "2026-09-26": "d9fff0358656345e25335cd2419d81070f7ebfcd",
+  "2026-09-27": "f02b14268356bf20fc2bf69b7987446ed6edf041",
+  "2026-09-28": "c78b0e6df52395e51f2d3defee123189f027fb2b",
+  "2026-09-29": "60607366e8368711b2d258c4b6eb9bf8c6b480a3",
+  "2026-09-30": "79137762bde84ae2eeffc9b19580b996b0e7dd83",
+  "2026-10-01": "711f3b3cb758788ade7f73e1948c7e80481c8b2d",
+  "2026-10-02": "a911d15f720158c7c1812b840abcfcc903fb2a7d",
+  "2026-10-03": "0df6e4defbc657746df59919ff279d0601fe5007",
+  "2026-10-04": "d1d1f55c83e0e2356c67b5871dd4fc0d7f2b98fb",
+  "2026-10-05": "f36210a23a5e79c5ba666e0c8f1bcc97b04d6d0a",
+  "2026-10-06": "097d046412898d8fe9c4ff53faaec3b080e31d02",
+  "2026-10-07": "5728f58b953f349c691ba4ef5eccf2376a70b023",
+  "2026-10-08": "a2dd5b0712d2baa74edf528c4e4be96ba888955e",
+  "2026-10-09": "93fba999df9035a1f18259215ba030b8f8a62849",
+  "2026-10-10": "956f78dacc1eda2ce53e4ddf2f61690cc0939e5d",
+  "2026-10-11": "3eb3032027573f9502996e60e87e319277141841",
+  "2026-10-12": "fe8c9a5160d2179d7121c11d576dc5b699f2ba2d",
+  "2026-10-13": "070ef783764005153ffe71963239b3f59d727d46",
+  "2026-10-14": "95a27783459a14373c42ca211124370cc091b43a",
+  "2026-10-15": "cf14327f22ee8ee70f9ae3c9c6cfa6a806c8fbd0",
+  "2026-10-16": "94c4a0c6c2436f17908f16f4f2e8d0db193dfef9",
+  "2026-10-17": "171d56e8f2734bb479cde80b0bf17793b0897d05",
+  "2026-10-18": "dfb52e9a14be2a4565f70e6c74d4782d0ba7e1e8",
+  "2026-10-19": "c8b622373d7838d287bfb1b160a1c2afb917ffde",
+  "2026-10-20": "ffb16147383d72e00068927b828952fe1e43772e",
+  "2026-10-21": "01533fd16d26ff434546f028fd245f7f4d7f512f",
+  "2026-10-22": "5d4764688e2cd423d1cca64beb29794d5b43e23f",
+  "2026-10-23": "612ccb6c43de4eb227e7426fdc70f7f89536f90b",
+  "2026-10-24": "904cb785f5ae3ec12051a27c95a259b5035e1dbe",
+  "2026-10-25": "25fa7c5c0824adc0855ba839eb7bf01572a63db9",
+  "2026-10-26": "cd14b02290e41c4c93a18dcf32d9e01de68cce16",
+  "2026-10-27": "9a81fec8e6b8d47d2dd3c8bcca8cecf3c00d289e",
+  "2026-10-28": "f247f1a10d8fc7be1ac89e3196436ebec02932f5",
+  "2026-10-29": "198055d1a2ff061e1dab60c64ecc46bf96d0e683",
+  "2026-10-30": "ca38796c64a45e32b14e7bd24022a84991343322",
+  "2026-10-31": "edeed00e4dc025f6bbd6cb3a9f1ed6198495ec5c",
+  "2026-11-01": "6914b40c8c1f64b285c2e415db5c49970ae71bc2",
+  "2026-11-02": "ad9a8e7d8c805d66327853e57893a22b45ee9289",
+  "2026-11-03": "6726035d81e387788fb3168532130fae6ff696b5",
+  "2026-11-04": "127599071c8b178b60ba2514648766f102bfade2",
+  "2026-11-05": "cbc542d559552da005f524ff785856808f1096b2",
+  "2026-11-06": "0353936455fed2c3e3bbf0b1a1e463aafa6e959b",
+  "2026-11-07": "5ec4652eaa52d1755217d7075f08157c5c9ff3e4",
+  "2026-11-08": "7839ec1b82b23735e5a9d2179b9e94455f316875",
+  "2026-11-09": "27df204571148f165b04d6f55ef2435a87cbe1c3",
+  "2026-11-10": "03953b008fbf68341fa8c27756c764054b636d49",
+  "2026-11-11": "27e6643c5f025e460950ab5f15d0188810d8fb3d",
+  "2026-11-12": "395983431f188edfd125391ae2dbabb3430e9f1c",
+  "2026-11-13": "9307e16f2ab4a81f3f0520d475cac3666f7ea58f",
+  "2026-11-14": "d4a16fd497d99c5723bf8cfb5b6aa6243606363e",
+  "2026-11-15": "64ccff6d7e618db8ee8c2c031ca6559c0277ac0f",
+  "2026-11-16": "06386a297907f34fc5faf385807e9c516c04322e",
+  "2026-11-17": "99cbab91172a6a20b80ecc7c8a196e73b7e349e4",
+  "2026-11-18": "6b72a4a6ffc2a3a78344bc311db7aa01dfb25879",
+  "2026-11-19": "f905403de2fc42d51c9ec24ec8119e064523b9bd",
+  "2026-11-20": "8543c60529d7cb15a6bdb7da78a6f637dd77db3b",
+  "2026-11-21": "36422cef371dd695f7de236ce67d1b4ff89f806c",
+  "2026-11-22": "357f5f76a214bdcf07b6545a11d2f80704675e85",
+  "2026-11-23": "65b17962850624e87ea798eb97cb951585903823",
+  "2026-11-24": "6432a49a38d9a2c72bb3b1686c3792b54146772c",
+  "2026-11-25": "aa5b7f441d1a06dd13349964704fb06c0fed4eb4",
+  "2026-11-26": "ef4872eeca7fc41797b6c9b97c07de7a76a79607",
+  "2026-11-27": "74a08b176360e42f931231206b40f47a637ccd3f",
+  "2026-11-28": "cf2421386574f033857c76b0b26a48d8ed798e08",
+  "2026-11-29": "d73851a5db88bbedd0744662f5722725553cc45b",
+  "2026-11-30": "28fabaedfd28585ef2c3c7a67b0c5ab764fea533",
+  "2026-12-01": "47becff574102207eeb1fa52b39099103e8a0b73",
+  "2026-12-02": "05e1abc7ab71517ca969024a312f44eda0ad27b4",
+  "2026-12-03": "9407366971944370fe9cfaec70582ced5c59f58f",
+  "2026-12-04": "996d9db5a3a34a5fdebf743b22c646215f6460a6",
+  "2026-12-05": "b08ed68897dcefb3ccdc8806c516445d733058d5",
+  "2026-12-06": "f4869a1e5bcad890e262e8b8c3002860e6d5171c",
+  "2026-12-07": "129dadd997f6b867b4a0e1ff0bb6aa65d61a21f7",
+  "2026-12-08": "400aeba5dc41cf2dcc6a5ae8cb7db011cb5581c0",
+  "2026-12-09": "475e4ae53b4966b5b11cf2d01b7adf8459817d1e",
+  "2026-12-10": "c47378923dc433c3e88064c772ce067ee93944a0",
+  "2026-12-11": "20c5afa5818fe40f383b41b6ced01a25aef641ef",
+  "2026-12-12": "bc24b95fa60bfec74d6e0de3be08a6b894e84105",
+  "2026-12-13": "e263b9da9077aa642805c662e7a713bdf15054aa",
+  "2026-12-14": "e086d8e1de4d047d8d96f37813e1ccf7e71e7a73",
+  "2026-12-15": "62c98caf113298d5aee8af0f265d6827bb523e41",
+  "2026-12-16": "d9262f066e2a5e0670792422e9ada0f33bb80e2f",
+  "2026-12-17": "278efdeaeef09692058ed75f3b38b5a74bacfcf9",
+  "2026-12-18": "d45886dec4ac6c078ed023d1789303b373942d5a",
+  "2026-12-19": "38daa47f550bceb2846c299d3649c9b1a058047a",
+  "2026-12-20": "42b82194640d7ccaa1643356dcdc55a6eff03c9d",
+  "2026-12-21": "d46fd04c7d9935707063b44f813ff38ba0e3b5e6",
+  "2026-12-22": "ea08a8b96f4353cd7dae2617731dc07aa1382cb4",
+  "2026-12-23": "1dc7142da5a1c819f4ec2f15ef54a47e6525fcb6",
+  "2026-12-24": "f5e30dea99276608ac61bb04cd6aa521d576106a",
+  "2026-12-25": "a93af3e14b22661d445aa28212608a1ba71fb53a",
+  "2026-12-26": "6b8d2859be93000d558675b90eae982ec4f90b2e",
+  "2026-12-27": "954b7399fcb516722153fbd7f2e01c519d58e501",
+  "2026-12-28": "9cf01a00a5c6c9e38f2cac08f35f7502c9c982ea",
+  "2026-12-29": "731a216e412e3c49b39c84e3194d9936d157d7ee",
+  "2026-12-30": "a4183b549a73097a427c55d6c56fd30aabddf239",
+  "2026-12-31": "d99ca7d8112f51e86dcf84936456f89ec817f72e",
+  "2027-01-01": "50d414862a91da577c7a5c5eef203fe4132e3fcc",
+  "2027-01-02": "0a6b514a2309387099388cc647f1f0366df0e25b",
+  "2027-01-03": "48da1408c33d13f07b98f78d2b2ce74f029058ba",
+  "2027-01-04": "d3aeca5f51bd253e10d611cef776b9f4a6beb8ef",
+  "2027-01-05": "512c3859a841db177e22ac5ce8693d9eb9fed89b",
+  "2027-01-06": "c232cecb0564f26873d1184a03b4de6337d58ed3",
+  "2027-01-07": "0391a84b5ed9338c0f64250254c2cfc651a5b8c2",
+  "2027-01-08": "c4631c6e08d4ce220fd0a82fd925e21cb095c55d",
+  "2027-01-09": "ea5329b116437a7ee03fcc0d8d049c67b8d1e001",
+  "2027-01-10": "215dace20ff59300e764429c549494720cb3440c",
+  "2027-01-11": "aecdd8b0bcc0db1c4f8cf7e44915126318006de8",
+  "2027-01-12": "ef0408ed16d93739793933d93c48919783042c76",
+  "2027-01-13": "316cf3a239f1de4f895d5be08dc60c70408af33e",
+  "2027-01-14": "437aaa556e417db00fd9a4b6ff941e2506aaa3c3",
+  "2027-01-15": "7aa543f52fbbb5d5913db5b0d6f20ee10e56294a",
+  "2027-01-16": "a62098c0891201d519529a6051e3fde7e781a867",
+  "2027-01-17": "b79af2ef48099068ab904d0e131d936e8b074afb",
+  "2027-01-18": "cda49dddc4a19c79320cb1d8aa29db6bfc65163b",
+  "2027-01-19": "b674f4001236a4fed467e8f66ff59e9dfc850059",
+  "2027-01-20": "1609431b2978b9af55a0f083f7dbd6ab151906cf",
+  "2027-01-21": "d71c71d4e096432092a54e40856b5a57e265a4fa",
+  "2027-01-22": "72eb0d97dc526011f9bce7732d6eba885598bfb4",
+  "2027-01-23": "9caa7a5b0aa9763d9da05f109e4858509838d10b",
+  "2027-01-24": "bb7088f659051a716f360e73385aa2ae0e4cf982",
+  "2027-01-25": "e605840e4fdb8c8468363762c172e4faadc98799",
+  "2027-01-26": "b9d126f5755d593fd275a2c09805962f69c65efd",
+  "2027-01-27": "b5b62431117266d2e4b569ff946a3231a3068e50",
+  "2027-01-28": "8edd214175a7ce5183b6031cac39a2f37d95ef0c",
+  "2027-01-29": "e4c021e251edb3a7a163d395d3f0fc951fbd2218",
+  "2027-01-30": "faacc517893c8bb522c9d56ed414e861ebfdb5a6",
+  "2027-01-31": "0b0812a716ab9abb441fc761fb4df1cd6bd3dc9d",
+  "2027-02-01": "a0936b03a153d8b70a066a086b96ac13f48f4366",
+  "2027-02-02": "93887edc1fef762844cf19327ea46a1e8577e491",
+  "2027-02-03": "cc083d83d557e0e22e2570c72f123d07dda41b16",
+  "2027-02-04": "6bf312f631cba2bd5ff4f5fd43ebfb960cce45d2",
+  "2027-02-05": "e6825fdfdfd104da8359eb932c5d112ec7e7bcac",
+  "2027-02-06": "d282231595dddc2b47304aa7f6a5fac7e92f3b1b",
+  "2027-02-07": "dd64eb9c514439489b89b9a1fc653b542964f8ad",
+  "2027-02-08": "7d072103c78dddea58a648ca9af171e1ed6b25e9",
+  "2027-02-09": "1055e42a446f75a9bfafe01966507f6c014521ce",
+  "2027-02-10": "8fb872aebe97778d29c37f050d8ee01c77674ae5",
+  "2027-02-11": "d64b04c51120db6a8cdfd69675a9d248a704cb25",
+  "2027-02-12": "368aaa4395a34c95e7e1edc4daaf8ec2fd69b072",
+  "2027-02-13": "886635109c10b134393a0962199127b1e050ea68",
+  "2027-02-14": "1eb2b4739d81de3feee50b907eb3528fa54cf020",
+  "2027-02-15": "6033e4261063bb32575115644fee01ca1c8dc319",
+  "2027-02-16": "5266c1aacd8e1ae43049ade87aea26f63561ae78",
+  "2027-02-17": "20d42349822f6550fe172cdbef9ff77aed6bd746",
+  "2027-02-18": "2460aa43b315c25c28c8a14a31929e26d237b2db",
+  "2027-02-19": "4eebbbfe6f802a63f9c5630333dd2b0247eb35e7",
+  "2027-02-20": "1c031449bb894991933bb526d375f52ba2ea697b",
+  "2027-02-21": "21e8dfd06f7a0500651567e27dc6d4c7a7b2b55d",
+  "2027-02-22": "cb75ceda51ce387f8896eb2267fabce1e910e321",
+  "2027-02-23": "941f0e24b1f4fe78274c5d4780212d1834aa8521",
+  "2027-02-24": "9fec0a08101f4d85baec07fd77a8fa3088275772",
+  "2027-02-25": "bb9f7b6e85c7c84f076cd8001451e140de46b777",
+  "2027-02-26": "fa247c327d12d472dc1041abb16c70847da44c66",
+  "2027-02-27": "ba181cdc947838ab8d9719e48758ce04597c5ad2",
+  "2027-02-28": "1de2b3f72fa98bb6225d20b4f7f334f4e1cdbb64",
+  "2027-03-01": "ba8949aa093329399270ba48ea249e257b52b13e",
+  "2027-03-02": "c0fcda7c0dd59fa8ad429417dc79c5fa5a1759e5",
+  "2027-03-03": "3017c2a48c829356bd2e70d5289f6bd8d88ba603",
+  "2027-03-04": "31a29323ad7a5618011f794625bf088335c5b736",
+  "2027-03-05": "590e944ffca8d00fdc3d665f10dd09bb226f11c2",
+  "2027-03-06": "0e69374f7b1676b688750a6a3a8653986131735a",
+  "2027-03-07": "e167e71f608d1cc04e4f66ea908f8a8701b521e2",
+  "2027-03-08": "78f93870d4dc762351e3de95729ca99b9dfbb8af",
+  "2027-03-09": "5b6f921c94ea76cbe64f37a1cce2a31bdb47d8ba",
+  "2027-03-10": "e1c846a0bab40bdf7f706694def7cd42bc0b17c2",
+  "2027-03-11": "2db61f30c445f08f3e329fccd318bc14c75c095c",
+  "2027-03-12": "192890ac850c669aaddcab88fa15011bb5858662",
+  "2027-03-13": "fc788af21c49ba0b9fa39178be6f398b95201233",
+  "2027-03-14": "5c71d77dca199bbcb37b5dc1027f9ef8be3c0441",
+  "2027-03-15": "0f6a0d1ef797a33c88e182ea040835e21e2631aa",
+  "2027-03-16": "6320cff3b0637c9477ccc809ad3846669490b1a3",
+  "2027-03-17": "5cba0cd609e6ec6f60730844d92edaf1ff5c3c36",
+  "2027-03-18": "20a26845a40250836558e5dd77a24318ada8ebcc",
+  "2027-03-19": "49e44ee9cc78fb7a272e9f7c2a116774e1fac634",
+  "2027-03-20": "f8081b6b729da458104b5105b72178dc5d5ba37a",
+  "2027-03-21": "7b2675fa920f059c31ac81ac52ef5359f3268c2e",
+  "2027-03-22": "166fbd0192a38826281d819fa76c2a188b5980e7",
+  "2027-03-23": "ea934af11c71883c2e22408cff3db2fbe7d0383b",
+  "2027-03-24": "4eaccc33d747db3a7710339dc017cda0d05de5d0",
+  "2027-03-25": "3661b3ff56324d1ba63ee72585fe463ef8142221",
+  "2027-03-26": "6b4bea0c0472afcb88d881e6206f27fa1f89a451",
+  "2027-03-27": "f87d5d448aff93feafdf43f4aa978da7fae09124",
+  "2027-03-28": "6840c4431b043e24b3c433d0ab434aac7f95b78f",
+  "2027-03-29": "7644045ada660f29aae24efd31bc8701384b4786",
+  "2027-03-30": "efb2e4d932be0130c6727406576dc06b407c33a1",
+  "2027-03-31": "2fec5e64106ea04e2742e6b4f6a7b419176a8031",
+  "2027-04-01": "3f6bd38d94c9c2277dbb2fa3e6a413ad5a66b53e",
+  "2027-04-02": "97b35b63e75913e87a722fbaafaecb2cc5ed36fd",
+  "2027-04-03": "c4c6a41847a9f5f4db57dc606316af765b552c3b",
+  "2027-04-04": "3e797c67243b20cf922402e68e383aa752bd9cb4",
+  "2027-04-05": "e2d39dfd7790833f5dd8ed7ff203bfd8603ef2af",
+  "2027-04-06": "75e65036c9713ed371b608685c05e1fc13d4694e",
+  "2027-04-07": "ca6f09d3c60ab747fbaa6df2234ec1120fa2e723",
+  "2027-04-08": "342a4f7b94148f5904d9a9d84df90a0271964608",
+  "2027-04-09": "57614912cf24107d52e9511a403d4411a7bc9dfe",
+  "2027-04-10": "3a941b015c8aa7b82eeded75cbbd248f05ec6344",
+  "2027-04-11": "1224908a5e2cf1d45fdbf475b39677c96ff0c025",
+  "2027-04-12": "3b08ab0d6a096cb03deb3c0b7d5cbdbff511cbc8",
+  "2027-04-13": "82f938c941766081432deda430867f5726ec2859",
+  "2027-04-14": "725f6008edcec8f831735f387f039a02f06cb472",
+  "2027-04-15": "b079bc318c5cacde9832d2b36f7820e172ea9cbd",
+  "2027-04-16": "84c2fb04d009fc5c1b4ded5d80f06b6becc15e4b",
+  "2027-04-17": "0511c2913706769d8d793bf11d3dbc1684988b81",
+  "2027-04-18": "aa5f8d2ebfa892cabae68d6cd062966425a6ec5e",
+  "2027-04-19": "a934ef10902f1470629caa8e3fe90b6f5d136267",
+  "2027-04-20": "6602ffba79ab64207ffe5d51d684d25979e912ad",
+  "2027-04-21": "3bb87eeb529653a3c429ceed8fffeb3be70e1351",
+  "2027-04-22": "bda5666507818d9ea1ae0e69624d5ed447a3f34a",
+  "2027-04-23": "cc824ce27179bb15ef80ceaa625a2ae597018ccb",
+  "2027-04-24": "8a0d1f093ebef5f0e05a1f70a11b4569d8da96cf",
+  "2027-04-25": "c79bcc95079797e279c09c7f5c40ba7520b5efc2",
+  "2027-04-26": "d547dc24363394e1fa83ba9d032ed228c7039b1c",
+  "2027-04-27": "9a5c2a1be817cf4975463caec7e73ac433e67fd9",
+  "2027-04-28": "528f2bd3a948082921f0ebeda2d313553b9fae1c",
+  "2027-04-29": "fdb099316405a25891598f2c21c3abafba76e3de",
+  "2027-04-30": "d01e573b418c69e062ff2ec3155eb19bbc92726b",
+  "2027-05-01": "f56845268faa5722dc301a467e8a0f1e9b1dbfc2",
+  "2027-05-02": "68e6fc874db780189eb2f7fde7f8f387dcaa19b0",
+  "2027-05-03": "a5214cd58088b599a1b8310de93aeb431a3f4733",
+  "2027-05-04": "a6d44c6a111eb245e2e59a0fdf787f0573060a7d",
+  "2027-05-05": "168892fab0c7d3425484d9200074d87ef7366eb1",
+  "2027-05-06": "60c6f5bb83cd8b98a13cb0311be1297e19ad2824",
+  "2027-05-07": "b0e3ed6a07646ff468bd9478b6e5217664cd6de3",
+  "2027-05-08": "acf9a8c493b557e5a053f70aac2a10eeb5fc02b9",
+  "2027-05-09": "28bdc6e213ce16172b248a0a5793f4445026c042",
+  "2027-05-10": "6320af81755dc85cddfe3a3a52a654ef119db998",
+  "2027-05-11": "6c295aec41c016e05e2cf147ee3bb8340084d8a1",
+  "2027-05-12": "04b98fd7ee22dd554b91e90378bba45fb415492a",
+  "2027-05-13": "83223317e935771b4f2bd1fc5ae8568b0fbc8dd5",
+  "2027-05-14": "cbc6d0ee6f977d68b51b2d3b49fbf6146914df9f",
+  "2027-05-15": "7acbb78aa2df3a1fa96c568ccb6f4fa6e4af253d",
+  "2027-05-16": "60ee59c9c0c3361a5bc5d384ed6ac53b5b1bad0d",
+  "2027-05-17": "9183a6bd8a714680e62ed7dc4fb3591d8da93462",
+  "2027-05-18": "ea40bdb8e557217b46dabb125817f7c255e135ad",
+  "2027-05-19": "5e794b181f15c2955d98d6b70e7228e7a2c9f1b7",
+  "2027-05-20": "424a1ae121d55fc485ac8b23ba23486923d63916",
+  "2027-05-21": "824789576738fe5d633042e99fbd5d548495c277",
+  "2027-05-22": "36f84544a26c013097add353d62aa04117f4fae7",
+  "2027-05-23": "7ed22949f385472b5adefe2a55b80915cb9ed890",
+  "2027-05-24": "ea95ce457f38ace71fe70bbf70c780b58b876e64",
+  "2027-05-25": "527fae21bbb0c37f1ab7fd4ecaf1681c22eaf1f7",
+  "2027-05-26": "63c5a87092faafc4e9fdc1235670d3e85711ab1f",
+  "2027-05-27": "87d9752718434363987de9c769f4eba6cc5f082a",
+  "2027-05-28": "570608455bb98bf84b605b11cefbd57d59782d42",
+  "2027-05-29": "befc4391d0bec7275a631a34847c67c512d001a2",
+  "2027-05-30": "c702c45a6e6500e122547803468207785876f209",
+  "2027-05-31": "03ef04b0f769834fa27c5e535108a3a9a4b6b6c5",
+  "2027-06-01": "3dc57cb49fd7ca376c476d43b1fa666a810450c6",
+  "2027-06-02": "5688007b223f2b89e01fa8736ebaf5c1040e1e4d",
+  "2027-06-03": "31ded96168bc5053f393dc366ea8fee6098da9e3",
+  "2027-06-04": "c6099bb8ae794fd59bf1cbb7b9803e921ada51db",
+  "2027-06-05": "fb8ccf1345bca642fd6612cf6428e82eeef1826c",
+  "2027-06-06": "fdc10f7251b569660ea6e021fb5edb7aa2552850",
+  "2027-06-07": "1954c63f9465bf92bb1b146c5c968506a77adace",
+  "2027-06-08": "4e3f683ed77df0a8bc2a81a04035cda877dfc65d",
+  "2027-06-09": "8b710282de483d787b0b0cf72aefb30df22f396a",
+  "2027-06-10": "7b920099255d5d3406d73bb3cb2714a1a45aa5bb",
+  "2027-06-11": "38f3230f5cadd3c742de004b03cb4a0705eb87ef",
+  "2027-06-12": "f177f25329fb13fced4db2e345d58035d642663d",
+  "2027-06-13": "28074b3927bd0e8d29f1b8fddf9f50c754d037c5",
+  "2027-06-14": "2d3968f7f548ed1588f9e1430c87f035df5b2729",
+  "2027-06-15": "722b3c3e8ac43e024af1c4c5a23868f65f950649",
+  "2027-06-16": "810ef76fa6cb0585b15e800fe23644fecc8567c4",
+  "2027-06-17": "2760cb9ab4fce4a91694345b6bc4091dea6680c8",
+  "2027-06-18": "b67419ffabc94cda7f37bb697367cb375ca2c2c2",
+  "2027-06-19": "e93c8dd011b05f2162b9531bcb6eac5164c6607b",
+  "2027-06-20": "b3796a3862d254f108c4fefcd47d77b940863eb6",
+  "2027-06-21": "7baa23f8b307ec8744f20bf5f3b315bed15cab78",
+  "2027-06-22": "2675d07bfadc0eeed2a7f0e151d190992a31a1fd",
+  "2027-06-23": "06b55fca3b5df26c663bbe691de36976559a7349",
+  "2027-06-24": "090099a7ac654decc7934fbaf47142a6f7694ca5",
+  "2027-06-25": "82d21d90df7e77add8f75409649bff082292dbf4",
+  "2027-06-26": "ddeedb7ca53e08824132cee44084a55675811882",
+  "2027-06-27": "e4449143001e75414ef48aeb90763786a59f757a",
+  "2027-06-28": "62da2f6aeef7e84d43860a579449066092ce670d",
+  "2027-06-29": "78116e1565ba19c53da29b4974189da7baaf3f70",
+  "2027-06-30": "87fc4d17ed63fded8fddb32e308c39a56753adf3"
+ },
+ "samples": {
+  "2026-09-01": {
+   "status": [
+    [
+     [
+      {
+       "k": "closed",
+       "n": [
+        "2026-10-10",
+        "Junior pheasant"
+       ]
+      },
+      "Closed · opens Sat, Oct 10 (youth)",
+      "Closed · opens Sat, Oct 10 (youth)",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "open",
+       "l": "Mourning dove",
+       "y": false,
+       "a": "2026-09-01T09:58:00.000Z",
+       "b": "2026-09-01T23:32:00.000Z"
+      },
+      "Open today · 5:58 AM – 7:32 PM",
+      "Open today · 5:58 AM – 7:32 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Fall turkey"
+      },
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": [
+        "2026-10-17",
+        "Ruffed grouse"
+       ]
+      },
+      "Closed · opens Sat, Oct 17",
+      "Closed · opens Sat, Oct 17",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Ducks and geese"
+      },
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": [
+        "2026-10-17",
+        "American woodcock"
+       ]
+      },
+      "Closed · opens Sat, Oct 17",
+      "Closed · opens Sat, Oct 17",
+      "CLOSED"
+     ]
+    ],
+    [
+     [
+      {
+       "k": "closed",
+       "n": [
+        "2026-10-10",
+        "Junior pheasant"
+       ]
+      },
+      "Closed · opens Sat, Oct 10 (youth)",
+      "Closed · opens Sat, Oct 10 (youth)",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "open",
+       "l": "Mourning dove",
+       "y": false,
+       "a": "2026-09-01T10:06:00.000Z",
+       "b": "2026-09-01T23:40:00.000Z"
+      },
+      "Open today · 6:06 AM – 7:40 PM",
+      "Open today · 6:06 AM – 7:40 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Fall turkey"
+      },
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": [
+        "2026-10-17",
+        "Ruffed grouse"
+       ]
+      },
+      "Closed · opens Sat, Oct 17",
+      "Closed · opens Sat, Oct 17",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Ducks and geese"
+      },
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": [
+        "2026-10-17",
+        "American woodcock"
+       ]
+      },
+      "Closed · opens Sat, Oct 17",
+      "Closed · opens Sat, Oct 17",
+      "CLOSED"
+     ]
+    ],
+    [
+     [
+      {
+       "k": "closed",
+       "n": [
+        "2026-10-10",
+        "Junior pheasant"
+       ]
+      },
+      "Closed · opens Sat, Oct 10 (youth)",
+      "Closed · opens Sat, Oct 10 (youth)",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "open",
+       "l": "Mourning dove",
+       "y": false,
+       "a": "2026-09-01T10:18:00.000Z",
+       "b": "2026-09-01T23:52:00.000Z"
+      },
+      "Open today · 6:18 AM – 7:52 PM",
+      "Open today · 6:18 AM – 7:52 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Fall turkey"
+      },
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": [
+        "2026-10-17",
+        "Ruffed grouse"
+       ]
+      },
+      "Closed · opens Sat, Oct 17",
+      "Closed · opens Sat, Oct 17",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Ducks and geese"
+      },
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": [
+        "2026-10-17",
+        "American woodcock"
+       ]
+      },
+      "Closed · opens Sat, Oct 17",
+      "Closed · opens Sat, Oct 17",
+      "CLOSED"
+     ]
+    ]
+   ],
+   "hours": [
+    [
+     [
+      "2026-09-01T09:58:00.000Z",
+      "2026-09-02T00:02:00.000Z"
+     ],
+     [
+      "2026-09-01T09:58:00.000Z",
+      "2026-09-01T23:32:00.000Z"
+     ],
+     [
+      "2026-09-01T09:58:00.000Z",
+      "2026-09-01T16:00:00.000Z"
+     ]
+    ],
+    [
+     [
+      "2026-09-01T10:06:00.000Z",
+      "2026-09-02T00:10:00.000Z"
+     ],
+     [
+      "2026-09-01T10:06:00.000Z",
+      "2026-09-01T23:40:00.000Z"
+     ],
+     [
+      "2026-09-01T10:06:00.000Z",
+      "2026-09-01T16:00:00.000Z"
+     ]
+    ],
+    [
+     [
+      "2026-09-01T10:18:00.000Z",
+      "2026-09-02T00:22:00.000Z"
+     ],
+     [
+      "2026-09-01T10:18:00.000Z",
+      "2026-09-01T23:52:00.000Z"
+     ],
+     [
+      "2026-09-01T10:18:00.000Z",
+      "2026-09-01T16:00:00.000Z"
+     ]
+    ]
+   ],
+   "places": [
+    {
+     "id": "sgl-sample-1",
+     "open": true,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "closed",
+        "n": [
+         "2026-10-10",
+         "Junior pheasant"
+        ]
+       }
+      ],
+      [
+       "dove",
+       {
+        "k": "open",
+        "l": "Mourning dove",
+        "y": false,
+        "a": "2026-09-01T10:06:00.000Z",
+        "b": "2026-09-01T23:40:00.000Z"
+       }
+      ],
+      [
+       "turkey",
+       {
+        "k": "check",
+        "l": "Fall turkey"
+       }
+      ],
+      [
+       "grouse",
+       {
+        "k": "closed",
+        "n": [
+         "2026-10-17",
+         "Ruffed grouse"
+        ]
+       }
+      ],
+      [
+       "waterfowl",
+       {
+        "k": "check",
+        "l": "Ducks and geese"
+       }
+      ],
+      [
+       "woodcock",
+       {
+        "k": "closed",
+        "n": [
+         "2026-10-17",
+         "American woodcock"
+        ]
+       }
+      ]
+     ],
+     "openSp": [
+      "dove"
+     ],
+     "tags": [
+      {
+       "text": "Opens Oct 24",
+       "tone": "soon"
+      },
+      {
+       "text": "Opens Oct 17",
+       "tone": "soon"
+      },
+      {
+       "text": "Opens Oct 17",
+       "tone": "soon"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Opens Oct 24"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Opens Oct 17"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Opens Oct 17"
+      },
+      {
+       "species": "dove",
+       "open": true
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2026-09-02",
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "grouse",
+        "reason": "Forest and young-growth cover suits grouse",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Opens Oct 17",
+         "tone": "soon"
+        }
+       },
+       {
+        "species": "turkey",
+        "reason": "Mixed woods and edges hold fall flocks",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ],
+      "possible": [
+       {
+        "species": "pheasant",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Opens Oct 24",
+         "tone": "soon"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "woodcock",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Opens Oct 17",
+         "tone": "soon"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "dove",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Migratory bird license required."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 1 species open",
+      "detail": "Dove · legal hours 6:06 AM – 8:10 PM"
+     }
+    },
+    {
+     "id": "stock-sample-1",
+     "open": false,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "closed",
+        "n": [
+         "2026-10-10",
+         "Junior pheasant"
+        ]
+       }
+      ]
+     ],
+     "openSp": [
+      "dove"
+     ],
+     "tags": [
+      {
+       "text": "Opens Oct 24",
+       "tone": "soon"
+      },
+      {
+       "text": "Opens Oct 17",
+       "tone": "soon"
+      },
+      {
+       "text": "Opens Oct 17",
+       "tone": "soon"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Opens Oct 24"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Opens Oct 17"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Opens Oct 17"
+      },
+      {
+       "species": "dove",
+       "open": true
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2026-09-02",
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "pheasant",
+        "reason": "PGC stocks this property",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Opens Oct 24",
+         "tone": "soon"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "woodcock",
+        "reason": "Moist thickets and young growth draw woodcock",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Opens Oct 17",
+         "tone": "soon"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       }
+      ],
+      "possible": [
+       {
+        "species": "grouse",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Opens Oct 17",
+         "tone": "soon"
+        }
+       },
+       {
+        "species": "dove",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Migratory bird license required."
+       },
+       {
+        "species": "turkey",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 1 species open",
+      "detail": "Dove · legal hours 6:02 AM – 8:06 PM"
+     }
+    },
+    {
+     "id": "dove-sample-1",
+     "open": true,
+     "st": [
+      [
+       "dove",
+       {
+        "k": "open",
+        "l": "Mourning dove",
+        "y": false,
+        "a": "2026-09-01T10:02:00.000Z",
+        "b": "2026-09-01T23:36:00.000Z"
+       }
+      ]
+     ],
+     "openSp": [
+      "dove"
+     ],
+     "tags": [
+      {
+       "text": "Opens Oct 24",
+       "tone": "soon"
+      },
+      {
+       "text": "Opens Oct 17",
+       "tone": "soon"
+      },
+      {
+       "text": "Opens Oct 17",
+       "tone": "soon"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Opens Oct 24"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Opens Oct 17"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Opens Oct 17"
+      },
+      {
+       "species": "dove",
+       "open": true
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2026-09-02",
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "pheasant",
+        "reason": "Grass and field edges suit pheasant",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Opens Oct 24",
+         "tone": "soon"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Managed dove field",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Migratory bird license required."
+       }
+      ],
+      "possible": [
+       {
+        "species": "grouse",
+        "reason": "Allowed here; field is managed for doves",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Opens Oct 17",
+         "tone": "soon"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Allowed here; field is managed for doves",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Opens Oct 17",
+         "tone": "soon"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Allowed here; field is managed for doves",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 1 species open",
+      "detail": "Dove · legal hours 6:02 AM – 8:06 PM"
+     }
+    },
+    {
+     "id": "sgl-sample-2",
+     "open": true,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "closed",
+        "n": [
+         "2026-10-10",
+         "Junior pheasant"
+        ]
+       }
+      ],
+      [
+       "dove",
+       {
+        "k": "open",
+        "l": "Mourning dove",
+        "y": false,
+        "a": "2026-09-01T10:18:00.000Z",
+        "b": "2026-09-01T23:52:00.000Z"
+       }
+      ],
+      [
+       "turkey",
+       {
+        "k": "check",
+        "l": "Fall turkey"
+       }
+      ],
+      [
+       "grouse",
+       {
+        "k": "closed",
+        "n": [
+         "2026-10-17",
+         "Ruffed grouse"
+        ]
+       }
+      ],
+      [
+       "waterfowl",
+       {
+        "k": "check",
+        "l": "Ducks and geese"
+       }
+      ],
+      [
+       "woodcock",
+       {
+        "k": "closed",
+        "n": [
+         "2026-10-17",
+         "American woodcock"
+        ]
+       }
+      ]
+     ],
+     "openSp": [
+      "dove"
+     ],
+     "tags": [
+      {
+       "text": "Opens Oct 24",
+       "tone": "soon"
+      },
+      {
+       "text": "Opens Oct 17",
+       "tone": "soon"
+      },
+      {
+       "text": "Opens Oct 17",
+       "tone": "soon"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Opens Oct 24"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Opens Oct 17"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Opens Oct 17"
+      },
+      {
+       "species": "dove",
+       "open": true
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2026-09-02",
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "grouse",
+        "reason": "Forest and young-growth cover suits grouse",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Opens Oct 17",
+         "tone": "soon"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Moist thickets and young growth draw woodcock",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Opens Oct 17",
+         "tone": "soon"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Mixed woods and edges hold fall flocks",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ],
+      "possible": [
+       {
+        "species": "pheasant",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Opens Oct 24",
+         "tone": "soon"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Migratory bird license required."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 1 species open",
+      "detail": "Dove · legal hours 6:18 AM – 8:22 PM"
+     }
+    },
+    {
+     "id": "stock-sample-2",
+     "open": false,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "closed",
+        "n": [
+         "2026-10-10",
+         "Junior pheasant"
+        ]
+       }
+      ]
+     ],
+     "openSp": [
+      "dove"
+     ],
+     "tags": [
+      {
+       "text": "Opens Oct 24",
+       "tone": "soon"
+      },
+      {
+       "text": "Opens Oct 17",
+       "tone": "soon"
+      },
+      {
+       "text": "Opens Oct 17",
+       "tone": "soon"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Opens Oct 24"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Opens Oct 17"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Opens Oct 17"
+      },
+      {
+       "species": "dove",
+       "open": true
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2026-09-02",
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "pheasant",
+        "reason": "PGC stocks this property",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Opens Oct 24",
+         "tone": "soon"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Crop fields draw doves",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Migratory bird license required."
+       }
+      ],
+      "possible": [
+       {
+        "species": "grouse",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Opens Oct 17",
+         "tone": "soon"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Opens Oct 17",
+         "tone": "soon"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 1 species open",
+      "detail": "Dove · legal hours 5:58 AM – 8:02 PM"
+     }
+    },
+    {
+     "id": "sgl-sample-3",
+     "open": true,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "closed",
+        "n": [
+         "2026-10-10",
+         "Junior pheasant"
+        ]
+       }
+      ],
+      [
+       "dove",
+       {
+        "k": "open",
+        "l": "Mourning dove",
+        "y": false,
+        "a": "2026-09-01T10:06:00.000Z",
+        "b": "2026-09-01T23:40:00.000Z"
+       }
+      ],
+      [
+       "turkey",
+       {
+        "k": "check",
+        "l": "Fall turkey"
+       }
+      ],
+      [
+       "grouse",
+       {
+        "k": "closed",
+        "n": [
+         "2026-10-17",
+         "Ruffed grouse"
+        ]
+       }
+      ],
+      [
+       "waterfowl",
+       {
+        "k": "check",
+        "l": "Ducks and geese"
+       }
+      ],
+      [
+       "woodcock",
+       {
+        "k": "closed",
+        "n": [
+         "2026-10-17",
+         "American woodcock"
+        ]
+       }
+      ]
+     ],
+     "openSp": [
+      "dove"
+     ],
+     "tags": [
+      {
+       "text": "Opens Oct 24",
+       "tone": "soon"
+      },
+      {
+       "text": "Opens Oct 17",
+       "tone": "soon"
+      },
+      {
+       "text": "Opens Oct 17",
+       "tone": "soon"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Opens Oct 24"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Opens Oct 17"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Opens Oct 17"
+      },
+      {
+       "species": "dove",
+       "open": true
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2026-09-02",
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "grouse",
+        "reason": "Forest and young-growth cover suits grouse",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Opens Oct 17",
+         "tone": "soon"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Moist thickets and young growth draw woodcock",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Opens Oct 17",
+         "tone": "soon"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Mixed woods and edges hold fall flocks",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ],
+      "possible": [
+       {
+        "species": "pheasant",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Opens Oct 24",
+         "tone": "soon"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Migratory bird license required."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 1 species open",
+      "detail": "Dove · legal hours 6:06 AM – 8:10 PM"
+     }
+    }
+   ],
+   "search": [
+    {
+     "kind": "closed",
+     "label": "Closed until Sat, Oct 10"
+    },
+    {
+     "kind": "closed",
+     "label": "Closed until Sat, Oct 17"
+    },
+    {
+     "kind": "closed",
+     "label": "Closed until Sat, Oct 17"
+    },
+    {
+     "kind": "open",
+     "label": "Open · closes Fri, Nov 27"
+    },
+    {
+     "kind": "closed",
+     "label": "Closed until Sat, Oct 31"
+    }
+   ],
+   "guide": [
+    [
+     [
+      "pheasant",
+      "CLOSED",
+      "Closed · opens Sat, Oct 10 (youth)"
+     ],
+     [
+      "dove",
+      "OPEN",
+      "Open today · 6:02 AM – 7:36 PM"
+     ],
+     [
+      "turkey",
+      "CHECK",
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+     ],
+     [
+      "grouse",
+      "CLOSED",
+      "Closed · opens Sat, Oct 17"
+     ],
+     [
+      "waterfowl",
+      "CHECK",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required."
+     ],
+     [
+      "woodcock",
+      "CLOSED",
+      "Closed · opens Sat, Oct 17"
+     ]
+    ],
+    [
+     {
+      "species": "pheasant",
+      "label": "Pheasant",
+      "date": "2026-10-10",
+      "status": "Opens Sat, Oct 10 (youth)"
+     },
+     {
+      "species": "grouse",
+      "label": "Grouse",
+      "date": "2026-10-17",
+      "status": "Opens Sat, Oct 17"
+     },
+     {
+      "species": "woodcock",
+      "label": "Woodcock",
+      "date": "2026-10-17",
+      "status": "Opens Sat, Oct 17"
+     }
+    ]
+   ],
+   "segments": [
+    [
+     [
+      "Junior pheasant",
+      [
+       [
+        "2026-10-10",
+        "2026-10-18"
+       ]
+      ]
+     ],
+     [
+      "Ring-necked pheasant",
+      [
+       [
+        "2026-10-24",
+        "2026-12-24"
+       ],
+       [
+        "2026-12-26",
+        "2027-02-28"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Mourning dove",
+      [
+       [
+        "2026-09-01",
+        "2026-11-27"
+       ],
+       [
+        "2026-12-18",
+        "2027-01-02"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Fall turkey",
+      null
+     ],
+     [
+      "Spring gobbler",
+      [
+       [
+        "2027-05-01",
+        "2027-05-31"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Ruffed grouse",
+      [
+       [
+        "2026-10-17",
+        "2026-12-24"
+       ],
+       [
+        "2026-12-26",
+        "2027-01-23"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Ducks and geese",
+      null
+     ]
+    ],
+    [
+     [
+      "American woodcock",
+      [
+       [
+        "2026-10-17",
+        "2026-12-08"
+       ]
+      ]
+     ]
+    ]
+   ],
+   "dates": [
+    "Oct 24 – Dec 24, Dec 26 – Feb 28",
+    "Oct 17 – Dec 24, Dec 26 – Jan 23",
+    "Oct 17 – Dec 8",
+    "Sep 1 – Nov 27, Dec 18 – Jan 2",
+    "dates vary, check the digest, May 1 – May 31"
+   ],
+   "windows": [
+    [
+     {
+      "label": "Sat, Oct 10 – Sun, Oct 18",
+      "current": false,
+      "past": false
+     }
+    ],
+    [
+     {
+      "label": "Sat, Oct 24 – Thu, Dec 24",
+      "current": false,
+      "past": false
+     },
+     {
+      "label": "Sat, Dec 26 – Sun, Feb 28",
+      "current": false,
+      "past": false
+     }
+    ],
+    [
+     {
+      "label": "Sat, Oct 17 – Thu, Dec 24",
+      "current": false,
+      "past": false
+     },
+     {
+      "label": "Sat, Dec 26 – Sat, Jan 23",
+      "current": false,
+      "past": false
+     }
+    ],
+    [
+     {
+      "label": "Tue, Sep 1 – Fri, Nov 27",
+      "current": true,
+      "past": false
+     },
+     {
+      "label": "Fri, Dec 18 – Sat, Jan 2",
+      "current": false,
+      "past": false
+     }
+    ],
+    [],
+    [
+     {
+      "label": "Sat, May 1 – Mon, May 31",
+      "current": false,
+      "past": false
+     }
+    ],
+    [],
+    [
+     {
+      "label": "Sat, Oct 17 – Tue, Dec 8",
+      "current": false,
+      "past": false
+     }
+    ]
+   ],
+   "sunday": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "2026-11-05": {
+   "status": [
+    [
+     [
+      {
+       "k": "open",
+       "l": "Ring-necked pheasant",
+       "y": false,
+       "a": "2026-11-05T11:04:00.000Z",
+       "b": "2026-11-05T22:24:00.000Z"
+      },
+      "Open today · 6:04 AM – 5:24 PM",
+      "Open today; legal hours ended 5:24 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "open",
+       "l": "Mourning dove",
+       "y": false,
+       "a": "2026-11-05T11:04:00.000Z",
+       "b": "2026-11-05T21:54:00.000Z"
+      },
+      "Open today · 6:04 AM – 4:54 PM",
+      "Open today; legal hours ended 4:54 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Fall turkey"
+      },
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "open",
+       "l": "Ruffed grouse",
+       "y": false,
+       "a": "2026-11-05T11:04:00.000Z",
+       "b": "2026-11-05T22:24:00.000Z"
+      },
+      "Open today · 6:04 AM – 5:24 PM",
+      "Open today; legal hours ended 5:24 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Ducks and geese"
+      },
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "open",
+       "l": "American woodcock",
+       "y": false,
+       "a": "2026-11-05T11:04:00.000Z",
+       "b": "2026-11-05T21:54:00.000Z"
+      },
+      "Open today · 6:04 AM – 4:54 PM",
+      "Open today; legal hours ended 4:54 PM",
+      "OPEN"
+     ]
+    ],
+    [
+     [
+      {
+       "k": "open",
+       "l": "Ring-necked pheasant",
+       "y": false,
+       "a": "2026-11-05T11:12:00.000Z",
+       "b": "2026-11-05T22:32:00.000Z"
+      },
+      "Open today · 6:12 AM – 5:32 PM",
+      "Open today; legal hours ended 5:32 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "open",
+       "l": "Mourning dove",
+       "y": false,
+       "a": "2026-11-05T11:12:00.000Z",
+       "b": "2026-11-05T22:02:00.000Z"
+      },
+      "Open today · 6:12 AM – 5:02 PM",
+      "Open today; legal hours ended 5:02 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Fall turkey"
+      },
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "open",
+       "l": "Ruffed grouse",
+       "y": false,
+       "a": "2026-11-05T11:12:00.000Z",
+       "b": "2026-11-05T22:32:00.000Z"
+      },
+      "Open today · 6:12 AM – 5:32 PM",
+      "Open today; legal hours ended 5:32 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Ducks and geese"
+      },
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "open",
+       "l": "American woodcock",
+       "y": false,
+       "a": "2026-11-05T11:12:00.000Z",
+       "b": "2026-11-05T22:02:00.000Z"
+      },
+      "Open today · 6:12 AM – 5:02 PM",
+      "Open today; legal hours ended 5:02 PM",
+      "OPEN"
+     ]
+    ],
+    [
+     [
+      {
+       "k": "open",
+       "l": "Ring-necked pheasant",
+       "y": false,
+       "a": "2026-11-05T11:24:00.000Z",
+       "b": "2026-11-05T22:44:00.000Z"
+      },
+      "Open today · 6:24 AM – 5:44 PM",
+      "Open today; legal hours ended 5:44 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "open",
+       "l": "Mourning dove",
+       "y": false,
+       "a": "2026-11-05T11:24:00.000Z",
+       "b": "2026-11-05T22:14:00.000Z"
+      },
+      "Open today · 6:24 AM – 5:14 PM",
+      "Open today; legal hours ended 5:14 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Fall turkey"
+      },
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "open",
+       "l": "Ruffed grouse",
+       "y": false,
+       "a": "2026-11-05T11:24:00.000Z",
+       "b": "2026-11-05T22:44:00.000Z"
+      },
+      "Open today · 6:24 AM – 5:44 PM",
+      "Open today; legal hours ended 5:44 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Ducks and geese"
+      },
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "open",
+       "l": "American woodcock",
+       "y": false,
+       "a": "2026-11-05T11:24:00.000Z",
+       "b": "2026-11-05T22:14:00.000Z"
+      },
+      "Open today · 6:24 AM – 5:14 PM",
+      "Open today; legal hours ended 5:14 PM",
+      "OPEN"
+     ]
+    ]
+   ],
+   "hours": [
+    [
+     [
+      "2026-11-05T11:04:00.000Z",
+      "2026-11-05T22:24:00.000Z"
+     ],
+     [
+      "2026-11-05T11:04:00.000Z",
+      "2026-11-05T21:54:00.000Z"
+     ],
+     [
+      "2026-11-05T11:04:00.000Z",
+      "2026-11-05T17:00:00.000Z"
+     ]
+    ],
+    [
+     [
+      "2026-11-05T11:12:00.000Z",
+      "2026-11-05T22:32:00.000Z"
+     ],
+     [
+      "2026-11-05T11:12:00.000Z",
+      "2026-11-05T22:02:00.000Z"
+     ],
+     [
+      "2026-11-05T11:12:00.000Z",
+      "2026-11-05T17:00:00.000Z"
+     ]
+    ],
+    [
+     [
+      "2026-11-05T11:24:00.000Z",
+      "2026-11-05T22:44:00.000Z"
+     ],
+     [
+      "2026-11-05T11:24:00.000Z",
+      "2026-11-05T22:14:00.000Z"
+     ],
+     [
+      "2026-11-05T11:24:00.000Z",
+      "2026-11-05T17:00:00.000Z"
+     ]
+    ]
+   ],
+   "places": [
+    {
+     "id": "sgl-sample-1",
+     "open": true,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "open",
+        "l": "Ring-necked pheasant",
+        "y": false,
+        "a": "2026-11-05T11:12:00.000Z",
+        "b": "2026-11-05T22:32:00.000Z"
+       }
+      ],
+      [
+       "dove",
+       {
+        "k": "open",
+        "l": "Mourning dove",
+        "y": false,
+        "a": "2026-11-05T11:12:00.000Z",
+        "b": "2026-11-05T22:02:00.000Z"
+       }
+      ],
+      [
+       "turkey",
+       {
+        "k": "check",
+        "l": "Fall turkey"
+       }
+      ],
+      [
+       "grouse",
+       {
+        "k": "open",
+        "l": "Ruffed grouse",
+        "y": false,
+        "a": "2026-11-05T11:12:00.000Z",
+        "b": "2026-11-05T22:32:00.000Z"
+       }
+      ],
+      [
+       "waterfowl",
+       {
+        "k": "check",
+        "l": "Ducks and geese"
+       }
+      ],
+      [
+       "woodcock",
+       {
+        "k": "open",
+        "l": "American woodcock",
+        "y": false,
+        "a": "2026-11-05T11:12:00.000Z",
+        "b": "2026-11-05T22:02:00.000Z"
+       }
+      ]
+     ],
+     "openSp": [
+      "pheasant",
+      "grouse",
+      "woodcock",
+      "dove"
+     ],
+     "tags": [
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": true
+      },
+      {
+       "species": "grouse",
+       "open": true
+      },
+      {
+       "species": "woodcock",
+       "open": true
+      },
+      {
+       "species": "dove",
+       "open": true
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2026-11-06",
+     "planClosed": false,
+     "hunt": {
+      "good": [
+       {
+        "species": "grouse",
+        "reason": "Forest and young-growth cover suits grouse",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        }
+       },
+       {
+        "species": "turkey",
+        "reason": "Mixed woods and edges hold fall flocks",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ],
+      "possible": [
+       {
+        "species": "pheasant",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "woodcock",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "dove",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Migratory bird license required."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 4 species open",
+      "detail": "Pheasant, Grouse, Woodcock, Dove · legal hours 6:12 AM – 5:32 PM"
+     }
+    },
+    {
+     "id": "stock-sample-1",
+     "open": true,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "open",
+        "l": "Ring-necked pheasant",
+        "y": false,
+        "a": "2026-11-05T11:08:00.000Z",
+        "b": "2026-11-05T22:28:00.000Z"
+       }
+      ]
+     ],
+     "openSp": [
+      "pheasant",
+      "grouse",
+      "woodcock",
+      "dove"
+     ],
+     "tags": [
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": true
+      },
+      {
+       "species": "grouse",
+       "open": true
+      },
+      {
+       "species": "woodcock",
+       "open": true
+      },
+      {
+       "species": "dove",
+       "open": true
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2026-11-06",
+     "planClosed": false,
+     "hunt": {
+      "good": [
+       {
+        "species": "pheasant",
+        "reason": "PGC stocks this property",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "woodcock",
+        "reason": "Moist thickets and young growth draw woodcock",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       }
+      ],
+      "possible": [
+       {
+        "species": "grouse",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        }
+       },
+       {
+        "species": "dove",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Migratory bird license required."
+       },
+       {
+        "species": "turkey",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 4 species open",
+      "detail": "Pheasant, Grouse, Woodcock, Dove · legal hours 6:08 AM – 5:28 PM"
+     }
+    },
+    {
+     "id": "dove-sample-1",
+     "open": true,
+     "st": [
+      [
+       "dove",
+       {
+        "k": "open",
+        "l": "Mourning dove",
+        "y": false,
+        "a": "2026-11-05T11:08:00.000Z",
+        "b": "2026-11-05T21:58:00.000Z"
+       }
+      ]
+     ],
+     "openSp": [
+      "pheasant",
+      "grouse",
+      "woodcock",
+      "dove"
+     ],
+     "tags": [
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": true
+      },
+      {
+       "species": "grouse",
+       "open": true
+      },
+      {
+       "species": "woodcock",
+       "open": true
+      },
+      {
+       "species": "dove",
+       "open": true
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2026-11-06",
+     "planClosed": false,
+     "hunt": {
+      "good": [
+       {
+        "species": "pheasant",
+        "reason": "Grass and field edges suit pheasant",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Managed dove field",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Migratory bird license required."
+       }
+      ],
+      "possible": [
+       {
+        "species": "grouse",
+        "reason": "Allowed here; field is managed for doves",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Allowed here; field is managed for doves",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Allowed here; field is managed for doves",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 4 species open",
+      "detail": "Pheasant, Grouse, Woodcock, Dove · legal hours 6:08 AM – 5:28 PM"
+     }
+    },
+    {
+     "id": "sgl-sample-2",
+     "open": true,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "open",
+        "l": "Ring-necked pheasant",
+        "y": false,
+        "a": "2026-11-05T11:24:00.000Z",
+        "b": "2026-11-05T22:44:00.000Z"
+       }
+      ],
+      [
+       "dove",
+       {
+        "k": "open",
+        "l": "Mourning dove",
+        "y": false,
+        "a": "2026-11-05T11:24:00.000Z",
+        "b": "2026-11-05T22:14:00.000Z"
+       }
+      ],
+      [
+       "turkey",
+       {
+        "k": "check",
+        "l": "Fall turkey"
+       }
+      ],
+      [
+       "grouse",
+       {
+        "k": "open",
+        "l": "Ruffed grouse",
+        "y": false,
+        "a": "2026-11-05T11:24:00.000Z",
+        "b": "2026-11-05T22:44:00.000Z"
+       }
+      ],
+      [
+       "waterfowl",
+       {
+        "k": "check",
+        "l": "Ducks and geese"
+       }
+      ],
+      [
+       "woodcock",
+       {
+        "k": "open",
+        "l": "American woodcock",
+        "y": false,
+        "a": "2026-11-05T11:24:00.000Z",
+        "b": "2026-11-05T22:14:00.000Z"
+       }
+      ]
+     ],
+     "openSp": [
+      "pheasant",
+      "grouse",
+      "woodcock",
+      "dove"
+     ],
+     "tags": [
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": true
+      },
+      {
+       "species": "grouse",
+       "open": true
+      },
+      {
+       "species": "woodcock",
+       "open": true
+      },
+      {
+       "species": "dove",
+       "open": true
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2026-11-06",
+     "planClosed": false,
+     "hunt": {
+      "good": [
+       {
+        "species": "grouse",
+        "reason": "Forest and young-growth cover suits grouse",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Moist thickets and young growth draw woodcock",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Mixed woods and edges hold fall flocks",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ],
+      "possible": [
+       {
+        "species": "pheasant",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Migratory bird license required."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 4 species open",
+      "detail": "Pheasant, Grouse, Woodcock, Dove · legal hours 6:24 AM – 5:44 PM"
+     }
+    },
+    {
+     "id": "stock-sample-2",
+     "open": true,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "open",
+        "l": "Ring-necked pheasant",
+        "y": false,
+        "a": "2026-11-05T11:04:00.000Z",
+        "b": "2026-11-05T22:24:00.000Z"
+       }
+      ]
+     ],
+     "openSp": [
+      "pheasant",
+      "grouse",
+      "woodcock",
+      "dove"
+     ],
+     "tags": [
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": true
+      },
+      {
+       "species": "grouse",
+       "open": true
+      },
+      {
+       "species": "woodcock",
+       "open": true
+      },
+      {
+       "species": "dove",
+       "open": true
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2026-11-06",
+     "planClosed": false,
+     "hunt": {
+      "good": [
+       {
+        "species": "pheasant",
+        "reason": "PGC stocks this property",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Crop fields draw doves",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Migratory bird license required."
+       }
+      ],
+      "possible": [
+       {
+        "species": "grouse",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 4 species open",
+      "detail": "Pheasant, Grouse, Woodcock, Dove · legal hours 6:04 AM – 5:24 PM"
+     }
+    },
+    {
+     "id": "sgl-sample-3",
+     "open": true,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "open",
+        "l": "Ring-necked pheasant",
+        "y": false,
+        "a": "2026-11-05T11:12:00.000Z",
+        "b": "2026-11-05T22:32:00.000Z"
+       }
+      ],
+      [
+       "dove",
+       {
+        "k": "open",
+        "l": "Mourning dove",
+        "y": false,
+        "a": "2026-11-05T11:12:00.000Z",
+        "b": "2026-11-05T22:02:00.000Z"
+       }
+      ],
+      [
+       "turkey",
+       {
+        "k": "check",
+        "l": "Fall turkey"
+       }
+      ],
+      [
+       "grouse",
+       {
+        "k": "open",
+        "l": "Ruffed grouse",
+        "y": false,
+        "a": "2026-11-05T11:12:00.000Z",
+        "b": "2026-11-05T22:32:00.000Z"
+       }
+      ],
+      [
+       "waterfowl",
+       {
+        "k": "check",
+        "l": "Ducks and geese"
+       }
+      ],
+      [
+       "woodcock",
+       {
+        "k": "open",
+        "l": "American woodcock",
+        "y": false,
+        "a": "2026-11-05T11:12:00.000Z",
+        "b": "2026-11-05T22:02:00.000Z"
+       }
+      ]
+     ],
+     "openSp": [
+      "pheasant",
+      "grouse",
+      "woodcock",
+      "dove"
+     ],
+     "tags": [
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": true
+      },
+      {
+       "species": "grouse",
+       "open": true
+      },
+      {
+       "species": "woodcock",
+       "open": true
+      },
+      {
+       "species": "dove",
+       "open": true
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2026-11-06",
+     "planClosed": false,
+     "hunt": {
+      "good": [
+       {
+        "species": "grouse",
+        "reason": "Forest and young-growth cover suits grouse",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Moist thickets and young growth draw woodcock",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Mixed woods and edges hold fall flocks",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ],
+      "possible": [
+       {
+        "species": "pheasant",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Migratory bird license required."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 4 species open",
+      "detail": "Pheasant, Grouse, Woodcock, Dove · legal hours 6:12 AM – 5:32 PM"
+     }
+    }
+   ],
+   "search": [
+    {
+     "kind": "open",
+     "label": "Open · closes Thu, Dec 24"
+    },
+    {
+     "kind": "open",
+     "label": "Open · closes Thu, Dec 24"
+    },
+    {
+     "kind": "open",
+     "label": "Open · closes Tue, Dec 8"
+    },
+    {
+     "kind": "open",
+     "label": "Open · closes Fri, Nov 27"
+    },
+    {
+     "kind": "check",
+     "label": "Check your WMU"
+    }
+   ],
+   "guide": [
+    [
+     [
+      "pheasant",
+      "OPEN",
+      "Open today · 6:08 AM – 5:28 PM"
+     ],
+     [
+      "dove",
+      "OPEN",
+      "Open today · 6:08 AM – 4:58 PM"
+     ],
+     [
+      "turkey",
+      "CHECK",
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+     ],
+     [
+      "grouse",
+      "OPEN",
+      "Open today · 6:08 AM – 5:28 PM"
+     ],
+     [
+      "waterfowl",
+      "CHECK",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required."
+     ],
+     [
+      "woodcock",
+      "OPEN",
+      "Open today · 6:08 AM – 4:58 PM"
+     ]
+    ],
+    []
+   ],
+   "segments": [
+    [
+     [
+      "Junior pheasant",
+      [
+       [
+        "2026-10-10",
+        "2026-10-18"
+       ]
+      ]
+     ],
+     [
+      "Ring-necked pheasant",
+      [
+       [
+        "2026-10-24",
+        "2026-12-24"
+       ],
+       [
+        "2026-12-26",
+        "2027-02-28"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Mourning dove",
+      [
+       [
+        "2026-09-01",
+        "2026-11-27"
+       ],
+       [
+        "2026-12-18",
+        "2027-01-02"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Fall turkey",
+      null
+     ],
+     [
+      "Spring gobbler",
+      [
+       [
+        "2027-05-01",
+        "2027-05-31"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Ruffed grouse",
+      [
+       [
+        "2026-10-17",
+        "2026-12-24"
+       ],
+       [
+        "2026-12-26",
+        "2027-01-23"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Ducks and geese",
+      null
+     ]
+    ],
+    [
+     [
+      "American woodcock",
+      [
+       [
+        "2026-10-17",
+        "2026-12-08"
+       ]
+      ]
+     ]
+    ]
+   ],
+   "dates": [
+    "Oct 24 – Dec 24, Dec 26 – Feb 28",
+    "Oct 17 – Dec 24, Dec 26 – Jan 23",
+    "Oct 17 – Dec 8",
+    "Sep 1 – Nov 27, Dec 18 – Jan 2",
+    "dates vary, check the digest, May 1 – May 31"
+   ],
+   "windows": [
+    [
+     {
+      "label": "Sat, Oct 10 – Sun, Oct 18",
+      "current": false,
+      "past": true
+     }
+    ],
+    [
+     {
+      "label": "Sat, Oct 24 – Thu, Dec 24",
+      "current": true,
+      "past": false
+     },
+     {
+      "label": "Sat, Dec 26 – Sun, Feb 28",
+      "current": false,
+      "past": false
+     }
+    ],
+    [
+     {
+      "label": "Sat, Oct 17 – Thu, Dec 24",
+      "current": true,
+      "past": false
+     },
+     {
+      "label": "Sat, Dec 26 – Sat, Jan 23",
+      "current": false,
+      "past": false
+     }
+    ],
+    [
+     {
+      "label": "Tue, Sep 1 – Fri, Nov 27",
+      "current": true,
+      "past": false
+     },
+     {
+      "label": "Fri, Dec 18 – Sat, Jan 2",
+      "current": false,
+      "past": false
+     }
+    ],
+    [],
+    [
+     {
+      "label": "Sat, May 1 – Mon, May 31",
+      "current": false,
+      "past": false
+     }
+    ],
+    [],
+    [
+     {
+      "label": "Sat, Oct 17 – Tue, Dec 8",
+      "current": true,
+      "past": false
+     }
+    ]
+   ],
+   "sunday": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "2026-12-25": {
+   "status": [
+    [
+     [
+      {
+       "k": "closed",
+       "n": [
+        "2026-12-26",
+        "Ring-necked pheasant"
+       ]
+      },
+      "Closed · opens Sat, Dec 26",
+      "Closed · opens Sat, Dec 26",
+      "SOON"
+     ],
+     [
+      {
+       "k": "open",
+       "l": "Mourning dove",
+       "y": false,
+       "a": "2026-12-25T11:51:00.000Z",
+       "b": "2026-12-25T21:41:00.000Z"
+      },
+      "Open today · 6:51 AM – 4:41 PM",
+      "Open today; legal hours ended 4:41 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Fall turkey"
+      },
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": [
+        "2026-12-26",
+        "Ruffed grouse"
+       ]
+      },
+      "Closed · opens Sat, Dec 26",
+      "Closed · opens Sat, Dec 26",
+      "SOON"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Ducks and geese"
+      },
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ]
+    ],
+    [
+     [
+      {
+       "k": "closed",
+       "n": [
+        "2026-12-26",
+        "Ring-necked pheasant"
+       ]
+      },
+      "Closed · opens Sat, Dec 26",
+      "Closed · opens Sat, Dec 26",
+      "SOON"
+     ],
+     [
+      {
+       "k": "open",
+       "l": "Mourning dove",
+       "y": false,
+       "a": "2026-12-25T11:59:00.000Z",
+       "b": "2026-12-25T21:49:00.000Z"
+      },
+      "Open today · 6:59 AM – 4:49 PM",
+      "Open today; legal hours ended 4:49 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Fall turkey"
+      },
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": [
+        "2026-12-26",
+        "Ruffed grouse"
+       ]
+      },
+      "Closed · opens Sat, Dec 26",
+      "Closed · opens Sat, Dec 26",
+      "SOON"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Ducks and geese"
+      },
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ]
+    ],
+    [
+     [
+      {
+       "k": "closed",
+       "n": [
+        "2026-12-26",
+        "Ring-necked pheasant"
+       ]
+      },
+      "Closed · opens Sat, Dec 26",
+      "Closed · opens Sat, Dec 26",
+      "SOON"
+     ],
+     [
+      {
+       "k": "open",
+       "l": "Mourning dove",
+       "y": false,
+       "a": "2026-12-25T12:11:00.000Z",
+       "b": "2026-12-25T22:01:00.000Z"
+      },
+      "Open today · 7:11 AM – 5:01 PM",
+      "Open today; legal hours ended 5:01 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Fall turkey"
+      },
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": [
+        "2026-12-26",
+        "Ruffed grouse"
+       ]
+      },
+      "Closed · opens Sat, Dec 26",
+      "Closed · opens Sat, Dec 26",
+      "SOON"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Ducks and geese"
+      },
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ]
+    ]
+   ],
+   "hours": [
+    [
+     [
+      "2026-12-25T11:51:00.000Z",
+      "2026-12-25T22:11:00.000Z"
+     ],
+     [
+      "2026-12-25T11:51:00.000Z",
+      "2026-12-25T21:41:00.000Z"
+     ],
+     [
+      "2026-12-25T11:51:00.000Z",
+      "2026-12-25T17:00:00.000Z"
+     ]
+    ],
+    [
+     [
+      "2026-12-25T11:59:00.000Z",
+      "2026-12-25T22:19:00.000Z"
+     ],
+     [
+      "2026-12-25T11:59:00.000Z",
+      "2026-12-25T21:49:00.000Z"
+     ],
+     [
+      "2026-12-25T11:59:00.000Z",
+      "2026-12-25T17:00:00.000Z"
+     ]
+    ],
+    [
+     [
+      "2026-12-25T12:11:00.000Z",
+      "2026-12-25T22:31:00.000Z"
+     ],
+     [
+      "2026-12-25T12:11:00.000Z",
+      "2026-12-25T22:01:00.000Z"
+     ],
+     [
+      "2026-12-25T12:11:00.000Z",
+      "2026-12-25T17:00:00.000Z"
+     ]
+    ]
+   ],
+   "places": [
+    {
+     "id": "sgl-sample-1",
+     "open": true,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "closed",
+        "n": [
+         "2026-12-26",
+         "Ring-necked pheasant"
+        ]
+       }
+      ],
+      [
+       "dove",
+       {
+        "k": "open",
+        "l": "Mourning dove",
+        "y": false,
+        "a": "2026-12-25T11:59:00.000Z",
+        "b": "2026-12-25T21:49:00.000Z"
+       }
+      ],
+      [
+       "turkey",
+       {
+        "k": "check",
+        "l": "Fall turkey"
+       }
+      ],
+      [
+       "grouse",
+       {
+        "k": "closed",
+        "n": [
+         "2026-12-26",
+         "Ruffed grouse"
+        ]
+       }
+      ],
+      [
+       "waterfowl",
+       {
+        "k": "check",
+        "l": "Ducks and geese"
+       }
+      ],
+      [
+       "woodcock",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ]
+     ],
+     "openSp": [
+      "dove"
+     ],
+     "tags": [
+      {
+       "text": "Opens Sat",
+       "tone": "soon"
+      },
+      {
+       "text": "Opens Sat",
+       "tone": "soon"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closes Jan 2",
+       "tone": "soon"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Opens Dec 26"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Opens Dec 26"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": true
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2026-12-26",
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "grouse",
+        "reason": "Forest and young-growth cover suits grouse",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Opens Sat",
+         "tone": "soon"
+        }
+       },
+       {
+        "species": "turkey",
+        "reason": "Mixed woods and edges hold fall flocks",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ],
+      "possible": [
+       {
+        "species": "pheasant",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Opens Sat",
+         "tone": "soon"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "woodcock",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "dove",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closes Jan 2",
+         "tone": "soon"
+        },
+        "note": "Migratory bird license required."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 1 species open",
+      "detail": "Dove · legal hours 6:59 AM – 5:19 PM"
+     }
+    },
+    {
+     "id": "stock-sample-1",
+     "open": false,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "closed",
+        "n": [
+         "2026-12-26",
+         "Ring-necked pheasant"
+        ]
+       }
+      ]
+     ],
+     "openSp": [
+      "dove"
+     ],
+     "tags": [
+      {
+       "text": "Opens Sat",
+       "tone": "soon"
+      },
+      {
+       "text": "Opens Sat",
+       "tone": "soon"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closes Jan 2",
+       "tone": "soon"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Opens Dec 26"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Opens Dec 26"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": true
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2026-12-26",
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "pheasant",
+        "reason": "PGC stocks this property",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Opens Sat",
+         "tone": "soon"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "woodcock",
+        "reason": "Moist thickets and young growth draw woodcock",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       }
+      ],
+      "possible": [
+       {
+        "species": "grouse",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Opens Sat",
+         "tone": "soon"
+        }
+       },
+       {
+        "species": "dove",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closes Jan 2",
+         "tone": "soon"
+        },
+        "note": "Migratory bird license required."
+       },
+       {
+        "species": "turkey",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 1 species open",
+      "detail": "Dove · legal hours 6:55 AM – 5:15 PM"
+     }
+    },
+    {
+     "id": "dove-sample-1",
+     "open": true,
+     "st": [
+      [
+       "dove",
+       {
+        "k": "open",
+        "l": "Mourning dove",
+        "y": false,
+        "a": "2026-12-25T11:55:00.000Z",
+        "b": "2026-12-25T21:45:00.000Z"
+       }
+      ]
+     ],
+     "openSp": [
+      "dove"
+     ],
+     "tags": [
+      {
+       "text": "Opens Sat",
+       "tone": "soon"
+      },
+      {
+       "text": "Opens Sat",
+       "tone": "soon"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closes Jan 2",
+       "tone": "soon"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Opens Dec 26"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Opens Dec 26"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": true
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2026-12-26",
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "pheasant",
+        "reason": "Grass and field edges suit pheasant",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Opens Sat",
+         "tone": "soon"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Managed dove field",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closes Jan 2",
+         "tone": "soon"
+        },
+        "note": "Migratory bird license required."
+       }
+      ],
+      "possible": [
+       {
+        "species": "grouse",
+        "reason": "Allowed here; field is managed for doves",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Opens Sat",
+         "tone": "soon"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Allowed here; field is managed for doves",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Allowed here; field is managed for doves",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 1 species open",
+      "detail": "Dove · legal hours 6:55 AM – 5:15 PM"
+     }
+    },
+    {
+     "id": "sgl-sample-2",
+     "open": true,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "closed",
+        "n": [
+         "2026-12-26",
+         "Ring-necked pheasant"
+        ]
+       }
+      ],
+      [
+       "dove",
+       {
+        "k": "open",
+        "l": "Mourning dove",
+        "y": false,
+        "a": "2026-12-25T12:11:00.000Z",
+        "b": "2026-12-25T22:01:00.000Z"
+       }
+      ],
+      [
+       "turkey",
+       {
+        "k": "check",
+        "l": "Fall turkey"
+       }
+      ],
+      [
+       "grouse",
+       {
+        "k": "closed",
+        "n": [
+         "2026-12-26",
+         "Ruffed grouse"
+        ]
+       }
+      ],
+      [
+       "waterfowl",
+       {
+        "k": "check",
+        "l": "Ducks and geese"
+       }
+      ],
+      [
+       "woodcock",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ]
+     ],
+     "openSp": [
+      "dove"
+     ],
+     "tags": [
+      {
+       "text": "Opens Sat",
+       "tone": "soon"
+      },
+      {
+       "text": "Opens Sat",
+       "tone": "soon"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closes Jan 2",
+       "tone": "soon"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Opens Dec 26"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Opens Dec 26"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": true
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2026-12-26",
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "grouse",
+        "reason": "Forest and young-growth cover suits grouse",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Opens Sat",
+         "tone": "soon"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Moist thickets and young growth draw woodcock",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Mixed woods and edges hold fall flocks",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ],
+      "possible": [
+       {
+        "species": "pheasant",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Opens Sat",
+         "tone": "soon"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closes Jan 2",
+         "tone": "soon"
+        },
+        "note": "Migratory bird license required."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 1 species open",
+      "detail": "Dove · legal hours 7:11 AM – 5:31 PM"
+     }
+    },
+    {
+     "id": "stock-sample-2",
+     "open": false,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "closed",
+        "n": [
+         "2026-12-26",
+         "Ring-necked pheasant"
+        ]
+       }
+      ]
+     ],
+     "openSp": [
+      "dove"
+     ],
+     "tags": [
+      {
+       "text": "Opens Sat",
+       "tone": "soon"
+      },
+      {
+       "text": "Opens Sat",
+       "tone": "soon"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closes Jan 2",
+       "tone": "soon"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Opens Dec 26"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Opens Dec 26"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": true
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2026-12-26",
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "pheasant",
+        "reason": "PGC stocks this property",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Opens Sat",
+         "tone": "soon"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Crop fields draw doves",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closes Jan 2",
+         "tone": "soon"
+        },
+        "note": "Migratory bird license required."
+       }
+      ],
+      "possible": [
+       {
+        "species": "grouse",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Opens Sat",
+         "tone": "soon"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 1 species open",
+      "detail": "Dove · legal hours 6:51 AM – 5:11 PM"
+     }
+    },
+    {
+     "id": "sgl-sample-3",
+     "open": true,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "closed",
+        "n": [
+         "2026-12-26",
+         "Ring-necked pheasant"
+        ]
+       }
+      ],
+      [
+       "dove",
+       {
+        "k": "open",
+        "l": "Mourning dove",
+        "y": false,
+        "a": "2026-12-25T11:59:00.000Z",
+        "b": "2026-12-25T21:49:00.000Z"
+       }
+      ],
+      [
+       "turkey",
+       {
+        "k": "check",
+        "l": "Fall turkey"
+       }
+      ],
+      [
+       "grouse",
+       {
+        "k": "closed",
+        "n": [
+         "2026-12-26",
+         "Ruffed grouse"
+        ]
+       }
+      ],
+      [
+       "waterfowl",
+       {
+        "k": "check",
+        "l": "Ducks and geese"
+       }
+      ],
+      [
+       "woodcock",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ]
+     ],
+     "openSp": [
+      "dove"
+     ],
+     "tags": [
+      {
+       "text": "Opens Sat",
+       "tone": "soon"
+      },
+      {
+       "text": "Opens Sat",
+       "tone": "soon"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closes Jan 2",
+       "tone": "soon"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Opens Dec 26"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Opens Dec 26"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": true
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2026-12-26",
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "grouse",
+        "reason": "Forest and young-growth cover suits grouse",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Opens Sat",
+         "tone": "soon"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Moist thickets and young growth draw woodcock",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Mixed woods and edges hold fall flocks",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ],
+      "possible": [
+       {
+        "species": "pheasant",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Opens Sat",
+         "tone": "soon"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closes Jan 2",
+         "tone": "soon"
+        },
+        "note": "Migratory bird license required."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 1 species open",
+      "detail": "Dove · legal hours 6:59 AM – 5:19 PM"
+     }
+    }
+   ],
+   "search": [
+    {
+     "kind": "closed",
+     "label": "Closed until Sat, Dec 26"
+    },
+    {
+     "kind": "closed",
+     "label": "Closed until Sat, Dec 26"
+    },
+    {
+     "kind": "closed",
+     "label": "Closed for the season"
+    },
+    {
+     "kind": "open",
+     "label": "Open · closes Sat, Jan 2"
+    },
+    {
+     "kind": "closed",
+     "label": "Closed for the season"
+    }
+   ],
+   "guide": [
+    [
+     [
+      "pheasant",
+      "SOON",
+      "Closed · opens Sat, Dec 26"
+     ],
+     [
+      "dove",
+      "OPEN",
+      "Open today · 6:55 AM – 4:45 PM"
+     ],
+     [
+      "turkey",
+      "CHECK",
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+     ],
+     [
+      "grouse",
+      "SOON",
+      "Closed · opens Sat, Dec 26"
+     ],
+     [
+      "waterfowl",
+      "CHECK",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required."
+     ],
+     [
+      "woodcock",
+      "CLOSED",
+      "Out of season"
+     ]
+    ],
+    [
+     {
+      "species": "pheasant",
+      "label": "Pheasant",
+      "date": "2026-12-26",
+      "status": "Opens Sat, Dec 26"
+     },
+     {
+      "species": "grouse",
+      "label": "Grouse",
+      "date": "2026-12-26",
+      "status": "Opens Sat, Dec 26"
+     }
+    ]
+   ],
+   "segments": [
+    [
+     [
+      "Junior pheasant",
+      [
+       [
+        "2026-10-10",
+        "2026-10-18"
+       ]
+      ]
+     ],
+     [
+      "Ring-necked pheasant",
+      [
+       [
+        "2026-10-24",
+        "2026-12-24"
+       ],
+       [
+        "2026-12-26",
+        "2027-02-28"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Mourning dove",
+      [
+       [
+        "2026-09-01",
+        "2026-11-27"
+       ],
+       [
+        "2026-12-18",
+        "2027-01-02"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Fall turkey",
+      null
+     ],
+     [
+      "Spring gobbler",
+      [
+       [
+        "2027-05-01",
+        "2027-05-31"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Ruffed grouse",
+      [
+       [
+        "2026-10-17",
+        "2026-12-24"
+       ],
+       [
+        "2026-12-26",
+        "2027-01-23"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Ducks and geese",
+      null
+     ]
+    ],
+    [
+     [
+      "American woodcock",
+      [
+       [
+        "2026-10-17",
+        "2026-12-08"
+       ]
+      ]
+     ]
+    ]
+   ],
+   "dates": [
+    "Oct 24 – Dec 24, Dec 26 – Feb 28",
+    "Oct 17 – Dec 24, Dec 26 – Jan 23",
+    "Oct 17 – Dec 8",
+    "Sep 1 – Nov 27, Dec 18 – Jan 2",
+    "dates vary, check the digest, May 1 – May 31"
+   ],
+   "windows": [
+    [
+     {
+      "label": "Sat, Oct 10 – Sun, Oct 18",
+      "current": false,
+      "past": true
+     }
+    ],
+    [
+     {
+      "label": "Sat, Oct 24 – Thu, Dec 24",
+      "current": false,
+      "past": true
+     },
+     {
+      "label": "Sat, Dec 26 – Sun, Feb 28",
+      "current": false,
+      "past": false
+     }
+    ],
+    [
+     {
+      "label": "Sat, Oct 17 – Thu, Dec 24",
+      "current": false,
+      "past": true
+     },
+     {
+      "label": "Sat, Dec 26 – Sat, Jan 23",
+      "current": false,
+      "past": false
+     }
+    ],
+    [
+     {
+      "label": "Tue, Sep 1 – Fri, Nov 27",
+      "current": false,
+      "past": true
+     },
+     {
+      "label": "Fri, Dec 18 – Sat, Jan 2",
+      "current": true,
+      "past": false
+     }
+    ],
+    [],
+    [
+     {
+      "label": "Sat, May 1 – Mon, May 31",
+      "current": false,
+      "past": false
+     }
+    ],
+    [],
+    [
+     {
+      "label": "Sat, Oct 17 – Tue, Dec 8",
+      "current": false,
+      "past": true
+     }
+    ]
+   ],
+   "sunday": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "2027-01-03": {
+   "status": [
+    [
+     [
+      {
+       "k": "open",
+       "l": "Ring-necked pheasant",
+       "y": false,
+       "a": "2027-01-03T11:53:00.000Z",
+       "b": "2027-01-03T22:18:00.000Z"
+      },
+      "Open today · 6:53 AM – 5:18 PM",
+      "Open today; legal hours ended 5:18 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Fall turkey"
+      },
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "open",
+       "l": "Ruffed grouse",
+       "y": false,
+       "a": "2027-01-03T11:53:00.000Z",
+       "b": "2027-01-03T22:18:00.000Z"
+      },
+      "Open today · 6:53 AM – 5:18 PM",
+      "Open today; legal hours ended 5:18 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Ducks and geese"
+      },
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ]
+    ],
+    [
+     [
+      {
+       "k": "open",
+       "l": "Ring-necked pheasant",
+       "y": false,
+       "a": "2027-01-03T12:01:00.000Z",
+       "b": "2027-01-03T22:26:00.000Z"
+      },
+      "Open today · 7:01 AM – 5:26 PM",
+      "Open today; legal hours ended 5:26 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Fall turkey"
+      },
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "open",
+       "l": "Ruffed grouse",
+       "y": false,
+       "a": "2027-01-03T12:01:00.000Z",
+       "b": "2027-01-03T22:26:00.000Z"
+      },
+      "Open today · 7:01 AM – 5:26 PM",
+      "Open today; legal hours ended 5:26 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Ducks and geese"
+      },
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ]
+    ],
+    [
+     [
+      {
+       "k": "open",
+       "l": "Ring-necked pheasant",
+       "y": false,
+       "a": "2027-01-03T12:13:00.000Z",
+       "b": "2027-01-03T22:38:00.000Z"
+      },
+      "Open today · 7:13 AM – 5:38 PM",
+      "Open today; legal hours ended 5:38 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Fall turkey"
+      },
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "open",
+       "l": "Ruffed grouse",
+       "y": false,
+       "a": "2027-01-03T12:13:00.000Z",
+       "b": "2027-01-03T22:38:00.000Z"
+      },
+      "Open today · 7:13 AM – 5:38 PM",
+      "Open today; legal hours ended 5:38 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Ducks and geese"
+      },
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ]
+    ]
+   ],
+   "hours": [
+    [
+     [
+      "2027-01-03T11:53:00.000Z",
+      "2027-01-03T22:18:00.000Z"
+     ],
+     [
+      "2027-01-03T11:53:00.000Z",
+      "2027-01-03T21:48:00.000Z"
+     ],
+     [
+      "2027-01-03T11:53:00.000Z",
+      "2027-01-03T17:00:00.000Z"
+     ]
+    ],
+    [
+     [
+      "2027-01-03T12:01:00.000Z",
+      "2027-01-03T22:26:00.000Z"
+     ],
+     [
+      "2027-01-03T12:01:00.000Z",
+      "2027-01-03T21:56:00.000Z"
+     ],
+     [
+      "2027-01-03T12:01:00.000Z",
+      "2027-01-03T17:00:00.000Z"
+     ]
+    ],
+    [
+     [
+      "2027-01-03T12:13:00.000Z",
+      "2027-01-03T22:38:00.000Z"
+     ],
+     [
+      "2027-01-03T12:13:00.000Z",
+      "2027-01-03T22:08:00.000Z"
+     ],
+     [
+      "2027-01-03T12:13:00.000Z",
+      "2027-01-03T17:00:00.000Z"
+     ]
+    ]
+   ],
+   "places": [
+    {
+     "id": "sgl-sample-1",
+     "open": true,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "open",
+        "l": "Ring-necked pheasant",
+        "y": false,
+        "a": "2027-01-03T12:01:00.000Z",
+        "b": "2027-01-03T22:26:00.000Z"
+       }
+      ],
+      [
+       "dove",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ],
+      [
+       "turkey",
+       {
+        "k": "check",
+        "l": "Fall turkey"
+       }
+      ],
+      [
+       "grouse",
+       {
+        "k": "open",
+        "l": "Ruffed grouse",
+        "y": false,
+        "a": "2027-01-03T12:01:00.000Z",
+        "b": "2027-01-03T22:26:00.000Z"
+       }
+      ],
+      [
+       "waterfowl",
+       {
+        "k": "check",
+        "l": "Ducks and geese"
+       }
+      ],
+      [
+       "woodcock",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ]
+     ],
+     "openSp": [
+      "pheasant",
+      "grouse"
+     ],
+     "tags": [
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": true
+      },
+      {
+       "species": "grouse",
+       "open": true
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2027-01-04",
+     "planClosed": false,
+     "hunt": {
+      "good": [
+       {
+        "species": "grouse",
+        "reason": "Forest and young-growth cover suits grouse",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        }
+       },
+       {
+        "species": "turkey",
+        "reason": "Mixed woods and edges hold fall flocks",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ],
+      "possible": [
+       {
+        "species": "pheasant",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "woodcock",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "dove",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Migratory bird license required."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 2 species open",
+      "detail": "Pheasant, Grouse · legal hours 7:01 AM – 5:26 PM"
+     }
+    },
+    {
+     "id": "stock-sample-1",
+     "open": true,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "open",
+        "l": "Ring-necked pheasant",
+        "y": false,
+        "a": "2027-01-03T11:57:00.000Z",
+        "b": "2027-01-03T22:22:00.000Z"
+       }
+      ]
+     ],
+     "openSp": [
+      "pheasant",
+      "grouse"
+     ],
+     "tags": [
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": true
+      },
+      {
+       "species": "grouse",
+       "open": true
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2027-01-04",
+     "planClosed": false,
+     "hunt": {
+      "good": [
+       {
+        "species": "pheasant",
+        "reason": "PGC stocks this property",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "woodcock",
+        "reason": "Moist thickets and young growth draw woodcock",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       }
+      ],
+      "possible": [
+       {
+        "species": "grouse",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        }
+       },
+       {
+        "species": "dove",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Migratory bird license required."
+       },
+       {
+        "species": "turkey",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 2 species open",
+      "detail": "Pheasant, Grouse · legal hours 6:57 AM – 5:22 PM"
+     }
+    },
+    {
+     "id": "dove-sample-1",
+     "open": false,
+     "st": [
+      [
+       "dove",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ]
+     ],
+     "openSp": [
+      "pheasant",
+      "grouse"
+     ],
+     "tags": [
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": true
+      },
+      {
+       "species": "grouse",
+       "open": true
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2027-01-04",
+     "planClosed": false,
+     "hunt": {
+      "good": [
+       {
+        "species": "pheasant",
+        "reason": "Grass and field edges suit pheasant",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Managed dove field",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Migratory bird license required."
+       }
+      ],
+      "possible": [
+       {
+        "species": "grouse",
+        "reason": "Allowed here; field is managed for doves",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Allowed here; field is managed for doves",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Allowed here; field is managed for doves",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 2 species open",
+      "detail": "Pheasant, Grouse · legal hours 6:57 AM – 5:22 PM"
+     }
+    },
+    {
+     "id": "sgl-sample-2",
+     "open": true,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "open",
+        "l": "Ring-necked pheasant",
+        "y": false,
+        "a": "2027-01-03T12:13:00.000Z",
+        "b": "2027-01-03T22:38:00.000Z"
+       }
+      ],
+      [
+       "dove",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ],
+      [
+       "turkey",
+       {
+        "k": "check",
+        "l": "Fall turkey"
+       }
+      ],
+      [
+       "grouse",
+       {
+        "k": "open",
+        "l": "Ruffed grouse",
+        "y": false,
+        "a": "2027-01-03T12:13:00.000Z",
+        "b": "2027-01-03T22:38:00.000Z"
+       }
+      ],
+      [
+       "waterfowl",
+       {
+        "k": "check",
+        "l": "Ducks and geese"
+       }
+      ],
+      [
+       "woodcock",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ]
+     ],
+     "openSp": [
+      "pheasant",
+      "grouse"
+     ],
+     "tags": [
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": true
+      },
+      {
+       "species": "grouse",
+       "open": true
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2027-01-04",
+     "planClosed": false,
+     "hunt": {
+      "good": [
+       {
+        "species": "grouse",
+        "reason": "Forest and young-growth cover suits grouse",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Moist thickets and young growth draw woodcock",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Mixed woods and edges hold fall flocks",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ],
+      "possible": [
+       {
+        "species": "pheasant",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Migratory bird license required."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 2 species open",
+      "detail": "Pheasant, Grouse · legal hours 7:13 AM – 5:38 PM"
+     }
+    },
+    {
+     "id": "stock-sample-2",
+     "open": true,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "open",
+        "l": "Ring-necked pheasant",
+        "y": false,
+        "a": "2027-01-03T11:53:00.000Z",
+        "b": "2027-01-03T22:18:00.000Z"
+       }
+      ]
+     ],
+     "openSp": [
+      "pheasant",
+      "grouse"
+     ],
+     "tags": [
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": true
+      },
+      {
+       "species": "grouse",
+       "open": true
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2027-01-04",
+     "planClosed": false,
+     "hunt": {
+      "good": [
+       {
+        "species": "pheasant",
+        "reason": "PGC stocks this property",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Crop fields draw doves",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Migratory bird license required."
+       }
+      ],
+      "possible": [
+       {
+        "species": "grouse",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 2 species open",
+      "detail": "Pheasant, Grouse · legal hours 6:53 AM – 5:18 PM"
+     }
+    },
+    {
+     "id": "sgl-sample-3",
+     "open": true,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "open",
+        "l": "Ring-necked pheasant",
+        "y": false,
+        "a": "2027-01-03T12:01:00.000Z",
+        "b": "2027-01-03T22:26:00.000Z"
+       }
+      ],
+      [
+       "dove",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ],
+      [
+       "turkey",
+       {
+        "k": "check",
+        "l": "Fall turkey"
+       }
+      ],
+      [
+       "grouse",
+       {
+        "k": "open",
+        "l": "Ruffed grouse",
+        "y": false,
+        "a": "2027-01-03T12:01:00.000Z",
+        "b": "2027-01-03T22:26:00.000Z"
+       }
+      ],
+      [
+       "waterfowl",
+       {
+        "k": "check",
+        "l": "Ducks and geese"
+       }
+      ],
+      [
+       "woodcock",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ]
+     ],
+     "openSp": [
+      "pheasant",
+      "grouse"
+     ],
+     "tags": [
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": true
+      },
+      {
+       "species": "grouse",
+       "open": true
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": "2027-01-04",
+     "planClosed": false,
+     "hunt": {
+      "good": [
+       {
+        "species": "grouse",
+        "reason": "Forest and young-growth cover suits grouse",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Moist thickets and young growth draw woodcock",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Mixed woods and edges hold fall flocks",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ],
+      "possible": [
+       {
+        "species": "pheasant",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Migratory bird license required."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 2 species open",
+      "detail": "Pheasant, Grouse · legal hours 7:01 AM – 5:26 PM"
+     }
+    }
+   ],
+   "search": [
+    {
+     "kind": "open",
+     "label": "Open · closes Sun, Feb 28"
+    },
+    {
+     "kind": "open",
+     "label": "Open · closes Sat, Jan 23"
+    },
+    {
+     "kind": "closed",
+     "label": "Closed for the season"
+    },
+    {
+     "kind": "closed",
+     "label": "Closed for the season"
+    },
+    {
+     "kind": "closed",
+     "label": "Closed for the season"
+    }
+   ],
+   "guide": [
+    [
+     [
+      "pheasant",
+      "OPEN",
+      "Open today · 6:57 AM – 5:22 PM"
+     ],
+     [
+      "dove",
+      "CLOSED",
+      "Out of season"
+     ],
+     [
+      "turkey",
+      "CHECK",
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+     ],
+     [
+      "grouse",
+      "OPEN",
+      "Open today · 6:57 AM – 5:22 PM"
+     ],
+     [
+      "waterfowl",
+      "CHECK",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required."
+     ],
+     [
+      "woodcock",
+      "CLOSED",
+      "Out of season"
+     ]
+    ],
+    []
+   ],
+   "segments": [
+    [
+     [
+      "Junior pheasant",
+      [
+       [
+        "2026-10-10",
+        "2026-10-18"
+       ]
+      ]
+     ],
+     [
+      "Ring-necked pheasant",
+      [
+       [
+        "2026-10-24",
+        "2026-12-24"
+       ],
+       [
+        "2026-12-26",
+        "2027-02-28"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Mourning dove",
+      [
+       [
+        "2026-09-01",
+        "2026-11-27"
+       ],
+       [
+        "2026-12-18",
+        "2027-01-02"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Fall turkey",
+      null
+     ],
+     [
+      "Spring gobbler",
+      [
+       [
+        "2027-05-01",
+        "2027-05-31"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Ruffed grouse",
+      [
+       [
+        "2026-10-17",
+        "2026-12-24"
+       ],
+       [
+        "2026-12-26",
+        "2027-01-23"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Ducks and geese",
+      null
+     ]
+    ],
+    [
+     [
+      "American woodcock",
+      [
+       [
+        "2026-10-17",
+        "2026-12-08"
+       ]
+      ]
+     ]
+    ]
+   ],
+   "dates": [
+    "Oct 24 – Dec 24, Dec 26 – Feb 28",
+    "Oct 17 – Dec 24, Dec 26 – Jan 23",
+    "Oct 17 – Dec 8",
+    "Sep 1 – Nov 27, Dec 18 – Jan 2",
+    "dates vary, check the digest, May 1 – May 31"
+   ],
+   "windows": [
+    [
+     {
+      "label": "Sat, Oct 10 – Sun, Oct 18",
+      "current": false,
+      "past": true
+     }
+    ],
+    [
+     {
+      "label": "Sat, Oct 24 – Thu, Dec 24",
+      "current": false,
+      "past": true
+     },
+     {
+      "label": "Sat, Dec 26 – Sun, Feb 28",
+      "current": true,
+      "past": false
+     }
+    ],
+    [
+     {
+      "label": "Sat, Oct 17 – Thu, Dec 24",
+      "current": false,
+      "past": true
+     },
+     {
+      "label": "Sat, Dec 26 – Sat, Jan 23",
+      "current": true,
+      "past": false
+     }
+    ],
+    [
+     {
+      "label": "Tue, Sep 1 – Fri, Nov 27",
+      "current": false,
+      "past": true
+     },
+     {
+      "label": "Fri, Dec 18 – Sat, Jan 2",
+      "current": false,
+      "past": true
+     }
+    ],
+    [],
+    [
+     {
+      "label": "Sat, May 1 – Mon, May 31",
+      "current": false,
+      "past": false
+     }
+    ],
+    [],
+    [
+     {
+      "label": "Sat, Oct 17 – Tue, Dec 8",
+      "current": false,
+      "past": true
+     }
+    ]
+   ],
+   "sunday": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "2027-05-10": {
+   "status": [
+    [
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "open",
+       "l": "Spring gobbler",
+       "y": false,
+       "a": "2027-05-10T09:21:00.000Z",
+       "b": "2027-05-10T16:00:00.000Z"
+      },
+      "Open today; legal hours ended 12:00 PM",
+      "Open today; legal hours ended 12:00 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Ducks and geese"
+      },
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ]
+    ],
+    [
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "open",
+       "l": "Spring gobbler",
+       "y": false,
+       "a": "2027-05-10T09:29:00.000Z",
+       "b": "2027-05-10T16:00:00.000Z"
+      },
+      "Open today; legal hours ended 12:00 PM",
+      "Open today; legal hours ended 12:00 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Ducks and geese"
+      },
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ]
+    ],
+    [
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "open",
+       "l": "Spring gobbler",
+       "y": false,
+       "a": "2027-05-10T09:41:00.000Z",
+       "b": "2027-05-10T16:00:00.000Z"
+      },
+      "Open today; legal hours ended 12:00 PM",
+      "Open today; legal hours ended 12:00 PM",
+      "OPEN"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Ducks and geese"
+      },
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ]
+    ]
+   ],
+   "hours": [
+    [
+     [
+      "2027-05-10T09:21:00.000Z",
+      "2027-05-11T00:34:00.000Z"
+     ],
+     [
+      "2027-05-10T09:21:00.000Z",
+      "2027-05-11T00:04:00.000Z"
+     ],
+     [
+      "2027-05-10T09:21:00.000Z",
+      "2027-05-10T16:00:00.000Z"
+     ]
+    ],
+    [
+     [
+      "2027-05-10T09:29:00.000Z",
+      "2027-05-11T00:42:00.000Z"
+     ],
+     [
+      "2027-05-10T09:29:00.000Z",
+      "2027-05-11T00:12:00.000Z"
+     ],
+     [
+      "2027-05-10T09:29:00.000Z",
+      "2027-05-10T16:00:00.000Z"
+     ]
+    ],
+    [
+     [
+      "2027-05-10T09:41:00.000Z",
+      "2027-05-11T00:54:00.000Z"
+     ],
+     [
+      "2027-05-10T09:41:00.000Z",
+      "2027-05-11T00:24:00.000Z"
+     ],
+     [
+      "2027-05-10T09:41:00.000Z",
+      "2027-05-10T16:00:00.000Z"
+     ]
+    ]
+   ],
+   "places": [
+    {
+     "id": "sgl-sample-1",
+     "open": true,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ],
+      [
+       "dove",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ],
+      [
+       "turkey",
+       {
+        "k": "open",
+        "l": "Spring gobbler",
+        "y": false,
+        "a": "2027-05-10T09:29:00.000Z",
+        "b": "2027-05-10T16:00:00.000Z"
+       }
+      ],
+      [
+       "grouse",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ],
+      [
+       "waterfowl",
+       {
+        "k": "check",
+        "l": "Ducks and geese"
+       }
+      ],
+      [
+       "woodcock",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ]
+     ],
+     "openSp": [
+      "turkey"
+     ],
+     "tags": [
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "turkey",
+       "open": true
+      }
+     ],
+     "next": "2027-05-11",
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "grouse",
+        "reason": "Forest and young-growth cover suits grouse",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        }
+       },
+       {
+        "species": "turkey",
+        "reason": "Mixed woods and edges hold fall flocks",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ],
+      "possible": [
+       {
+        "species": "pheasant",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "woodcock",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "dove",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Migratory bird license required."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 1 species open",
+      "detail": "Turkey · legal hours 5:29 AM – 8:42 PM"
+     }
+    },
+    {
+     "id": "stock-sample-1",
+     "open": false,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ]
+     ],
+     "openSp": [
+      "turkey"
+     ],
+     "tags": [
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "turkey",
+       "open": true
+      }
+     ],
+     "next": "2027-05-11",
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "pheasant",
+        "reason": "PGC stocks this property",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "woodcock",
+        "reason": "Moist thickets and young growth draw woodcock",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       }
+      ],
+      "possible": [
+       {
+        "species": "grouse",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        }
+       },
+       {
+        "species": "dove",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Migratory bird license required."
+       },
+       {
+        "species": "turkey",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 1 species open",
+      "detail": "Turkey · legal hours 5:25 AM – 8:38 PM"
+     }
+    },
+    {
+     "id": "dove-sample-1",
+     "open": false,
+     "st": [
+      [
+       "dove",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ]
+     ],
+     "openSp": [
+      "turkey"
+     ],
+     "tags": [
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "turkey",
+       "open": true
+      }
+     ],
+     "next": "2027-05-11",
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "pheasant",
+        "reason": "Grass and field edges suit pheasant",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Managed dove field",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Migratory bird license required."
+       }
+      ],
+      "possible": [
+       {
+        "species": "grouse",
+        "reason": "Allowed here; field is managed for doves",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Allowed here; field is managed for doves",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Allowed here; field is managed for doves",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 1 species open",
+      "detail": "Turkey · legal hours 5:25 AM – 8:38 PM"
+     }
+    },
+    {
+     "id": "sgl-sample-2",
+     "open": true,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ],
+      [
+       "dove",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ],
+      [
+       "turkey",
+       {
+        "k": "open",
+        "l": "Spring gobbler",
+        "y": false,
+        "a": "2027-05-10T09:41:00.000Z",
+        "b": "2027-05-10T16:00:00.000Z"
+       }
+      ],
+      [
+       "grouse",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ],
+      [
+       "waterfowl",
+       {
+        "k": "check",
+        "l": "Ducks and geese"
+       }
+      ],
+      [
+       "woodcock",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ]
+     ],
+     "openSp": [
+      "turkey"
+     ],
+     "tags": [
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "turkey",
+       "open": true
+      }
+     ],
+     "next": "2027-05-11",
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "grouse",
+        "reason": "Forest and young-growth cover suits grouse",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Moist thickets and young growth draw woodcock",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Mixed woods and edges hold fall flocks",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ],
+      "possible": [
+       {
+        "species": "pheasant",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Migratory bird license required."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 1 species open",
+      "detail": "Turkey · legal hours 5:41 AM – 8:54 PM"
+     }
+    },
+    {
+     "id": "stock-sample-2",
+     "open": false,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ]
+     ],
+     "openSp": [
+      "turkey"
+     ],
+     "tags": [
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "turkey",
+       "open": true
+      }
+     ],
+     "next": "2027-05-11",
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "pheasant",
+        "reason": "PGC stocks this property",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Crop fields draw doves",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Migratory bird license required."
+       }
+      ],
+      "possible": [
+       {
+        "species": "grouse",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 1 species open",
+      "detail": "Turkey · legal hours 5:21 AM – 8:34 PM"
+     }
+    },
+    {
+     "id": "sgl-sample-3",
+     "open": true,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ],
+      [
+       "dove",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ],
+      [
+       "turkey",
+       {
+        "k": "open",
+        "l": "Spring gobbler",
+        "y": false,
+        "a": "2027-05-10T09:29:00.000Z",
+        "b": "2027-05-10T16:00:00.000Z"
+       }
+      ],
+      [
+       "grouse",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ],
+      [
+       "waterfowl",
+       {
+        "k": "check",
+        "l": "Ducks and geese"
+       }
+      ],
+      [
+       "woodcock",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ]
+     ],
+     "openSp": [
+      "turkey"
+     ],
+     "tags": [
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Open",
+       "tone": "open"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "turkey",
+       "open": true
+      }
+     ],
+     "next": "2027-05-11",
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "grouse",
+        "reason": "Forest and young-growth cover suits grouse",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Moist thickets and young growth draw woodcock",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Mixed woods and edges hold fall flocks",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Open",
+         "tone": "open"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ],
+      "possible": [
+       {
+        "species": "pheasant",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Migratory bird license required."
+       }
+      ]
+     },
+     "today": {
+      "title": "Today: 1 species open",
+      "detail": "Turkey · legal hours 5:29 AM – 8:42 PM"
+     }
+    }
+   ],
+   "search": [
+    {
+     "kind": "closed",
+     "label": "Closed for the season"
+    },
+    {
+     "kind": "closed",
+     "label": "Closed for the season"
+    },
+    {
+     "kind": "closed",
+     "label": "Closed for the season"
+    },
+    {
+     "kind": "closed",
+     "label": "Closed for the season"
+    },
+    {
+     "kind": "closed",
+     "label": "Closed for the season"
+    }
+   ],
+   "guide": [
+    [
+     [
+      "pheasant",
+      "CLOSED",
+      "Out of season"
+     ],
+     [
+      "dove",
+      "CLOSED",
+      "Out of season"
+     ],
+     [
+      "turkey",
+      "OPEN",
+      "Open today; legal hours ended 12:00 PM"
+     ],
+     [
+      "grouse",
+      "CLOSED",
+      "Out of season"
+     ],
+     [
+      "waterfowl",
+      "CHECK",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required."
+     ],
+     [
+      "woodcock",
+      "CLOSED",
+      "Out of season"
+     ]
+    ],
+    []
+   ],
+   "segments": [
+    [
+     [
+      "Junior pheasant",
+      [
+       [
+        "2026-10-10",
+        "2026-10-18"
+       ]
+      ]
+     ],
+     [
+      "Ring-necked pheasant",
+      [
+       [
+        "2026-10-24",
+        "2026-12-24"
+       ],
+       [
+        "2026-12-26",
+        "2027-02-28"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Mourning dove",
+      [
+       [
+        "2026-09-01",
+        "2026-11-27"
+       ],
+       [
+        "2026-12-18",
+        "2027-01-02"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Fall turkey",
+      null
+     ],
+     [
+      "Spring gobbler",
+      [
+       [
+        "2027-05-01",
+        "2027-05-31"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Ruffed grouse",
+      [
+       [
+        "2026-10-17",
+        "2026-12-24"
+       ],
+       [
+        "2026-12-26",
+        "2027-01-23"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Ducks and geese",
+      null
+     ]
+    ],
+    [
+     [
+      "American woodcock",
+      [
+       [
+        "2026-10-17",
+        "2026-12-08"
+       ]
+      ]
+     ]
+    ]
+   ],
+   "dates": [
+    "Oct 24 – Dec 24, Dec 26 – Feb 28",
+    "Oct 17 – Dec 24, Dec 26 – Jan 23",
+    "Oct 17 – Dec 8",
+    "Sep 1 – Nov 27, Dec 18 – Jan 2",
+    "dates vary, check the digest, May 1 – May 31"
+   ],
+   "windows": [
+    [
+     {
+      "label": "Sat, Oct 10 – Sun, Oct 18",
+      "current": false,
+      "past": true
+     }
+    ],
+    [
+     {
+      "label": "Sat, Oct 24 – Thu, Dec 24",
+      "current": false,
+      "past": true
+     },
+     {
+      "label": "Sat, Dec 26 – Sun, Feb 28",
+      "current": false,
+      "past": true
+     }
+    ],
+    [
+     {
+      "label": "Sat, Oct 17 – Thu, Dec 24",
+      "current": false,
+      "past": true
+     },
+     {
+      "label": "Sat, Dec 26 – Sat, Jan 23",
+      "current": false,
+      "past": true
+     }
+    ],
+    [
+     {
+      "label": "Tue, Sep 1 – Fri, Nov 27",
+      "current": false,
+      "past": true
+     },
+     {
+      "label": "Fri, Dec 18 – Sat, Jan 2",
+      "current": false,
+      "past": true
+     }
+    ],
+    [],
+    [
+     {
+      "label": "Sat, May 1 – Mon, May 31",
+      "current": true,
+      "past": false
+     }
+    ],
+    [],
+    [
+     {
+      "label": "Sat, Oct 17 – Tue, Dec 8",
+      "current": false,
+      "past": true
+     }
+    ]
+   ],
+   "sunday": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "2027-06-30": {
+   "status": [
+    [
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Fall turkey"
+      },
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Ducks and geese"
+      },
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ]
+    ],
+    [
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Fall turkey"
+      },
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Ducks and geese"
+      },
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ]
+    ],
+    [
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Fall turkey"
+      },
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ],
+     [
+      {
+       "k": "check",
+       "l": "Ducks and geese"
+      },
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required.",
+      "CHECK"
+     ],
+     [
+      {
+       "k": "closed",
+       "n": null
+      },
+      "Out of season",
+      "Out of season",
+      "CLOSED"
+     ]
+    ]
+   ],
+   "hours": [
+    [
+     [
+      "2027-06-30T09:05:00.000Z",
+      "2027-07-01T01:03:00.000Z"
+     ],
+     [
+      "2027-06-30T09:05:00.000Z",
+      "2027-07-01T00:33:00.000Z"
+     ],
+     [
+      "2027-06-30T09:05:00.000Z",
+      "2027-07-01T01:03:00.000Z"
+     ]
+    ],
+    [
+     [
+      "2027-06-30T09:13:00.000Z",
+      "2027-07-01T01:11:00.000Z"
+     ],
+     [
+      "2027-06-30T09:13:00.000Z",
+      "2027-07-01T00:41:00.000Z"
+     ],
+     [
+      "2027-06-30T09:13:00.000Z",
+      "2027-07-01T01:11:00.000Z"
+     ]
+    ],
+    [
+     [
+      "2027-06-30T09:25:00.000Z",
+      "2027-07-01T01:23:00.000Z"
+     ],
+     [
+      "2027-06-30T09:25:00.000Z",
+      "2027-07-01T00:53:00.000Z"
+     ],
+     [
+      "2027-06-30T09:25:00.000Z",
+      "2027-07-01T01:23:00.000Z"
+     ]
+    ]
+   ],
+   "places": [
+    {
+     "id": "sgl-sample-1",
+     "open": false,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ],
+      [
+       "dove",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ],
+      [
+       "turkey",
+       {
+        "k": "check",
+        "l": "Fall turkey"
+       }
+      ],
+      [
+       "grouse",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ],
+      [
+       "waterfowl",
+       {
+        "k": "check",
+        "l": "Ducks and geese"
+       }
+      ],
+      [
+       "woodcock",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ]
+     ],
+     "openSp": [],
+     "tags": [
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": null,
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "grouse",
+        "reason": "Forest and young-growth cover suits grouse",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        }
+       },
+       {
+        "species": "turkey",
+        "reason": "Mixed woods and edges hold fall flocks",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ],
+      "possible": [
+       {
+        "species": "pheasant",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "woodcock",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "dove",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Migratory bird license required."
+       }
+      ]
+     },
+     "today": null
+    },
+    {
+     "id": "stock-sample-1",
+     "open": false,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ]
+     ],
+     "openSp": [],
+     "tags": [
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": null,
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "pheasant",
+        "reason": "PGC stocks this property",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "woodcock",
+        "reason": "Moist thickets and young growth draw woodcock",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       }
+      ],
+      "possible": [
+       {
+        "species": "grouse",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        }
+       },
+       {
+        "species": "dove",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Migratory bird license required."
+       },
+       {
+        "species": "turkey",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ]
+     },
+     "today": null
+    },
+    {
+     "id": "dove-sample-1",
+     "open": false,
+     "st": [
+      [
+       "dove",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ]
+     ],
+     "openSp": [],
+     "tags": [
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": null,
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "pheasant",
+        "reason": "Grass and field edges suit pheasant",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Managed dove field",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Migratory bird license required."
+       }
+      ],
+      "possible": [
+       {
+        "species": "grouse",
+        "reason": "Allowed here; field is managed for doves",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Allowed here; field is managed for doves",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Allowed here; field is managed for doves",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ]
+     },
+     "today": null
+    },
+    {
+     "id": "sgl-sample-2",
+     "open": false,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ],
+      [
+       "dove",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ],
+      [
+       "turkey",
+       {
+        "k": "check",
+        "l": "Fall turkey"
+       }
+      ],
+      [
+       "grouse",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ],
+      [
+       "waterfowl",
+       {
+        "k": "check",
+        "l": "Ducks and geese"
+       }
+      ],
+      [
+       "woodcock",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ]
+     ],
+     "openSp": [],
+     "tags": [
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": null,
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "grouse",
+        "reason": "Forest and young-growth cover suits grouse",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Moist thickets and young growth draw woodcock",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Mixed woods and edges hold fall flocks",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ],
+      "possible": [
+       {
+        "species": "pheasant",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Migratory bird license required."
+       }
+      ]
+     },
+     "today": null
+    },
+    {
+     "id": "stock-sample-2",
+     "open": false,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ]
+     ],
+     "openSp": [],
+     "tags": [
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": null,
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "pheasant",
+        "reason": "PGC stocks this property",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Crop fields draw doves",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Migratory bird license required."
+       }
+      ],
+      "possible": [
+       {
+        "species": "grouse",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Not stocked; wild birds possible in nearby cover",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ]
+     },
+     "today": null
+    },
+    {
+     "id": "sgl-sample-3",
+     "open": false,
+     "st": [
+      [
+       "pheasant",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ],
+      [
+       "dove",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ],
+      [
+       "turkey",
+       {
+        "k": "check",
+        "l": "Fall turkey"
+       }
+      ],
+      [
+       "grouse",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ],
+      [
+       "waterfowl",
+       {
+        "k": "check",
+        "l": "Ducks and geese"
+       }
+      ],
+      [
+       "woodcock",
+       {
+        "k": "closed",
+        "n": null
+       }
+      ]
+     ],
+     "openSp": [],
+     "tags": [
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Closed",
+       "tone": "closed"
+      },
+      {
+       "text": "Check digest",
+       "tone": "closed"
+      }
+     ],
+     "choices": [
+      {
+       "species": "pheasant",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "grouse",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "woodcock",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "dove",
+       "open": false,
+       "hint": "Closed"
+      },
+      {
+       "species": "turkey",
+       "open": false,
+       "hint": "Closed"
+      }
+     ],
+     "next": null,
+     "planClosed": true,
+     "hunt": {
+      "good": [
+       {
+        "species": "grouse",
+        "reason": "Forest and young-growth cover suits grouse",
+        "dates": "Oct 17 – Dec 24, Dec 26 – Jan 23",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        }
+       },
+       {
+        "species": "woodcock",
+        "reason": "Moist thickets and young growth draw woodcock",
+        "dates": "Oct 17 – Dec 8",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Closed Sundays. Migratory bird license required. Hunting ends at sunset."
+       },
+       {
+        "species": "turkey",
+        "reason": "Mixed woods and edges hold fall flocks",
+        "dates": "dates vary, check the digest, May 1 – May 31",
+        "tag": {
+         "text": "Check digest",
+         "tone": "closed"
+        },
+        "note": "Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+       }
+      ],
+      "possible": [
+       {
+        "species": "pheasant",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Oct 24 – Dec 24, Dec 26 – Feb 28",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Pheasant permit required."
+       },
+       {
+        "species": "dove",
+        "reason": "Allowed on game lands; habitat varies",
+        "dates": "Sep 1 – Nov 27, Dec 18 – Jan 2",
+        "tag": {
+         "text": "Closed",
+         "tone": "closed"
+        },
+        "note": "Migratory bird license required."
+       }
+      ]
+     },
+     "today": null
+    }
+   ],
+   "search": [
+    {
+     "kind": "closed",
+     "label": "Closed for the season"
+    },
+    {
+     "kind": "closed",
+     "label": "Closed for the season"
+    },
+    {
+     "kind": "closed",
+     "label": "Closed for the season"
+    },
+    {
+     "kind": "closed",
+     "label": "Closed for the season"
+    },
+    {
+     "kind": "closed",
+     "label": "Closed for the season"
+    }
+   ],
+   "guide": [
+    [
+     [
+      "pheasant",
+      "CLOSED",
+      "Out of season"
+     ],
+     [
+      "dove",
+      "CLOSED",
+      "Out of season"
+     ],
+     [
+      "turkey",
+      "CHECK",
+      "Limit 1 bird per season. Dates vary by WMU (from Oct 31); closed in WMUs 5C and 5D. Check your WMU in the digest."
+     ],
+     [
+      "grouse",
+      "CLOSED",
+      "Out of season"
+     ],
+     [
+      "waterfowl",
+      "CHECK",
+      "Dates vary by zone. Federal duck stamp and migratory bird license required."
+     ],
+     [
+      "woodcock",
+      "CLOSED",
+      "Out of season"
+     ]
+    ],
+    []
+   ],
+   "segments": [
+    [
+     [
+      "Junior pheasant",
+      [
+       [
+        "2026-10-10",
+        "2026-10-18"
+       ]
+      ]
+     ],
+     [
+      "Ring-necked pheasant",
+      [
+       [
+        "2026-10-24",
+        "2026-12-24"
+       ],
+       [
+        "2026-12-26",
+        "2027-02-28"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Mourning dove",
+      [
+       [
+        "2026-09-01",
+        "2026-11-27"
+       ],
+       [
+        "2026-12-18",
+        "2027-01-02"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Fall turkey",
+      null
+     ],
+     [
+      "Spring gobbler",
+      [
+       [
+        "2027-05-01",
+        "2027-05-31"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Ruffed grouse",
+      [
+       [
+        "2026-10-17",
+        "2026-12-24"
+       ],
+       [
+        "2026-12-26",
+        "2027-01-23"
+       ]
+      ]
+     ]
+    ],
+    [
+     [
+      "Ducks and geese",
+      null
+     ]
+    ],
+    [
+     [
+      "American woodcock",
+      [
+       [
+        "2026-10-17",
+        "2026-12-08"
+       ]
+      ]
+     ]
+    ]
+   ],
+   "dates": [
+    "Oct 24 – Dec 24, Dec 26 – Feb 28",
+    "Oct 17 – Dec 24, Dec 26 – Jan 23",
+    "Oct 17 – Dec 8",
+    "Sep 1 – Nov 27, Dec 18 – Jan 2",
+    "dates vary, check the digest, May 1 – May 31"
+   ],
+   "windows": [
+    [
+     {
+      "label": "Sat, Oct 10 – Sun, Oct 18",
+      "current": false,
+      "past": true
+     }
+    ],
+    [
+     {
+      "label": "Sat, Oct 24 – Thu, Dec 24",
+      "current": false,
+      "past": true
+     },
+     {
+      "label": "Sat, Dec 26 – Sun, Feb 28",
+      "current": false,
+      "past": true
+     }
+    ],
+    [
+     {
+      "label": "Sat, Oct 17 – Thu, Dec 24",
+      "current": false,
+      "past": true
+     },
+     {
+      "label": "Sat, Dec 26 – Sat, Jan 23",
+      "current": false,
+      "past": true
+     }
+    ],
+    [
+     {
+      "label": "Tue, Sep 1 – Fri, Nov 27",
+      "current": false,
+      "past": true
+     },
+     {
+      "label": "Fri, Dec 18 – Sat, Jan 2",
+      "current": false,
+      "past": true
+     }
+    ],
+    [],
+    [
+     {
+      "label": "Sat, May 1 – Mon, May 31",
+      "current": false,
+      "past": true
+     }
+    ],
+    [],
+    [
+     {
+      "label": "Sat, Oct 17 – Tue, Dec 8",
+      "current": false,
+      "past": true
+     }
+    ]
+   ],
+   "sunday": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ]
+  }
+ }
+}
