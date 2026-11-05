@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react-native';
+import { render } from '@testing-library/react-native';
 
 import { PastSeasonsCardView } from '@/components/spot/PastSeasonsCard';
 import type { PastSeasonsSummary } from '@/data/pastSeasons';
@@ -29,18 +29,18 @@ const base = (over: Partial<PastSeasonsSummary> = {}): PastSeasonsSummary => ({
 });
 
 describe('PastSeasonsCardView', () => {
-  it('shows the honest empty state with no invented numbers', () => {
-    render(<PastSeasonsCardView summary={base()} />);
-    expect(screen.getByTestId('past-seasons-card-empty')).toBeTruthy();
-    expect(screen.getByText('No history for this week yet')).toBeTruthy();
-    expect(screen.getByText(/Nothing is invented/)).toBeTruthy();
-    expect(screen.queryByTestId('past-seasons-card-tiles')).toBeNull();
-    expect(screen.queryByTestId('past-seasons-card-best-time')).toBeNull();
-    expect(screen.getByTestId('past-seasons-card-privacy')).toBeTruthy();
+  it('shows the honest empty state with no invented numbers', async () => {
+    const sc = await render(<PastSeasonsCardView summary={base()} />);
+    expect(sc.getByTestId('past-seasons-card-empty')).toBeTruthy();
+    expect(sc.getByText('No history for this week yet')).toBeTruthy();
+    expect(sc.getByText(/Nothing is invented/)).toBeTruthy();
+    expect(sc.queryByTestId('past-seasons-card-tiles')).toBeNull();
+    expect(sc.queryByTestId('past-seasons-card-best-time')).toBeNull();
+    expect(sc.getByTestId('past-seasons-card-privacy')).toBeTruthy();
   });
 
-  it('shows counts, note, and best hints when the sample is large enough', () => {
-    render(
+  it('shows counts, note, and best hints when the sample is large enough', async () => {
+    const sc = await render(
       <PastSeasonsCardView
         summary={base({
           empty: false,
@@ -54,18 +54,18 @@ describe('PastSeasonsCardView', () => {
         })}
       />,
     );
-    expect(screen.getByTestId('past-seasons-card-hunts')).toHaveTextContent('5');
-    expect(screen.getByTestId('past-seasons-card-flushes')).toHaveTextContent('11');
-    expect(screen.getByTestId('past-seasons-card-harvest')).toHaveTextContent('3');
-    expect(screen.getByTestId('past-seasons-card-seasons')).toHaveTextContent('2');
-    expect(screen.getByTestId('past-seasons-card-note')).toHaveTextContent(/5 hunts across 2 prior seasons/);
-    expect(screen.getByTestId('past-seasons-card-best-time')).toHaveTextContent(/Morning/);
-    expect(screen.getByTestId('past-seasons-card-best-weather')).toHaveTextContent(/NW wind 8 mph/);
-    expect(screen.queryByTestId('past-seasons-card-no-hint')).toBeNull();
+    expect(sc.getByTestId('past-seasons-card-hunts')).toHaveTextContent(/^5/);
+    expect(sc.getByTestId('past-seasons-card-flushes')).toHaveTextContent(/^11/);
+    expect(sc.getByTestId('past-seasons-card-harvest')).toHaveTextContent(/^3/);
+    expect(sc.getByTestId('past-seasons-card-seasons')).toHaveTextContent(/^2/);
+    expect(sc.getByTestId('past-seasons-card-note')).toHaveTextContent(/5 hunts across 2 prior seasons/);
+    expect(sc.getByTestId('past-seasons-card-best-time')).toHaveTextContent(/Morning/);
+    expect(sc.getByTestId('past-seasons-card-best-weather')).toHaveTextContent(/NW wind 8 mph/);
+    expect(sc.queryByTestId('past-seasons-card-no-hint')).toBeNull();
   });
 
-  it('omits best hints below the sample threshold and says so', () => {
-    render(
+  it('omits best hints below the sample threshold and says so', async () => {
+    const sc = await render(
       <PastSeasonsCardView
         summary={base({
           empty: false,
@@ -79,8 +79,8 @@ describe('PastSeasonsCardView', () => {
         })}
       />,
     );
-    expect(screen.getByTestId('past-seasons-card-tiles')).toBeTruthy();
-    expect(screen.getByTestId('past-seasons-card-no-hint')).toHaveTextContent(/at least 3 hunts/);
-    expect(screen.queryByTestId('past-seasons-card-best-time')).toBeNull();
+    expect(sc.getByTestId('past-seasons-card-tiles')).toBeTruthy();
+    expect(sc.getByTestId('past-seasons-card-no-hint')).toHaveTextContent(/at least 3 hunts/);
+    expect(sc.queryByTestId('past-seasons-card-best-time')).toBeNull();
   });
 });
