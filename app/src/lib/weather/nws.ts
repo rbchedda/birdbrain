@@ -117,6 +117,8 @@ export type ForecastPeriod = {
   windDirection: string;
   /** Degrees the wind blows FROM (meteorological), null when variable/unknown. */
   windFromDeg: number | null;
+  /** Gust mph when NWS gives one (often absent on hourly/7-day periods). */
+  windGustMph: number | null;
   shortForecast: string;
 };
 
@@ -141,6 +143,15 @@ export function parseWindMph(speed: unknown): number | null {
   return /km/i.test(speed) ? Math.round(max / 1.609) : max;
 }
 
+/** windGust is a string ("20 mph") on some endpoints and a {value, unitCode} km/h quantity on others. */
+export function parseGust(g: unknown): number | null {
+  if (typeof g === 'string') return parseWindMph(g);
+  const v = (g as { value?: unknown; unitCode?: unknown } | null)?.value;
+  if (typeof v !== 'number' || !Number.isFinite(v)) return null;
+  const unit = String((g as { unitCode?: unknown }).unitCode ?? '');
+  return Math.round(/km_h/.test(unit) ? v / 1.609 : v);
+}
+
 export function parsePeriods(json: unknown): ForecastPeriod[] {
   const raw = (json as { properties?: { periods?: unknown } })?.properties?.periods;
   if (!Array.isArray(raw)) throw new NwsError('bad-data', 'No forecast periods');
@@ -159,6 +170,7 @@ export function parsePeriods(json: unknown): ForecastPeriod[] {
         windMph: parseWindMph(p.windSpeed),
         windDirection: typeof p.windDirection === 'string' ? p.windDirection : '',
         windFromDeg: windDirToDeg(p.windDirection),
+        windGustMph: parseGust(p.windGust),
         shortForecast: typeof p.shortForecast === 'string' ? p.shortForecast : '',
       };
     });

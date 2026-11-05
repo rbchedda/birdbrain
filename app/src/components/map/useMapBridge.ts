@@ -22,7 +22,7 @@ type Inbound =
  * page; the returned `receive` handles messages coming back.
  */
 export function useMapBridge(post: (m: Outbound) => void, props: PlaceMapProps) {
-  const { places, selectedId, outline, basemap, focus, onSelect, onSelectPark, onEmptyTap, me, offline, ranks, fit, onCenterChange, onViewportChange, wind } = props;
+  const { places, selectedId, outline, basemap, focus, onSelect, onSelectPark, onEmptyTap, me, offline, ranks, fit, onCenterChange, onViewportChange, wind, windOpacity } = props;
   const offlineKey = (offline?.basemaps ?? []).join(',');
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string>();
@@ -76,8 +76,8 @@ export function useMapBridge(post: (m: Outbound) => void, props: PlaceMapProps) 
   }, [ready, me, post]);
 
   useEffect(() => {
-    if (ready) post(windMessage(wind));
-  }, [ready, wind, post]);
+    if (ready) post(windMessage(wind, windOpacity));
+  }, [ready, wind, windOpacity, post]);
 
   const receive = useCallback(
     (raw: string) => {
@@ -138,7 +138,7 @@ export function meMessage(me: PlaceMapProps['me']) {
 }
 
 /** Bridge message for the wind layer: finite points only; null/empty clears it. */
-export function windMessage(wind: PlaceMapProps['wind']) {
+export function windMessage(wind: PlaceMapProps['wind'], opacity = 0.85) {
   const samples = (wind ?? [])
     .filter((w) => isLngLat([w.lng, w.lat]))
     .map((w) => ({
@@ -147,5 +147,5 @@ export function windMessage(wind: PlaceMapProps['wind']) {
       fromDeg: typeof w.fromDeg === 'number' && Number.isFinite(w.fromDeg) ? w.fromDeg : null,
       mph: typeof w.mph === 'number' && Number.isFinite(w.mph) ? Math.round(w.mph) : null,
     }));
-  return { type: 'wind', samples };
+  return { type: 'wind', samples, opacity: Number.isFinite(opacity) ? Math.min(1, Math.max(0, opacity)) : 0.85 };
 }
