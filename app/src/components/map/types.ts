@@ -47,6 +47,10 @@ export interface PlaceMapProps {
   ranks?: Record<string, number>;
   /** Bump to fit the camera to these bounds exactly ([[west, south], [east, north]]). */
   fit?: { bounds: [[number, number], [number, number]]; key: number };
+  /** Viewport after load and each pan/zoom ([[west, south], [east, north]]). */
+  onViewportChange?: (v: { bounds: [[number, number], [number, number]]; zoom: number; center: LngLat }) => void;
+  /** Wind arrows (from-direction in degrees, mph); null or empty clears the layer. */
+  wind?: { lng: number; lat: number; fromDeg: number | null; mph: number | null }[] | null;
   /** Map center after each pan/zoom. */
   onCenterChange?: (center: LngLat) => void;
 }

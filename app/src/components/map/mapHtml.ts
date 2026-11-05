@@ -66,6 +66,10 @@ export function buildMapHtml(opts: { terrain?: boolean; assets?: MapAssets | nul
     font: 700 13px system-ui, sans-serif; display: flex; align-items: center; justify-content: center;
     border: 2px solid ${colors.ground}; pointer-events: none; }
   .maplibregl-ctrl-attrib { font: 11px system-ui, sans-serif; }
+  .bb-wind { display: flex; flex-direction: column; align-items: center; pointer-events: none;
+    font: 700 11px system-ui, sans-serif; color: ${colors.text}; }
+  .bb-wind svg { filter: drop-shadow(0 0 1.5px ${colors.ground}); }
+  .bb-wind span { background: ${colors.ground}; border-radius: 6px; padding: 0 4px; margin-top: 1px; opacity: 0.92; }
 </style>
 </head>
 <body>
@@ -254,6 +258,7 @@ ${terrain ? `<script>${pmtilesJs}</script>\n<script>${contourJs}</script>` : ''}
       map.fitBounds(m.bounds, { padding: m.padding || { top: 140, bottom: 200, left: 40, right: 40 }, maxZoom: 14, duration: 600 });
     }
     if (m.type === 'places') drawRanks(m.data);
+    if (m.type === 'wind') drawWind(m.samples);
     if (m.type === 'focus') map.easeTo({ center: m.center, zoom: Math.max(map.getZoom(), m.zoom || 11), duration: 600 });
   }
   // Species search: numbered pins (rank 1-10) as DOM markers, so they need no glyphs and work offline.
@@ -270,6 +275,32 @@ ${terrain ? `<script>${pmtilesJs}</script>\n<script>${contourJs}</script>` : ''}
       el.setAttribute('data-rank', String(r));
       rankMarkers.push(new maplibregl.Marker({ element: el }).setLngLat(f.geometry.coordinates).addTo(map));
     });
+  }
+  // Wind layer: DOM markers (no glyphs, no tiles). The arrow points where the wind
+  // is going (NWS gives the direction it comes FROM, so rotate by from + 180).
+  var windMarkers = [];
+  function drawWind(samples) {
+    windMarkers.forEach(function (mk) { mk.remove(); });
+    windMarkers = [];
+    (Array.isArray(samples) ? samples : []).forEach(function (w) {
+      if (typeof w.lng !== 'number' || typeof w.lat !== 'number') return;
+      var el = document.createElement('div');
+      el.className = 'bb-wind';
+      el.setAttribute('data-wind', '1');
+      var calm = w.mph === 0 || w.fromDeg === null || w.fromDeg === undefined;
+      if (!calm) {
+        el.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" style="transform: rotate(' + ((w.fromDeg + 180) % 360) +
+          'deg)"><path d="M12 2 L19 13 H14 V22 H10 V13 H5 Z" fill="${colors.text}" stroke="${colors.ground}" stroke-width="1.2"/></svg>';
+      }
+      var label = document.createElement('span');
+      label.textContent = calm ? (w.mph === 0 ? 'Calm' : 'Var') : (w.mph === null ? '?' : String(w.mph)) + ' mph';
+      el.appendChild(label);
+      windMarkers.push(new maplibregl.Marker({ element: el }).setLngLat([w.lng, w.lat]).addTo(map));
+    });
+  }
+  function sendViewport() {
+    var b = map.getBounds(), c = map.getCenter();
+    send({ type: 'viewport', bounds: [[b.getWest(), b.getSouth()], [b.getEast(), b.getNorth()]], zoom: map.getZoom(), center: [c.lng, c.lat] });
   }
   // Accuracy ring as a 64-point polygon, meters to degrees on a sphere.
   function circle(c, meters) {
@@ -343,10 +374,12 @@ ${terrain ? `<script>${pmtilesJs}</script>\n<script>${contourJs}</script>` : ''}
     map.on('moveend', function () {
       var c = map.getCenter();
       send({ type: 'center', center: [c.lng, c.lat] });
+      sendViewport();
     });
     loaded = true;
     queue.splice(0).forEach(apply);
     send({ type: 'ready', terrain: terrainOk });
+    sendViewport();
     // Fallback if the app never sends a basemap: show topo.
     setTimeout(function () { if (!basemapChosen) showBasemap(current); }, 1500);
   });
