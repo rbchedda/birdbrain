@@ -1,7 +1,8 @@
 import { addDays, formatDay, type Ymd } from '@/lib/time';
 
 import { stockingCountyOf, windowsForCounty } from './places';
-import { speciesStatus } from './seasons';
+import { season2026_27 } from './seasonSets/2026-27';
+import { currentSeason, speciesStatus, unpublishedLine } from './seasons';
 import type { LngLat, Place, Species } from './types';
 
 /**
@@ -49,12 +50,12 @@ export const isUncoveredBird = (query: string) => {
   return q.length >= 2 && futureTerms.some((t) => t === q || t.startsWith(q + ' ') || q.startsWith(t));
 };
 
-// Fall turkey 2026-27 (digest PDF p.35): opens Oct 31 in every WMU but 5C/5D; the end varies by WMU
-// (Nov 3 at the earliest, Nov 27 at the latest). Places carry no WMU yet, so after Nov 3 the
-// status is "check your WMU" rather than a guessed date.
-export const FALL_TURKEY_OPEN: Ymd = '2026-10-31';
-export const FALL_TURKEY_FIRST_CLOSE: Ymd = '2026-11-03';
-export const FALL_TURKEY_LAST_CLOSE: Ymd = '2026-11-27';
+// Fall turkey dates come from the season set (2026-27: digest PDF p.35, opens Oct 31 in every WMU
+// but 5C/5D; ends Nov 3 at the earliest, Nov 27 at the latest). Places carry no WMU yet, so after
+// the first close the status is "check your WMU" rather than a guessed date.
+export const FALL_TURKEY_OPEN: Ymd = season2026_27.fallTurkey.open;
+export const FALL_TURKEY_FIRST_CLOSE: Ymd = season2026_27.fallTurkey.firstClose;
+export const FALL_TURKEY_LAST_CLOSE: Ymd = season2026_27.fallTurkey.lastClose;
 
 export type SeasonTag =
   | { kind: 'open'; label: string }
@@ -63,10 +64,14 @@ export type SeasonTag =
 
 /** Season tag for a bird today (statewide; fall turkey per spec above). */
 export function seasonTag(bird: SearchBird, ymd: Ymd, at: LngLat): SeasonTag {
+  const cur = currentSeason(ymd);
+  // Unpublished season: never a definite Closed; 'check' keeps it out of the Open-now exclusion.
+  if (cur.kind === 'unpublished') return { kind: 'check', label: unpublishedLine(cur.year) };
   if (bird === 'turkey') {
-    if (ymd < FALL_TURKEY_OPEN) return { kind: 'closed', label: `Closed until ${formatDay(FALL_TURKEY_OPEN)}` };
-    if (ymd <= FALL_TURKEY_FIRST_CLOSE) return { kind: 'open', label: 'Open (not WMU 5C/5D)' };
-    if (ymd <= FALL_TURKEY_LAST_CLOSE) return { kind: 'check', label: 'Check your WMU' };
+    const t = cur.set.fallTurkey;
+    if (ymd < t.open) return { kind: 'closed', label: `Closed until ${formatDay(t.open)}` };
+    if (ymd <= t.firstClose) return { kind: 'open', label: 'Open (not WMU 5C/5D)' };
+    if (ymd <= t.lastClose) return { kind: 'check', label: 'Check your WMU' };
     return { kind: 'closed', label: 'Closed for the season' };
   }
   const s = speciesStatus(bird as Species, ymd, at);
@@ -77,6 +82,7 @@ export function seasonTag(bird: SearchBird, ymd: Ymd, at: LngLat): SeasonTag {
   }
   if (s.kind === 'sunday') return { kind: 'closed', label: 'Closed Sundays' };
   if (s.kind === 'check') return { kind: 'check', label: 'Check the digest' };
+  if (s.kind === 'unpublished') return { kind: 'check', label: unpublishedLine(s.year) };
   return { kind: 'closed', label: s.nextOpen ? `Closed until ${formatDay(s.nextOpen.date)}` : 'Closed for the season' };
 }
 

@@ -2,7 +2,8 @@ import { etWallTime, officialDay } from '@/lib/sun';
 import { addDays, type Ymd } from '@/lib/time';
 
 import type { JournalEntry } from './journal';
-import { seasons } from './seasons';
+import { SEASONS, seasonYearOf } from './seasonRegistry';
+import type { SeasonYear } from './seasonTypes';
 import type { Dog, Place, Species } from './types';
 
 /**
@@ -12,9 +13,7 @@ import type { Dog, Place, Species } from './types';
 
 /** PA seasons run Jul 1 – Jun 30: '2026-27'. */
 export function seasonOf(ymd: Ymd): string {
-  const y = Number(ymd.slice(0, 4));
-  const start = Number(ymd.slice(5, 7)) >= 7 ? y : y - 1;
-  return `${start}-${String((start + 1) % 100).padStart(2, '0')}`;
+  return seasonYearOf(ymd);
 }
 export const seasonLabel = (season: string) => `${season.slice(0, 4)}–${season.slice(5)}`;
 
@@ -186,7 +185,7 @@ export function badges(all: JournalEntry[], season: string, lookup: PlaceLookup 
   const coldDays = new Set(inSeason.filter((e) => (e.details?.weather?.tempF ?? Infinity) < 20).map((e) => e.huntedOn)).size;
 
   const days = new Set(inSeason.map((e) => e.huntedOn));
-  const openerToCloser = seasons.some((s) => {
+  const openerToCloser = (SEASONS[season as SeasonYear]?.seasons ?? []).some((s) => {
     if (s.youth || !s.windows?.length || seasonOf(s.windows[0][0]) !== season) return false;
     const hunted = (d: Ymd) => inSeason.some((e) => e.huntedOn === d && speciesOf(e).includes(s.species));
     const opener = s.windows[0][0];

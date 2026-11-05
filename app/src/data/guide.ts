@@ -1,6 +1,7 @@
-import { describeStatus, legalHours, seasons, speciesStatus, type SpeciesStatus } from '@/data/seasons';
+import { displaySeasonSet } from '@/data/seasonRegistry';
+import { describeStatus, legalHours, speciesStatus, type SpeciesStatus } from '@/data/seasons';
 import { officialHours, type HoursTable } from '@/lib/sun';
-import { addDays, formatDay, formatTime, weekdayOf, type Ymd } from '@/lib/time';
+import { addDays, formatDay, formatTime, todayET, weekdayOf, type Ymd } from '@/lib/time';
 
 import { allSpecies, speciesLabel, type Species } from './types';
 
@@ -48,6 +49,7 @@ export function badgeFor(status: SpeciesStatus, ymd: Ymd): Badge {
     case 'open':
       return 'OPEN';
     case 'check':
+    case 'unpublished':
       return 'CHECK';
     case 'sunday':
       return 'CLOSED';
@@ -89,8 +91,15 @@ export function shootingTimes(ymd: Ymd, zone: number, days = 8, table: HoursTabl
   });
 }
 
-/** Seasons listed for a species, for the bag section's segment labels. */
-export const segmentsFor = (species: Species) => seasons.filter((s) => s.species === species);
+/**
+ * Seasons listed for a species: the current season's, or (when this year's dates aren't
+ * published) the newest published season's, which segmentsHeading labels as last season.
+ */
+export const segmentsFor = (species: Species, ymd: Ymd = todayET()) =>
+  displaySeasonSet(ymd).set.seasons.filter((s) => s.species === species);
+
+/** Null for the current season; '2026-27 (last season)' when showing an older season's dates. */
+export const segmentsHeading = (ymd: Ymd = todayET()) => displaySeasonSet(ymd).label;
 
 /** Spring gobbler hours (digest p.10 note 3, p.35). A rule, not a computed time. */
 export const SPRING_GOBBLER_HOURS =

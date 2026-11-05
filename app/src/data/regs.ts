@@ -1,3 +1,5 @@
+import { season2026_27 } from './seasonSets/2026-27';
+import { seasonSetFor } from './seasonRegistry';
 import type { Species } from './types';
 
 /**
@@ -94,7 +96,8 @@ export const NO_FALL_TURKEY_WMUS = ['5C', '5D'];
  * SE_PARK_SUNDAYS.
  */
 export const SE_PARK_SUNDAY_COUNTIES = ['Bucks', 'Chester', 'Delaware', 'Montgomery', 'Philadelphia'];
-export const SE_PARK_SUNDAYS = ['2026-11-15', '2026-11-22', '2026-11-29'];
+/** 2026-27 dates (per-year values live in the season set: seParkSundays). */
+export const SE_PARK_SUNDAYS = season2026_27.seParkSundays;
 export const SE_PARK_SUNDAY_NOTE =
   'State parks and preserves in Bucks, Chester, Delaware, Montgomery and Philadelphia counties: Sundays only on Nov 15, 22 and 29.';
 
@@ -102,7 +105,8 @@ export const SE_PARK_SUNDAY_NOTE =
 export function sundayAllowed(species: Species, ymd: string, opts: { county?: string; stateParkOrPreserve?: boolean } = {}) {
   if (REGS.species[species].sunday === 'closed') return false;
   if (opts.stateParkOrPreserve && opts.county && SE_PARK_SUNDAY_COUNTIES.includes(opts.county)) {
-    return SE_PARK_SUNDAYS.includes(ymd);
+    // Unpublished season: no known park Sundays, so not allowed (conservative).
+    return seasonSetFor(ymd)?.seParkSundays.includes(ymd) ?? false;
   }
   return true;
 }
