@@ -1,110 +1,197 @@
-import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import type { ForecastPeriod } from '@/lib/weather/nws';
+import { agoLabel, clockLabel, type ForecastDay, forecastAge, toDays } from '@/lib/weather/days';
 import { useSpotForecast } from '@/lib/weather/useWeather';
+import { officialDay } from '@/lib/sun';
+import { formatTime, todayET } from '@/lib/time';
 import { colors, fonts, radius, space } from '@/theme/tokens';
 
-/** Arrow pointing where the wind is going (NWS direction is where it comes from). */
-function WindArrow({ fromDeg }: { fromDeg: number | null }) {
-  if (fromDeg === null) return null;
-  return (
-    <View style={{ transform: [{ rotate: `${(fromDeg + 180) % 360}deg` }] }} testID="forecast-wind-arrow">
-      <Ionicons name="arrow-up" size={14} color={colors.subtle} />
-    </View>
-  );
-}
+export const NWS_SOURCE_URL = 'https://www.weather.gov/';
 
-function PeriodCard({ p }: { p: ForecastPeriod }) {
-  return (
-    <View style={[styles.card, !p.isDaytime && styles.night]} testID="forecast-period" accessible accessibilityLabel={periodA11y(p)}>
-      <Text style={styles.name} numberOfLines={1}>
-        {p.name}
-      </Text>
-      <Text style={styles.temp}>{p.temperature === null ? '–' : `${p.temperature}°`}</Text>
-      <Text style={styles.short} numberOfLines={2}>
-        {p.shortForecast}
-      </Text>
-      <View style={styles.windRow}>
-        <WindArrow fromDeg={p.windFromDeg} />
-        <Text style={styles.small} numberOfLines={2}>
-          {p.windDirection ? `${p.windDirection} ` : ''}
-          {p.windSpeed || '–'}
-        </Text>
-      </View>
-      <Text style={styles.small}>{p.precip === null ? 'Precip –' : `${p.precip}% precip`}</Text>
-    </View>
-  );
-}
+const dayTitle = (ymd: string) => {
+  const [y, m, d] = ymd.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+};
+const temp = (n: number | null) => (n === null ? '–' : `${n}°`);
 
-export const periodA11y = (p: ForecastPeriod) =>
+export const dayA11y = (d: ForecastDay) =>
   [
-    p.name,
-    p.temperature === null ? null : `${p.isDaytime ? 'high' : 'low'} ${p.temperature} degrees`,
-    p.shortForecast,
-    p.windSpeed ? `wind ${p.windDirection} ${p.windSpeed}` : null,
-    p.precip === null ? null : `${p.precip} percent chance of precipitation`,
+    dayTitle(d.ymd),
+    d.windMph === null ? null : `wind ${d.windDirection} ${d.windMph} miles per hour`,
+    d.precip === null ? null : `${d.precip} percent chance of rain`,
+    d.high === null ? null : `high ${d.high}`,
+    d.low === null ? null : `low ${d.low}`,
   ]
     .filter(Boolean)
     .join(', ');
 
-/** 7-day NWS forecast (day/night periods) for a spot; cached copy with "As of" when there's no signal. */
-export function SpotForecast({ spotId, center, active = true }: { spotId: string; center: { lat: number; lng: number }; active?: boolean }) {
-  const { forecast, cached, loading, error, asOf, retry } = useSpotForecast(spotId, center, active);
+/** Sun + PGC legal hours for a date (offline, lib/sun). Null outside the PGC table. */
+function sunLines(ymd: string, lng: number) {
+  const o = officialDay(ymd, lng);
+  if (!o) return null;
+  return {
+    sun: `Sunrise ${formatTime(o.sunrise)} · Sunset ${formatTime(o.sunset)}`,
+    legal: `Legal hours ${formatTime(o.huntStart)} – ${formatTime(o.huntEnd)} (PGC)`,
+  };
+}
+
+function Tile({ d, on, onPress, dim }: { d: ForecastDay; on: boolean; onPress: () => void; dim: boolean }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: on }}
+      accessibilityLabel={dayA11y(d)}
+      onPress={onPress}
+      style={[styles.tile, on && styles.tileOn, dim && styles.dim]}
+      testID="forecast-day"
+    >
+      <Text style={styles.tDay}>{d.label}</Text>
+      <Text style={styles.tWind} numberOfLines={1}>
+        {d.windMph === 0 ? 'Calm' : `${d.windDirection} ${d.windMph ?? '–'}`}
+      </Text>
+      <Text style={styles.tSmall}>{d.precip === null ? '–' : `${d.precip}%`}</Text>
+      <Text style={styles.tTemp} numberOfLines={1}>
+        {temp(d.high)}/{temp(d.low)}
+      </Text>
+    </Pressable>
+  );
+}
+
+function DayCard({ d, lng }: { d: ForecastDay; lng: number }) {
+  const s = sunLines(d.ymd, lng);
+  const wind = d.windMph === null ? null : `AM: ${d.windMph === 0 ? 'calm' : `${d.windDirection} ${d.windMph} mph`}${d.windGustMph !== null ? `, gusts ${d.windGustMph}` : ''}`;
+  return (
+    <View style={styles.card} testID="forecast-day-card">
+      <View style={styles.cardHead}>
+        <Text style={styles.cardTitle}>{dayTitle(d.ymd)}</Text>
+        {s && <Text style={styles.cardSun}>{s.sun}</Text>}
+      </View>
+      <Text style={styles.cardBody}>{[s?.legal, wind, d.precip === null ? null : `Rain ${d.precip}%`].filter(Boolean).join(' · ')}</Text>
+    </View>
+  );
+}
+
+/**
+ * Spot 7-day block (spec wind-forecast 03/04): seven day tiles, a tapped day's
+ * card with sun/legal hours, and the stale / expired / unavailable / loading states.
+ */
+export function SpotForecast({
+  spotId,
+  center,
+  active = true,
+  onSource,
+}: {
+  spotId: string;
+  center: { lat: number; lng: number };
+  active?: boolean;
+  onSource?: () => void;
+}) {
+  const { forecast, loading, error, errorKind, retry } = useSpotForecast(spotId, center, active);
+  const [pick, setPick] = useState<string | null>(null);
+  const age = forecast ? forecastAge(forecast.fetchedAt) : null;
+  const days = forecast && age !== 'expired' ? toDays(forecast.periods) : [];
+  const chosen = days.find((d) => d.ymd === pick) ?? days[0];
+  const noSignal = errorKind === 'network' || errorKind === 'timeout';
+
+  let body: React.ReactNode;
+  if (days.length) {
+    body = (
+      <>
+        <View style={styles.tiles}>
+          {days.map((d) => (
+            <Tile key={d.ymd} d={d} on={d.ymd === chosen?.ymd} dim={age === 'stale'} onPress={() => setPick(d.ymd)} />
+          ))}
+        </View>
+        {age === 'stale' ? (
+          <Text style={styles.small} testID="forecast-stale">
+            ⚠ Saved {agoLabel(forecast!.fetchedAt)} ({clockLabel(forecast!.fetchedAt)}).{noSignal ? ' No signal.' : ''} Will refresh when you're back online.
+          </Text>
+        ) : (
+          <Text style={styles.small}>Wind mph · rain chance · high/low</Text>
+        )}
+        {chosen && <DayCard d={chosen} lng={center.lng} />}
+        <Text style={styles.small} testID="forecast-source">
+          National Weather Service · updated {clockLabel(forecast!.updated ?? forecast!.fetchedAt) ?? '–'} ·{' '}
+          <Text accessibilityRole="link" onPress={onSource} style={styles.link} testID="forecast-source-link">
+            Source ›
+          </Text>
+        </Text>
+      </>
+    );
+  } else if (forecast && age === 'expired') {
+    const s = sunLines(todayET(), center.lng);
+    body = (
+      <View testID="forecast-expired" style={{ gap: 4 }}>
+        <Text style={styles.msg}>Forecast is more than a day old, so it's hidden. Sunrise, sunset and legal hours still work offline.</Text>
+        {s && (
+          <Text style={styles.small}>
+            {dayTitle(todayET())} · {s.sun} · {s.legal.replace('Legal hours', 'Legal').replace(' (PGC)', '')}
+          </Text>
+        )}
+      </View>
+    );
+  } else if (loading || (!error && active)) {
+    body = (
+      <View style={styles.tiles} testID="forecast-loading" accessibilityLabel="Loading forecast">
+        {Array.from({ length: 7 }, (_, i) => (
+          <View key={i} style={[styles.tile, styles.skeleton]} />
+        ))}
+      </View>
+    );
+  } else {
+    body = (
+      <View testID="forecast-unavailable" style={{ gap: space.sm }}>
+        <Text style={styles.msg} testID="forecast-error">
+          {errorKind === 'outside' ? error : 'Forecast unavailable right now.'}
+        </Text>
+        {errorKind !== 'outside' && (
+          <Pressable accessibilityRole="button" onPress={retry} style={styles.retry} testID="forecast-retry">
+            <Text style={styles.retryText}>Try again</Text>
+          </Pressable>
+        )}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.wrap} testID="spot-forecast">
-      <View style={styles.head}>
-        <Text style={styles.title}>7-day forecast</Text>
-        {loading && <ActivityIndicator size="small" color={colors.muted} />}
-      </View>
-      {forecast && forecast.periods.length > 0 ? (
-        <>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}>
-            {forecast.periods.slice(0, 14).map((p) => (
-              <PeriodCard key={p.startTime || p.name} p={p} />
-            ))}
-          </ScrollView>
-          <Text style={styles.small} testID="forecast-as-of">
-            {[asOf, cached ? 'saved on this phone' : null, 'National Weather Service'].filter(Boolean).join(' · ')}
-          </Text>
-        </>
-      ) : (
-        !loading && !error && <Text style={styles.small}>No forecast yet.</Text>
-      )}
-      {!!error && (
-        <View style={styles.errRow}>
-          <Text style={[styles.small, { flex: 1 }]} testID="forecast-error">
-            {forecast ? `Couldn't refresh. ${error}` : error}
-          </Text>
-          <Pressable accessibilityRole="button" onPress={retry} hitSlop={8} testID="forecast-retry">
-            <Text style={styles.link}>Retry</Text>
-          </Pressable>
-        </View>
-      )}
+      <Text style={styles.title}>7-DAY FORECAST</Text>
+      {body}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: { gap: space.sm },
-  head: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  title: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text },
-  strip: { gap: space.sm, paddingRight: space.sm },
-  card: {
-    width: 108,
-    gap: 4,
-    padding: space.sm,
+  title: { fontFamily: fonts.bodySemi, fontSize: 13, letterSpacing: 1, color: colors.muted },
+  tiles: { flexDirection: 'row', gap: 4 },
+  tile: {
+    flex: 1,
+    minHeight: 72,
+    alignItems: 'center',
+    paddingVertical: 6,
+    gap: 1,
     borderRadius: radius.md,
-    backgroundColor: colors.surfaceRaised,
+    backgroundColor: colors.ground,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  night: { backgroundColor: colors.surface },
-  name: { fontFamily: fonts.bodySemi, fontSize: 12, color: colors.subtle },
-  temp: { fontFamily: fonts.heading, fontSize: 24, color: colors.text },
-  short: { fontFamily: fonts.body, fontSize: 12, color: colors.text, minHeight: 32 },
-  windRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  tileOn: { borderColor: colors.accent },
+  dim: { opacity: 0.55 },
+  skeleton: { backgroundColor: colors.surfaceRaised, borderColor: colors.surfaceRaised },
+  tDay: { fontFamily: fonts.heading, fontSize: 15, color: colors.text },
+  tWind: { fontFamily: fonts.bodySemi, fontSize: 11, color: colors.subtle },
+  tSmall: { fontFamily: fonts.body, fontSize: 11, color: colors.muted },
+  tTemp: { fontFamily: fonts.bodySemi, fontSize: 11, color: colors.text },
   small: { fontFamily: fonts.body, fontSize: 12, color: colors.muted },
-  errRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  link: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.accent },
+  msg: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text },
+  link: { fontFamily: fonts.bodySemi, color: colors.accent },
+  card: { gap: 4, padding: space.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border },
+  cardHead: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: space.sm },
+  cardTitle: { fontFamily: fonts.heading, fontSize: 17, color: colors.text },
+  cardSun: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
+  cardBody: { fontFamily: fonts.body, fontSize: 13, color: colors.subtle },
+  retry: { alignSelf: 'flex-start', paddingHorizontal: space.lg, minHeight: 48, justifyContent: 'center', borderRadius: radius.md, backgroundColor: colors.tile },
+  retryText: { fontFamily: fonts.heading, fontSize: 16, color: colors.text },
 });

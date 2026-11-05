@@ -11,6 +11,7 @@ import {
   ScrollView,
   type ScrollViewInstance,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   useWindowDimensions,
@@ -23,8 +24,10 @@ import { BottomSheet, useBottomSheetScroll } from '@/components/BottomSheet';
 import { PlanTripHint } from '@/components/guide/PlanTripHint';
 import { LocateButton } from '@/components/map/LocateButton';
 import { PlaceMap } from '@/components/map/PlaceMap';
-import { SpotForecast } from '@/components/weather/SpotForecast';
-import { WindPanel } from '@/components/weather/WindPanel';
+import { NWS_SOURCE_URL, SpotForecast } from '@/components/weather/SpotForecast';
+import { WindReadout } from '@/components/weather/WindReadout';
+import { WIND_DEFAULT_ON, WIND_PREF_KEY } from '@/lib/weather/config';
+import { agoLabel } from '@/lib/weather/days';
 import { useWindOverlay, type Viewport } from '@/lib/weather/useWeather';
 import { StateParkSheet } from '@/components/StateParkSheet';
 import { BirdSuggestions, SpeciesResults, UnknownBird } from '@/components/SpeciesSearch';
@@ -142,8 +145,15 @@ export default function MapScreen() {
   const [planner, setPlanner] = useState(false);
   const [fullNotice, setFullNotice] = useState(false);
   const [layersOpen, setLayersOpen] = useState(false);
-  // Wind layer (NWS): off by default so the map never calls the weather service unasked.
-  const [windOn, setWindOn] = useState(false);
+  // Wind layer (NWS, spec wind-forecast 01): default from WIND_DEFAULT_ON (off), remembered like the basemap.
+  const [windOn, setWindOnState] = useState(WIND_DEFAULT_ON);
+  useEffect(() => {
+    readJson<boolean>(WIND_PREF_KEY, WIND_DEFAULT_ON).then((v) => setWindOnState(v === true), () => {});
+  }, []);
+  const setWindOn = (v: boolean) => {
+    setWindOnState(v);
+    void writeJson(WIND_PREF_KEY, v);
+  };
   const [viewport, setViewport] = useState<Viewport | null>(null);
   const wind = useWindOverlay(windOn, viewport);
   // The sheet's top never rises above the banner block (search, layers, banner, expanded notice).
@@ -323,6 +333,7 @@ export default function MapScreen() {
         onCenterChange={setMapCenter}
         onViewportChange={setViewport}
         wind={wind.samples}
+        windOpacity={wind.opacity}
         selectedId={selectedId}
         outline={detail.data?.outline}
         basemap={basemap}
@@ -390,21 +401,23 @@ export default function MapScreen() {
           >
             <Ionicons name="layers-outline" size={20} color={colors.text} />
           </Pressable>
-          <Pressable
-            accessibilityRole="switch"
-            accessibilityLabel="Wind layer"
-            accessibilityState={{ checked: windOn }}
-            onPress={() => setWindOn((v) => !v)}
-            style={[styles.layerButton, windOn && styles.layerButtonOn]}
-            testID="wind-button"
-          >
-            <Ionicons name="flag-outline" size={20} color={windOn ? colors.accent : colors.text} />
-          </Pressable>
         </View>
         {!bird && (searchFocused || query.trim().length >= 2) && (
           <BirdSuggestions query={query} matches={matchBirds(query)} chips={chips} onPick={(b) => runSpecies(b)} />
         )}
-        {windOn && <WindPanel now={wind.now} loading={wind.loading} error={wind.error} />}
+        {windOn && (
+          <WindReadout
+            hour={wind.hour}
+            index={wind.hourIndex}
+            count={wind.hourCount}
+            onStep={wind.setHour}
+            updated={wind.updated}
+            saved={wind.saved}
+            savedAgo={agoLabel(wind.savedAt)}
+            loading={wind.loading}
+            error={wind.error}
+          />
+        )}
         {layersOpen && (
           <View style={styles.layers} testID="layers-panel">
             <Text style={styles.layersTitle}>Map</Text>
@@ -419,6 +432,22 @@ export default function MapScreen() {
                 <Chip key={f.key} label={f.label} active={f.key === filter} onPress={() => setFilter(f.key)} />
               ))}
               <Chip label="Open today" icon="sunny-outline" active={openOnly} onPress={() => setOpenOnly((v) => !v)} />
+            </View>
+            <Text style={styles.layersTitle}>Overlays</Text>
+            <View style={styles.overlayRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.overlayLabel}>{wind.saved ? `Wind · saved ${agoLabel(wind.savedAt)}` : 'Wind'}</Text>
+                <Text style={styles.overlaySub}>{wind.needsSignal && !windOn ? 'Needs signal' : 'NWS forecast · arrows'}</Text>
+              </View>
+              <Switch
+                value={windOn}
+                onValueChange={setWindOn}
+                disabled={wind.needsSignal && !windOn}
+                accessibilityLabel="Wind"
+                trackColor={{ true: colors.accent, false: colors.border }}
+                thumbColor={colors.text}
+                testID="wind-switch"
+              />
             </View>
             <Chip
               label="Stocking planner"
@@ -795,7 +824,6 @@ function PlaceDetails({
           <Text style={styles.fine}>Next county release wk</Text>
         </View>
       )}
-      {expanded && <SpotForecast spotId={place.id} center={place.center} />}
       <View style={[ui.row, { gap: space.lg, flexWrap: 'wrap' }]}>
         <Pressable accessibilityRole="button" accessibilityLabel={saved ? 'Saved' : 'Save privately'} onPress={toggleSave} style={styles.linkTap}>
           <Text style={styles.link}>{saved ? '★ Saved' : '☆ Save'}</Text>
@@ -811,6 +839,8 @@ function PlaceDetails({
         </Pressable>
       </View>
       {saveError && <Notice tone="error">{saveError}</Notice>}
+      {/* Spec wind-forecast 03: below the verdict + buttons, above "More". */}
+      {expanded && <SpotForecast spotId={place.id} center={place.center} onSource={() => Linking.openURL(NWS_SOURCE_URL).catch(() => {})} />}
       <Pressable accessibilityRole="link" onPress={onMore} style={styles.linkTap} testID="more-about-spot">
         <Text style={styles.link}>More about this spot ›</Text>
       </Pressable>
@@ -934,6 +964,9 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: space.md,
   },
+  overlayRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 48 },
+  overlayLabel: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text },
+  overlaySub: { fontFamily: fonts.body, fontSize: 12, color: colors.muted },
   layersTitle: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.muted },
   layerButton: {
     width: touchTarget,
