@@ -14,7 +14,8 @@ grant usage on schema public, extensions, auth, storage to anon, authenticated, 
 create table auth.users (id uuid primary key, email text, is_anonymous boolean not null default false, created_at timestamptz default now());
 
 create function auth.uid() returns uuid language sql stable as $$
-  select nullif(current_setting('request.jwt.claims', true)::json ->> 'sub', '')::uuid
+  -- Like hosted auth.uid(): an empty claims setting (left over after a SET LOCAL) means no user.
+  select nullif(nullif(current_setting('request.jwt.claims', true), '')::json ->> 'sub', '')::uuid
 $$;
 
 create function auth.jwt() returns jsonb language sql stable as $$
