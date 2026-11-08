@@ -57,6 +57,9 @@ export interface PlaceMapProps {
   onCenterChange?: (center: LngLat) => void;
 }
 
+// Keep fixed for pin contrast; do not follow colors.border if that UI token is later lightened.
+export const unpublishedPinStroke = '#2A4A38';
+
 export const pinColor: Record<PlaceType, string> = {
   game_land: colors.text,
   stocking: colors.accent,

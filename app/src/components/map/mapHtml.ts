@@ -3,7 +3,7 @@ import { colors } from '@/theme/tokens';
 import { AWS_TERRARIUM, CONTOUR_THRESHOLDS_FT, DEM_ATTRIBUTION, DEM_MAXZOOM, mapAssets, type MapAssets } from '@/lib/mapConfig';
 
 import { selectedOutlineLayers, terrainLayers } from './terrainStyle';
-import { pinColor, terrainBasemapEnabled } from './types';
+import { pinColor, terrainBasemapEnabled, unpublishedPinStroke } from './types';
 import { contourJs, pmtilesJs } from './vendor/terrainLibs';
 // UMD build with an inline worker, bundled into the page (no CDN at runtime), so it
 // runs from an about:blank WebView/iframe. Regenerate with app/scripts/vendor-maplibre.mjs.
@@ -349,7 +349,7 @@ ${terrain ? `<script>${pmtilesJs}</script>\n<script>${contourJs}</script>` : ''}
       'circle-color': ['match', ['get', 'type'],
         'stocking', '${pinColor.stocking}', 'dove_field', '${pinColor.dove_field}', '${pinColor.game_land}'],
       'circle-opacity': ['case', ['get', 'open'], 1, ['to-boolean', ['get', 'unknown']], 1, 0.55],
-      'circle-stroke-width': 2, 'circle-stroke-color': ['case', ['to-boolean', ['get', 'unknown']], '${colors.muted}', '${colors.ground}'] } });
+      'circle-stroke-width': 2, 'circle-stroke-color': ['case', ['to-boolean', ['get', 'unknown']], '${unpublishedPinStroke}', '${colors.ground}'] } });
     // Species search: results ranked 11-20 stay small dots; ranked pins get a bigger orange tap target.
     map.addLayer({ id: 'places-rank', type: 'circle', source: 'places',
       filter: ['all', ['>=', ['get', 'rank'], 1], ['<=', ['get', 'rank'], 10]],

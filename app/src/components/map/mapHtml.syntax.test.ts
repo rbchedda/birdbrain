@@ -1,6 +1,7 @@
 import vm from 'node:vm';
 import { colors } from '@/theme/tokens';
 import { buildMapHtml, mapHtml } from './mapHtml';
+import { unpublishedPinStroke } from './types';
 
 // Guards against template-literal escaping bugs that blank the map on device.
 it('every inline script in mapHtml parses', () => {
@@ -25,8 +26,10 @@ it('has the species-search rank layer, numbered markers and fit/center messages'
 });
 
 // Unpublished pins need a distinct ring, not a barely perceptible fade.
-it('keeps unpublished pins fully opaque with a muted stroke; closed pins stay faded', () => {
+it('keeps unpublished pins fully opaque with a fixed high-contrast stroke; closed pins stay faded', () => {
+  expect(unpublishedPinStroke).toBe('#2A4A38');
   const html = buildMapHtml();
   expect(html).toContain("'circle-opacity': ['case', ['get', 'open'], 1, ['to-boolean', ['get', 'unknown']], 1, 0.55]");
-  expect(html).toContain(`'circle-stroke-color': ['case', ['to-boolean', ['get', 'unknown']], '${colors.muted}', '${colors.ground}']`);
+  expect(html).toContain("'circle-stroke-width': 2");
+  expect(html).toContain(`'circle-stroke-color': ['case', ['to-boolean', ['get', 'unknown']], '${unpublishedPinStroke}', '${colors.ground}']`);
 });
