@@ -328,7 +328,6 @@ export function computeSpotVerdict(opts: ComputeVerdictOpts): SpotVerdict {
     word = wordFromRates(rates, recentFlushes);
     line = ownerLine(word, counted, withHoursAll.length);
   }
-  if (closed.unpublished) line = `${closed.unpublished} ${line}`.trim();
 
   const nForHonest = audience === 'crew' ? eligible.length : allAt.length;
   const honestLine = ownerHonestLine(Math.max(nForHonest, counted.length));

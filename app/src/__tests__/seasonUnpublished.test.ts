@@ -68,10 +68,11 @@ describe.each(['2027-07-01', '2027-09-15'])('unpublished season on %s', (ymd) =>
     expect(planMaxDate(ymd)).toBe('2028-06-30');
   });
 
-  it('spot verdict is never Closed; its line leads with the unpublished copy', () => {
+  it('spot verdict is never Closed and keeps season copy out of the owner line', () => {
     const v = computeSpotVerdict({ place: dove, entries: [], reference: ymd });
     expect(v.word).not.toBe('Closed');
-    expect(v.line.startsWith(LINE)).toBe(true);
+    expect(v.line).not.toContain(LINE);
+    expect(v.line).toBe("You haven't logged a hunt here yet. Log one to start your record.");
     expect(computeSpotVerdict({ place: dove, entries: [], reference: '2027-06-15' }).word).toBe('Closed');
   });
 

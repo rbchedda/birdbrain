@@ -802,6 +802,9 @@ function PlaceDetails({
             {place.type === 'stocking' ? ` · ${STOCKING_PIN_NOTE}` : ''}
           </Text>
         </View>
+        {!!today.unpublished && (
+          <Tag label="Dates not published" tone="neutral" testID="unpublished-dates-chip" />
+        )}
         {openTags(openSpecies(place, today.date)).map((t) => (
           <Tag key={t} label={t} tone="accent" />
         ))}
@@ -894,9 +897,9 @@ function PlaceDetails({
         ))}
         <Text style={styles.fine} testID="place-hours-note">
           Legal hours come from the official PGC hunting-hours table for this spot’s zone, with each species’ rules (the
-          same as the Open today card on Plan). Where the table has no time, check the digest. {shownSeason.current
-            ? `${shownSeason.set.year} statewide dates; WMU and zone rules vary.`
-            : unpublishedLine(seasonYearOf(today.date))}
+          same as the Open today card on Plan). Where the table has no time, check the digest.{shownSeason.current
+            ? ` ${shownSeason.set.year} statewide dates; WMU and zone rules vary.`
+            : ''}
         </Text>
         <Pressable
           accessibilityRole="link"

@@ -348,8 +348,8 @@ ${terrain ? `<script>${pmtilesJs}</script>\n<script>${contourJs}</script>` : ''}
       'circle-radius': ['interpolate', ['linear'], ['zoom'], 6, 5, 11, 9],
       'circle-color': ['match', ['get', 'type'],
         'stocking', '${pinColor.stocking}', 'dove_field', '${pinColor.dove_field}', '${pinColor.game_land}'],
-      'circle-opacity': ['case', ['get', 'open'], 1, ['to-boolean', ['get', 'unknown']], 0.8, 0.55],
-      'circle-stroke-width': 2, 'circle-stroke-color': '${colors.ground}' } });
+      'circle-opacity': ['case', ['get', 'open'], 1, ['to-boolean', ['get', 'unknown']], 1, 0.55],
+      'circle-stroke-width': 2, 'circle-stroke-color': ['case', ['to-boolean', ['get', 'unknown']], '${colors.muted}', '${colors.ground}'] } });
     // Species search: results ranked 11-20 stay small dots; ranked pins get a bigger orange tap target.
     map.addLayer({ id: 'places-rank', type: 'circle', source: 'places',
       filter: ['all', ['>=', ['get', 'rank'], 1], ['<=', ['get', 'rank'], 10]],
