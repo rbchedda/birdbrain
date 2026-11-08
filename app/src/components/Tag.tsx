@@ -4,9 +4,9 @@ import { colors, fonts, radius } from '@/theme/tokens';
 
 type Tone = 'accent' | 'dove' | 'neutral';
 
-export function Tag({ label, tone = 'neutral' }: { label: string; tone?: Tone }) {
+export function Tag({ label, tone = 'neutral', testID }: { label: string; tone?: Tone; testID?: string }) {
   return (
-    <View style={[styles.tag, toneStyles[tone].box]}>
+    <View style={[styles.tag, toneStyles[tone].box]} testID={testID}>
       <Text style={[styles.text, toneStyles[tone].text]}>{label}</Text>
     </View>
   );

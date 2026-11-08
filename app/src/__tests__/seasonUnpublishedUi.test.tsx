@@ -35,6 +35,12 @@ it('spot sheet: unpublished line, no Closed/Out of season, no legal hours in Tod
   expect(await screen.findByTestId('today-row')).toHaveTextContent(`Today: season dates not published${LINE}`);
   expect(screen.getByText(/Season dates not published ·/)).toBeTruthy();
   expect(screen.getByTestId('season-unpublished-line')).toHaveTextContent(LINE);
+  expect(screen.getByTestId('unpublished-dates-chip')).toHaveTextContent('Dates not published');
+  expect(screen.getByTestId('spot-verdict')).not.toHaveTextContent(LINE, { exact: false });
+  expect(screen.getByTestId('spot-verdict')).toHaveTextContent("You haven't logged a hunt here yet. Log one to start your record.", { exact: false });
+  expect(screen.getByTestId('place-hours-note')).toHaveTextContent(/Where the table has no time, check the digest\.$/);
+  expect(screen.getByTestId('place-hours-note')).not.toHaveTextContent(LINE, { exact: false });
+  expect(screen.queryByText(/^(Pheasant|Grouse|Dove) open$/)).toBeNull();
   expect(screen.queryByText(/Out of season|No season open today/)).toBeNull();
   expect(screen.queryByText('Migratory birds')).toBeNull();
   expect(screen.queryByText(/^Closed$/)).toBeNull();
