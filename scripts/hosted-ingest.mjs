@@ -1,13 +1,13 @@
 // Run the repo's ingest (ingest/arcgis.mjs + ingest/stocking_windows.mjs) against hosted
-// Supabase when Postgres ports are blocked: a db adapter with query(text, params) that
-// inlines params as SQL literals and sends them through the Management API query endpoint.
-// Statements between begin/commit are buffered and sent as one transaction on commit; if the
-// batch is too big, the idempotent upserts go in chunks first and the deletes/state in a final
-// transaction. Re-runnable: everything is upsert + delete-missing. Never prints secrets.
-//   node scripts/hosted-ingest.mjs [--force]
+// Supabase. Prefer DATABASE_URL as the ingest_writer pooler role (parameterised
+// queries, least privilege; see supabase/migrations/20261109004000_ingest_writer.sql).
+// When Postgres ports are blocked, a Management API adapter inlines params as SQL
+// literals and sends them through the query endpoint. Use a scoped, expiring
+// SUPABASE_ACCESS_TOKEN for that fallback only (I8; quote-doubling assumes
+// standard_conforming_strings = on). Never prints secrets.
+//   DATABASE_URL=postgres://ingest_writer... node scripts/hosted-ingest.mjs [--force]
 import { readFileSync } from 'node:fs';
-import { q } from './hosted-apply-migrations.mjs';
-import { SOURCES, ingestCounties, ingestSource } from '../ingest/arcgis.mjs';
+import { SOURCES, ingestCounties, ingestSource, pgClientConfig } from '../ingest/arcgis.mjs';
 import { loadSeed } from '../ingest/stocking_windows.mjs';
 
 const pgArray = (a) => `{${a.map((v) => (v == null ? 'NULL' : `"${String(v).replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"`)).join(',')}}`;
@@ -24,7 +24,8 @@ export const inline = (text, params = []) => text.replace(/\$(\d+)/g, (_, n) => 
   if (Number(n) > params.length) throw new Error(`missing param $${n}`); return literal(params[Number(n) - 1]);
 });
 const CHUNK = 3_000_000;
-export function managementDb(run = q) {
+export function managementDb(run) {
+  if (typeof run !== 'function') throw new Error('managementDb requires a query function');
   let buf = null;
   return {
     async query(text, params) {
@@ -52,10 +53,27 @@ export function managementDb(run = q) {
     },
   };
 }
+async function openDb() {
+  if (process.env.DATABASE_URL) {
+    const { default: pg } = await import('pg');
+    const client = new pg.Client(pgClientConfig(process.env.DATABASE_URL));
+    await client.connect();
+    return { db: client, close: () => client.end() };
+  }
+  console.warn('DATABASE_URL unset; falling back to the Management API. Prefer a pooler URL as ingest_writer.');
+  const { q } = await import('./hosted-apply-migrations.mjs');
+  return { db: managementDb(q), close: () => {} };
+}
+
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const db = managementDb(); const force = process.argv.includes('--force');
-  console.log(JSON.stringify(await ingestCounties(db, { force })));
-  for (const n of Object.keys(SOURCES)) console.log(JSON.stringify(await ingestSource(db, SOURCES[n], { force })));
-  const seed = JSON.parse(readFileSync(new URL('../data/pgc/pheasant-allocation-2026-27.json', import.meta.url), 'utf8'));
-  console.log(JSON.stringify(await loadSeed(db, seed)));
+  const { db, close } = await openDb();
+  const force = process.argv.includes('--force');
+  try {
+    console.log(JSON.stringify(await ingestCounties(db, { force })));
+    for (const n of Object.keys(SOURCES)) console.log(JSON.stringify(await ingestSource(db, SOURCES[n], { force })));
+    const seed = JSON.parse(readFileSync(new URL('../data/pgc/pheasant-allocation-2026-27.json', import.meta.url), 'utf8'));
+    console.log(JSON.stringify(await loadSeed(db, seed)));
+  } finally {
+    await close();
+  }
 }

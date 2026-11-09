@@ -1,0 +1,25 @@
+# Copy this file to .github/workflows/test.yml to take effect.
+# The default GitHub token cannot push changes under .github/workflows/
+# (missing `workflow` scope); a repo admin should copy or push it.
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run db:test
+      - run: node --test 'ingest/*.test.mjs' 'scripts/*.test.mjs'

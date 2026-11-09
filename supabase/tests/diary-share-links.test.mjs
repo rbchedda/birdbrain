@@ -17,6 +17,9 @@ let token;
 const q = (user, sql, params = []) => as(db, 'authenticated', user, (tx) => tx.query(sql, params));
 const rows = async (user, sql, params) => (await q(user, sql, params)).rows;
 const anon = (sql, params = []) => as(db, 'anon', null, (tx) => tx.query(sql, params));
+// live_at is now greatest(hunt-date rule, share_links.created_at + 12h).
+const ageLink = (linkId) =>
+  db.query(`update public.share_links set created_at = now() - interval '13 hours' where id = $1`, [linkId]);
 
 const details = {
   hours: 3.5,
@@ -132,6 +135,7 @@ describe('non-owner / anon cannot manage', () => {
     await assert.rejects(q(bob, 'select * from public.create_diary_share_link($1, $2)', [clientId, crewId]), /entry not found/);
     const t = (await rows(alice, 'select * from public.create_diary_share_link($1, $2)', [clientId, crewId]))[0];
     token = t.token;
+    await ageLink(t.link_id);
     await assert.rejects(q(bob, 'select public.revoke_diary_share_link($1)', [clientId]), /entry not found/);
     await assert.rejects(anon('select * from public.create_diary_share_link($1, $2)', [clientId, crewId]), /permission denied/);
     await assert.rejects(anon('select * from public.share_links'), /permission denied/);
@@ -190,13 +194,16 @@ describe('public read_shared_diary (SQL flag defaults OFF)', () => {
 
     const created = (await rows(alice, 'select * from public.create_public_diary_share_link($1)', [clientId]))[0];
     pubToken = created.token;
+    await ageLink(created.link_id);
     // Rotating to public revoked the crew link.
     assert.equal((await rows(bob, 'select * from public.read_crew_shared_diary($1)', [token])).length, 0);
 
     const r = (await anon('select * from public.read_shared_diary($1)', [pubToken])).rows[0];
     assert.equal(r.live, true);
     assert.equal(r.county, 'Centre');
-    assert.ok(typeof r.blurred_lng === 'number');
+    // Public audience is county only (repo L7); columns remain for compatibility.
+    assert.equal(r.blurred_lng, null);
+    assert.equal(r.blurred_lat, null);
     assert.equal(r.species, undefined);
     assert.equal(r.caption, undefined);
     assert.equal(r.dogs, undefined);
@@ -241,6 +248,7 @@ describe('public read_shared_diary (SQL flag defaults OFF)', () => {
 describe('entry delete invalidates', () => {
   it('cascades share_links away', async () => {
     const created = (await rows(alice, 'select * from public.create_diary_share_link($1, $2)', [clientId, crewId]))[0];
+    await ageLink(created.link_id);
     assert.equal((await rows(bob, 'select * from public.read_crew_shared_diary($1)', [created.token])).length, 1);
     await q(alice, 'delete from public.hunt_log_entries where client_id = $1', [clientId]);
     assert.equal((await rows(bob, 'select * from public.read_crew_shared_diary($1)', [created.token])).length, 0);
@@ -297,16 +305,26 @@ describe('view counts schema and bot filter', () => {
       JSON.stringify({ hours: 1, flushes: 1, shots: 0, birds: [], cover: [], dogs: [], photos: [] }),
     ]);
     const created = (await rows(alice, 'select * from public.create_diary_share_link($1, $2)', [viewClient, crewId]))[0];
-    await anon(`select public.record_share_link_view($1, $2, $3)`, [
-      created.token,
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit/537.36 Chrome/120.0.0.0',
-      '203.0.113.10',
-    ]);
-    await anon(`select public.record_share_link_view($1, $2, $3)`, [
-      created.token,
-      'Googlebot/2.1',
-      '203.0.113.11',
-    ]);
+    await as(db, 'anon', null, async (tx) => {
+      await tx.query(`select set_config('request.headers', $1, true)`, [
+        JSON.stringify({ 'cf-connecting-ip': '203.0.113.10' }),
+      ]);
+      await tx.query(`select public.record_share_link_view($1, $2, $3)`, [
+        created.token,
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit/537.36 Chrome/120.0.0.0',
+        '198.51.100.9', // spoofed p_ip must be ignored
+      ]);
+    });
+    await as(db, 'anon', null, async (tx) => {
+      await tx.query(`select set_config('request.headers', $1, true)`, [
+        JSON.stringify({ 'cf-connecting-ip': '203.0.113.11' }),
+      ]);
+      await tx.query(`select public.record_share_link_view($1, $2, $3)`, [
+        created.token,
+        'Googlebot/2.1',
+        '203.0.113.11',
+      ]);
+    });
     const n = (
       await db.query(`select view_count from public.share_link_view_counts where link_id = $1`, [created.link_id])
     ).rows[0].view_count;

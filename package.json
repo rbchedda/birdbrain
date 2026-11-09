@@ -6,7 +6,7 @@
     "db:test": "node --test --test-concurrency=2 'supabase/tests/*.test.mjs'",
     "ingest": "node ingest/arcgis.mjs",
     "ingest:describe": "node ingest/arcgis.mjs --describe",
-    "test": "npm run db:test && node --test --test-concurrency=2 'ingest/*.test.mjs' 'scripts/basemap/*.test.mjs' && npm --prefix app test",
+    "test": "npm run db:test && node --test --test-concurrency=2 'ingest/*.test.mjs' 'scripts/*.test.mjs' 'scripts/basemap/*.test.mjs' && npm --prefix app test",
     "basemap:build": "bash scripts/basemap/build.sh",
     "basemap:dem": "node scripts/basemap/fetch-dem.mjs",
     "basemap:glyphs": "node scripts/basemap/build-glyphs.mjs",

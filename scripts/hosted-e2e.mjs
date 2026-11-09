@@ -12,7 +12,8 @@
 // --read-only does the signed-out reads only: no sign-ups, writes or cleanup.
 // Everything created is tracked and removed in finally and on SIGINT. Logs are redacted.
 import fs from 'node:fs'; import crypto from 'node:crypto'; import { createRequire } from 'node:module';
-import { assertTargetAllowed, Cleanup, makeLogger, parseArgs } from './e2e/core.mjs';
+import { adminCreateUser, adminDeleteUser, adminGetUser, authAdminConfigured } from './auth-admin.mjs';
+import { assertTargetAllowed, Cleanup, isLocalUrl, makeLogger, parseArgs } from './e2e/core.mjs';
 import { runAll } from './e2e/checks.mjs';
 
 const lit = (s) => `'${String(s).replaceAll("'", "''")}'`;
@@ -52,23 +53,49 @@ async function adminSql({ databaseUrl, allowHosted }) {
   return { query: q, close: () => {} };
 }
 
-function makeAdmin(sql, mk) {
+function makeAdmin(sql, mk, { allowHosted, url, databaseUrl } = {}) {
   const tag = crypto.randomBytes(4).toString('hex');
+  const ids = [];
+  const useAuthAdmin = authAdminConfigured();
+  if (allowHosted && !useAuthAdmin) {
+    throw new Error('hosted user provisioning requires SUPABASE_AUTH_ADMIN_KEY or SUPABASE_SERVICE_ROLE_KEY (Auth admin API). Raw SQL into auth.users is not used against hosted.');
+  }
+  if (!useAuthAdmin && !sql) throw new Error('set local DATABASE_URL or Auth admin key');
   return {
     tag,
     async createUser(label) {
-      const id = crypto.randomUUID(), email = `e2e-${label}-${tag}@example.invalid`, pw = crypto.randomBytes(18).toString('base64url');
-      await sql.query(`insert into auth.users (instance_id,id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at,confirmation_token,recovery_token,email_change_token_new,email_change)
-        values ('00000000-0000-0000-0000-000000000000',${lit(id)},'authenticated','authenticated',${lit(email)},extensions.crypt(${lit(pw)},extensions.gen_salt('bf')),now(),'{"provider":"email","providers":["email"]}','{}',now(),now(),'','','','');
-        insert into auth.identities (id,user_id,provider_id,identity_data,provider,created_at,updated_at,last_sign_in_at)
-        values (gen_random_uuid(),${lit(id)},${lit(id)},jsonb_build_object('sub',${lit(id)},'email',${lit(email)},'email_verified',true),'email',now(),now(),now());`);
+      const email = `e2e-${label}-${tag}@example.invalid`, pw = crypto.randomBytes(18).toString('base64url');
+      let id;
+      if (useAuthAdmin) {
+        ({ id } = await adminCreateUser({ url, email, password: pw }));
+      } else {
+        if (databaseUrl && !isLocalUrl(databaseUrl.replace(/^postgres(ql)?:/, 'http:'))) {
+          throw new Error('refusing raw SQL into auth.users against a non-local DATABASE_URL');
+        }
+        id = crypto.randomUUID();
+        await sql.query(`insert into auth.users (instance_id,id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at,confirmation_token,recovery_token,email_change_token_new,email_change)
+          values ('00000000-0000-0000-0000-000000000000',${lit(id)},'authenticated','authenticated',${lit(email)},extensions.crypt(${lit(pw)},extensions.gen_salt('bf')),now(),'{"provider":"email","providers":["email"]}','{}',now(),now(),'','','','');
+          insert into auth.identities (id,user_id,provider_id,identity_data,provider,created_at,updated_at,last_sign_in_at)
+          values (gen_random_uuid(),${lit(id)},${lit(id)},jsonb_build_object('sub',${lit(id)},'email',${lit(email)},'email_verified',true),'email',now(),now(),now());`);
+      }
+      ids.push(id);
       const sb = mk(); const si = await sb.auth.signInWithPassword({ email, password: pw });
-      if (si.error) { await sql.query(`delete from auth.users where id = ${lit(id)}`); throw new Error(`sign-in failed: ${si.error.message}`); }
+      if (si.error) {
+        if (useAuthAdmin) await adminDeleteUser({ url, id }); else await sql.query(`delete from auth.users where id = ${lit(id)}`);
+        throw new Error(`sign-in failed: ${si.error.message}`);
+      }
       return { id, email, client: wrapSupabase(sb) };
     },
-    deleteUser: (id) => sql.query(`delete from auth.users where id = ${lit(id)}`),
+    deleteUser: (id) => useAuthAdmin ? adminDeleteUser({ url, id }) : sql.query(`delete from auth.users where id = ${lit(id)}`),
     deleteCrew: (id) => sql.query(`delete from public.groups where id = ${lit(id)} and kind = 'crew'`),
-    leftovers: async () => Number((await sql.query(`select count(*)::int n from auth.users where email like ${lit(`e2e-%-${tag}@example.invalid`)}`))[0].n),
+    leftovers: async () => {
+      if (useAuthAdmin) {
+        let n = 0;
+        for (const id of ids) { if (await adminGetUser({ url, id })) n += 1; }
+        return n;
+      }
+      return Number((await sql.query(`select count(*)::int n from auth.users where email like ${lit(`e2e-%-${tag}@example.invalid`)}`))[0].n);
+    },
   };
 }
 
@@ -98,7 +125,7 @@ async function main() {
   log(`target ${new URL(env.url).host}${args.readOnly ? ' (read-only)' : ''}`);
   let failures = [];
   try {
-    if (!args.readOnly) { sql = await adminSql({ ...env, allowHosted: args.allowHosted }); admin = makeAdmin(sql, mk); }
+    if (!args.readOnly) { sql = await adminSql({ ...env, allowHosted: args.allowHosted }); admin = makeAdmin(sql, mk, { allowHosted: args.allowHosted, url: env.url, databaseUrl: env.databaseUrl }); }
     await runAll({ anon: wrapSupabase(mk()), admin }, { readOnly: args.readOnly, rec, cleanup });
   } catch (e) {
     rec('run aborted', false, e.message);
