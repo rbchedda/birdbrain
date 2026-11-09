@@ -343,7 +343,7 @@ export interface DiaryShareLink {
   liveAt: string;
 }
 
-/** Public reader payload: county + blur only (read_shared_diary). */
+/** Public reader payload: county only (blur columns stay on the RPC but are always null). */
 export interface SharedDiaryView {
   live: boolean;
   county: string | null;
