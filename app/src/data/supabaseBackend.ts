@@ -68,11 +68,9 @@ function toCounts(v: unknown): BirdCounts | null {
 
 /**
  * The only upload path for diary-photos and post-photos. Re-encodes first so
- * the original file (and its EXIF/GPS) never leaves the device. When
- * photoStripLive is on, also asks the hosted strip-diary-photo function to
- * overwrite the stored object with a stripped derivative. That invoke is
- * skipped while the flag is off so fieldtest against undeployed functions
- * does not break uploads.
+ * the original file (and its EXIF/GPS) never leaves the device, then sends
+ * the cleaned JPEG to strip-diary-photo, which is the only writer (service
+ * role). Clients cannot storage.upload into these buckets.
  */
 async function uploadReencodedPhoto(
   sb: SupabaseClient,
@@ -81,12 +79,16 @@ async function uploadReencodedPhoto(
   localUri: string,
 ): Promise<string> {
   const body = await reencodePhotoForUpload(localUri);
-  const res = await sb.storage.from(bucket).upload(path, body, { contentType: 'image/jpeg', upsert: true });
-  if (res.error) throw new Error(res.error.message);
-  if (flags.photoStripLive) {
-    const fn = await sb.functions.invoke('strip-diary-photo', { body: { bucket, path } });
-    if (fn.error) throw new Error(fn.error.message);
-  }
+  const buf = body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength) as ArrayBuffer;
+  const fn = await sb.functions.invoke('strip-diary-photo', {
+    headers: {
+      'x-birdbrain-bucket': bucket,
+      'x-birdbrain-path': path,
+      'content-type': 'image/jpeg',
+    },
+    body: buf,
+  });
+  if (fn.error) throw new Error(fn.error.message || "Couldn't upload your photo. Please try again.");
   return path;
 }
 

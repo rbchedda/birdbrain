@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { createSupabaseBackend } from '@/data/supabaseBackend';
+import { PHOTO_ADD_UPDATE_APP_MESSAGE } from '@/lib/reencodePhotoForUpload';
 import { jpegHasExifSegment, jpegHasGpsExif } from '@/lib/stripJpegMetadata';
 
 import { buildGpsJpeg } from './fixtures/gpsJpeg';
@@ -18,7 +19,7 @@ jest.mock('expo-image-manipulator', () => ({
   ImageManipulator: { manipulate: (...args: unknown[]) => (mockManipulate as Function)(...args) },
 }));
 
-function fakeSb(uploads: { bucket: string; path: string; body: ArrayBuffer | Uint8Array; contentType?: string }[], invokes: unknown[]) {
+function fakeSb(invokes: { name: string; args: { headers?: Record<string, string>; body?: ArrayBuffer | Uint8Array } }[]) {
   const tagged = buildGpsJpeg();
   globalThis.fetch = jest.fn(async (uri: string) => {
     if (uri !== savedUri) throw new Error(`unexpected fetch of ${uri}`);
@@ -33,15 +34,14 @@ function fakeSb(uploads: { bucket: string; path: string; body: ArrayBuffer | Uin
       getSession: async () => ({ data: { session: { user: { id: uid, is_anonymous: false } } } }),
     },
     storage: {
-      from: (bucket: string) => ({
-        upload: async (path: string, body: ArrayBuffer | Uint8Array, opts?: { contentType?: string }) => {
-          uploads.push({ bucket, path, body, contentType: opts?.contentType });
-          return { data: { path }, error: null };
+      from: () => ({
+        upload: async () => {
+          throw new Error('clients must not storage.upload photo buckets');
         },
       }),
     },
     functions: {
-      invoke: jest.fn(async (name: string, args: unknown) => {
+      invoke: jest.fn(async (name: string, args: { headers?: Record<string, string>; body?: ArrayBuffer | Uint8Array }) => {
         invokes.push({ name, args });
         return { data: { ok: true }, error: null };
       }),
@@ -50,44 +50,68 @@ function fakeSb(uploads: { bucket: string; path: string; body: ArrayBuffer | Uin
   return sb;
 }
 
-describe('uploadDiaryPhoto strips EXIF before upload', () => {
+describe('uploadDiaryPhoto goes through strip-diary-photo', () => {
   const saved = { ...process.env };
   afterEach(() => {
     for (const k of Object.keys(process.env)) {
       if (!(k in saved)) delete process.env[k];
     }
     Object.assign(process.env, saved);
-    jest.resetModules();
   });
 
-  it('uploads only re-encoded bytes with no GPS or EXIF, and does not call the edge function while the flag is off', async () => {
+  it('re-encodes first, invokes the function with cleaned JPEG bytes, and never storage.uploads', async () => {
     delete process.env.EXPO_PUBLIC_FLAG_PHOTO_STRIP_LIVE;
-    const uploads: { bucket: string; path: string; body: ArrayBuffer | Uint8Array; contentType?: string }[] = [];
-    const invokes: unknown[] = [];
-    const sb = fakeSb(uploads, invokes);
+    const invokes: { name: string; args: { headers?: Record<string, string>; body?: ArrayBuffer | Uint8Array } }[] = [];
+    const sb = fakeSb(invokes);
     const path = await createSupabaseBackend(sb).uploadDiaryPhoto('entry-1', { id: 'p1', localUri: originalUri });
     expect(path).toBe(`${uid}/entry-1/p1.jpg`);
-    expect(uploads).toHaveLength(1);
-    expect(uploads[0].bucket).toBe('diary-photos');
-    expect(uploads[0].path).toBe(path);
-    expect(uploads[0].contentType).toBe('image/jpeg');
-    const body = uploads[0].body instanceof Uint8Array ? uploads[0].body : new Uint8Array(uploads[0].body);
+    expect(invokes).toHaveLength(1);
+    expect(invokes[0].name).toBe('strip-diary-photo');
+    expect(invokes[0].args.headers?.['x-birdbrain-bucket']).toBe('diary-photos');
+    expect(invokes[0].args.headers?.['x-birdbrain-path']).toBe(path);
+    expect(invokes[0].args.headers?.['content-type']).toBe('image/jpeg');
+    const raw = invokes[0].args.body!;
+    const body = raw instanceof Uint8Array ? raw : new Uint8Array(raw);
     expect(jpegHasGpsExif(body)).toBe(false);
     expect(jpegHasExifSegment(body)).toBe(false);
-    expect(invokes).toEqual([]);
     expect(mockManipulate).toHaveBeenCalledWith(originalUri);
   });
+});
 
-  it('invokes strip-diary-photo after upload when the live flag is on', async () => {
-    process.env.EXPO_PUBLIC_FLAG_PHOTO_STRIP_LIVE = '1';
+describe('uploadDiaryPhoto fail-closed when the native module is missing', () => {
+  it('throws the friendly update-app error and never uploads raw bytes', async () => {
     jest.resetModules();
-    const { createSupabaseBackend: createFresh } = require('@/data/supabaseBackend') as typeof import('@/data/supabaseBackend');
-    const uploads: { bucket: string; path: string; body: ArrayBuffer | Uint8Array }[] = [];
+    jest.doMock('@/lib/photoManipulatorNative', () => ({
+      getExpoImageManipulatorNative: () => null,
+    }));
     const invokes: unknown[] = [];
-    const sb = fakeSb(uploads, invokes);
-    const path = await createFresh(sb).uploadDiaryPhoto('entry-1', { id: 'p1', localUri: originalUri });
-    expect(invokes).toEqual([{ name: 'strip-diary-photo', args: { body: { bucket: 'diary-photos', path } } }]);
-    const body = uploads[0].body instanceof Uint8Array ? uploads[0].body : new Uint8Array(uploads[0].body);
-    expect(jpegHasGpsExif(body)).toBe(false);
+    const uploads: unknown[] = [];
+    const { createSupabaseBackend: createFresh } = require('@/data/supabaseBackend') as typeof import('@/data/supabaseBackend');
+    const { PHOTO_ADD_UPDATE_APP_MESSAGE: msg } = require('@/lib/reencodePhotoForUpload') as typeof import('@/lib/reencodePhotoForUpload');
+    expect(msg).toBe(PHOTO_ADD_UPDATE_APP_MESSAGE);
+
+    const sb = {
+      auth: { getSession: async () => ({ data: { session: { user: { id: uid, is_anonymous: false } } } }) },
+      storage: {
+        from: () => ({
+          upload: async (...args: unknown[]) => {
+            uploads.push(args);
+            return { data: { path: 'leaked' }, error: null };
+          },
+        }),
+      },
+      functions: {
+        invoke: jest.fn(async (...args: unknown[]) => {
+          invokes.push(args);
+          return { data: { ok: true }, error: null };
+        }),
+      },
+    } as unknown as SupabaseClient;
+
+    await expect(createFresh(sb).uploadDiaryPhoto('entry-1', { id: 'p1', localUri: originalUri })).rejects.toThrow(
+      PHOTO_ADD_UPDATE_APP_MESSAGE,
+    );
+    expect(uploads).toEqual([]);
+    expect(invokes).toEqual([]);
   });
 });

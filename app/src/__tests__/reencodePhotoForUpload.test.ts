@@ -1,4 +1,4 @@
-import { reencodePhotoForUpload } from '@/lib/reencodePhotoForUpload';
+import { PHOTO_ADD_UPDATE_APP_MESSAGE, reencodePhotoForUpload } from '@/lib/reencodePhotoForUpload';
 import { jpegHasExifSegment, jpegHasGpsExif } from '@/lib/stripJpegMetadata';
 
 import { buildGpsJpeg } from './fixtures/gpsJpeg';
@@ -52,5 +52,21 @@ describe('reencodePhotoForUpload', () => {
       arrayBuffer: async () => new Uint8Array([0x89, 0x50, 0x4e, 0x47]).buffer,
     }));
     await expect(reencodePhotoForUpload(originalUri)).rejects.toThrow(/not a JPEG/);
+  });
+});
+
+describe('reencodePhotoForUpload fail-closed', () => {
+  it('throws a friendly error and does not read the original file when the native module is missing', async () => {
+    jest.resetModules();
+    jest.doMock('@/lib/photoManipulatorNative', () => ({
+      getExpoImageManipulatorNative: () => null,
+    }));
+    const fetchMock = jest.fn();
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    const { reencodePhotoForUpload: reencode, PHOTO_ADD_UPDATE_APP_MESSAGE: msg } =
+      require('@/lib/reencodePhotoForUpload') as typeof import('@/lib/reencodePhotoForUpload');
+    expect(msg).toBe(PHOTO_ADD_UPDATE_APP_MESSAGE);
+    await expect(reencode('file:///tmp/original-gps.jpg')).rejects.toThrow(PHOTO_ADD_UPDATE_APP_MESSAGE);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

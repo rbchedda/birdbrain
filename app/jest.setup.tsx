@@ -68,3 +68,9 @@ jest.mock('expo-image-manipulator', () => {
     manipulateAsync: async (uri: string) => ({ uri: `${uri}-reencoded.jpg` }),
   };
 });
+
+// Default: the native module is present. Tests that cover a missing module
+// mock @/lib/photoManipulatorNative themselves.
+jest.mock('@/lib/photoManipulatorNative', () => ({
+  getExpoImageManipulatorNative: () => ({ manipulate: () => ({}) }),
+}));

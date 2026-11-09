@@ -63,10 +63,10 @@ export const flags = {
 
   /**
    * photoStripLive: OFF until the hosted strip-diary-photo function is deployed
-   * with verify_jwt and a fieldtest build includes expo-image-manipulator.
-   * While off, share-sheet copy uses softened wording and never promises that
-   * we remove location data. Client re-encode still runs; the edge function is
-   * not called (it is not on hosted yet).
+   * with verify_jwt, the photo-function-owns-upload migration is applied, and a
+   * fieldtest build includes expo-image-manipulator. While off, share-sheet
+   * copy uses softened wording and never promises that we remove location data.
+   * Uploads still go through the function; this flag only controls the copy.
    */
   get photoStripLive() {
     return process.env.EXPO_PUBLIC_FLAG_PHOTO_STRIP_LIVE === '1';
