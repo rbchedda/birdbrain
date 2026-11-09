@@ -89,7 +89,7 @@ describe('post location privacy', () => {
     await db.query(`update public.posts set public_after = now() - interval '1 minute' where id = $1`, [postId]);
   });
 
-  it('offsets the public location 1.5-3 km (keyed random blur, M1) and snaps to 0.01 deg', async () => {
+  it('offsets the public location 1.5-3 km from the true point (coarse-cell keyed blur, M1)', async () => {
     const { rows } = await as(db, 'authenticated', bob, (tx) =>
       tx.query(
         `select extensions.st_x(blurred_geom) x, extensions.st_y(blurred_geom) y,
@@ -99,9 +99,7 @@ describe('post location privacy', () => {
         [postId],
       ),
     );
-    const onGrid = (v) => Math.abs(v * 100 - Math.round(v * 100)) < 1e-6;
-    assert.ok(onGrid(rows[0].x) && onGrid(rows[0].y), `not on 0.01 grid: ${rows[0].x},${rows[0].y}`);
-    assert.ok(rows[0].d > 700 && rows[0].d < 3800, `offset was ${rows[0].d} m`);
+    assert.ok(rows[0].d >= 1500 - 0.01 && rows[0].d <= 3000 + 0.01, `offset was ${rows[0].d} m`);
   });
 
   it('hides the exact location from other users', async () => {
