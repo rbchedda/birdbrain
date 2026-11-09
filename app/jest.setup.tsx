@@ -54,3 +54,17 @@ jest.mock('expo-secure-store', () => {
     }),
   };
 });
+
+// expo-image-manipulator is native; tests that exercise re-encode mock it themselves.
+jest.mock('expo-image-manipulator', () => {
+  const saveAsync = async (uri?: string) => ({ uri: uri ?? 'file:///tmp/reencoded.jpg' });
+  const manipulate = (uri: string) => ({
+    renderAsync: async () => ({ saveAsync: async () => ({ uri: `${uri}-reencoded.jpg` }) }),
+  });
+  return {
+    SaveFormat: { JPEG: 'jpeg' },
+    manipulate,
+    ImageManipulator: { manipulate },
+    manipulateAsync: async (uri: string) => ({ uri: `${uri}-reencoded.jpg` }),
+  };
+});
