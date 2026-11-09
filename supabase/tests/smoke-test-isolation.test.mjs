@@ -6,6 +6,8 @@ import { as, createTestDb, createUser } from './db.mjs';
 
 const T = '00000000-0000-0000-0000-00000000aaaa';
 const R = '00000000-0000-0000-0000-00000000bbbb';
+const rollback2001 = readFileSync(new URL('../rollbacks/20261109002001_is_test_account_auth_uid.down.sql', import.meta.url), 'utf8');
+const rollback2000 = readFileSync(new URL('../rollbacks/20261109002000_smoke_guards_groups_profiles.down.sql', import.meta.url), 'utf8');
 const rollback = readFileSync(new URL('../rollbacks/20261105000200_smoke_test_isolation.down.sql', import.meta.url), 'utf8');
 
 test('test account is isolated, owner-only writes still work, rollback is clean', async () => {
@@ -47,6 +49,10 @@ test('test account is isolated, owner-only writes still work, rollback is clean'
   await assert.rejects(as(db, 'anon', null, (tx) => tx.query('select public.is_test_account()')));
 
   await db.exec('create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key, name text);');
+  // Later isolation migrations add a groups trigger and a profile guard that
+  // depend on these functions; roll those back first, then the original file.
+  await db.exec(rollback2001);
+  await db.exec(rollback2000);
   await db.exec(rollback);
   assert.equal((await db.query(`select to_regclass('private.test_accounts') t`)).rows[0].t, null);
   assert.equal((await db.query(`select count(*)::int n from pg_trigger where tgname in ('guard_test_account','guard_test_account_plan')`)).rows[0].n, 0);

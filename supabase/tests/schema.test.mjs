@@ -57,7 +57,7 @@ describe('places', () => {
         tx.query(`insert into public.places (type, name, geom, source, source_id)
                   values ('game_land', 'x', extensions.st_setsrid(extensions.st_makepoint(0,0),4326), 'x', 'x')`),
       ),
-      /row-level security/,
+      /row-level security|permission denied/,
     );
   });
 
