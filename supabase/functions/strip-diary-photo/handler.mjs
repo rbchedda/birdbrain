@@ -1,14 +1,15 @@
 /**
- * Request handler for strip-diary-photo. Injectable deps so Node tests can
- * cover JWT, path and strip logic without Deno or a live Supabase project.
+ * Request handler for strip-diary-photo. The function owns the write: the
+ * client sends the image body plus bucket/path headers; this authenticates
+ * the JWT, converts to a cleaned JPEG (or rejects), and stores only that.
+ * Injectable deps so Node tests can cover this without Deno or hosted Storage.
  */
 import { authorizeObjectPath, PathAuthError } from './objectPath.mjs';
-import { stripJpegMetadata } from './stripJpegMetadata.mjs';
+import { MAX_PHOTO_BYTES, toCleanJpeg, UnsupportedImageError } from './imageKind.mjs';
 
 /**
  * @typedef {object} StripDeps
  * @property {(token: string) => Promise<{ id: string } | null>} getUser
- * @property {(bucket: string, path: string) => Promise<Uint8Array | null>} download
  * @property {(bucket: string, path: string, body: Uint8Array) => Promise<void>} upload
  */
 
@@ -43,19 +44,12 @@ export async function handleStripRequest(req, deps) {
     return new Response('invalid authorization', { status: 401 });
   }
 
-  let body;
-  try {
-    body = await req.json();
-  } catch {
-    return new Response('expected json body', { status: 400 });
-  }
-  if (!body || typeof body !== 'object') {
-    return new Response('expected json body', { status: 400 });
-  }
+  const bucket = req.headers.get('x-birdbrain-bucket');
+  const path = req.headers.get('x-birdbrain-path');
 
   let authorized;
   try {
-    authorized = authorizeObjectPath(body.bucket, body.path, user.id);
+    authorized = authorizeObjectPath(bucket, path, user.id);
   } catch (e) {
     if (e instanceof PathAuthError) {
       return new Response(e.message, { status: e.status });
@@ -63,15 +57,21 @@ export async function handleStripRequest(req, deps) {
     throw e;
   }
 
-  const raw = await deps.download(authorized.bucket, authorized.path);
-  if (!raw) {
-    return new Response('object not found', { status: 404 });
+  const raw = new Uint8Array(await req.arrayBuffer());
+  if (raw.byteLength === 0) {
+    return new Response('expected image body', { status: 400 });
+  }
+  if (raw.byteLength > MAX_PHOTO_BYTES) {
+    return new Response('image too large', { status: 413 });
   }
 
   let cleaned;
   try {
-    cleaned = stripJpegMetadata(raw);
+    cleaned = toCleanJpeg(raw);
   } catch (e) {
+    if (e instanceof UnsupportedImageError) {
+      return new Response(e.message, { status: 415 });
+    }
     const msg = e instanceof Error ? e.message : 'strip failed';
     const status = msg === 'not a JPEG' ? 415 : 400;
     return new Response(msg, { status });

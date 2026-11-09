@@ -1,12 +1,11 @@
 /**
  * Edge Function: strip-diary-photo
  *
- * Overwrites a stored diary-photos or post-photos object with a JPEG that has
- * EXIF/XMP/IPTC stripped. NOT DEPLOYED by this PR — engineer deploys after
- * review, with verify_jwt = true. Never put secret values in this file.
- *
- * Auth: gateway verify_jwt plus supabase.auth.getUser on the caller token.
- * Paths must sit under the caller's own <uid>/ folder in an allowed bucket.
+ * Clients POST the image body with x-birdbrain-bucket and x-birdbrain-path.
+ * This verifies the JWT, checks the caller's <uid>/ folder, converts to a
+ * cleaned JPEG (or rejects the file), and writes with the service role.
+ * Raw bytes are never stored. NOT DEPLOYED by this PR — engineer deploys
+ * after review, with verify_jwt = true. Never put secret values in this file.
  */
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 
@@ -38,11 +37,6 @@ Deno.serve(async (req) => {
         const { data, error } = await userClient(token).auth.getUser(token);
         if (error || !data.user) return null;
         return { id: data.user.id };
-      },
-      async download(bucket, path) {
-        const { data, error } = await serviceClient().storage.from(bucket).download(path);
-        if (error || !data) return null;
-        return new Uint8Array(await data.arrayBuffer());
       },
       async upload(bucket, path, body) {
         const { error } = await serviceClient()
