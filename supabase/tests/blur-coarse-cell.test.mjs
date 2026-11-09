@@ -14,6 +14,20 @@ const centreLng = -77.7912;
 const centreLat = 40.8123;
 const cellM = 250;
 
+// Test-only fixture, not a production secret. Pins HMAC output so tests that
+// call the rolled-back 20261027000200 function (0.01° snap) are deterministic.
+// Verified with alice: the two points below are 15 m apart, share one coarse
+// cell under the new function, and snap to different 0.01° cells under the old
+// one. A random salt + arbitrary 15 m azimuth flakes (CI run 42660654696)
+// because independent 1.5–3 km offsets can land in the same snapped cell.
+const FIXED_BLUR_TEST_SALT = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+const OLD_FN_INTERIOR = { lng: -77.79047553813643, lat: 40.811843040578246 };
+const OLD_FN_NEARBY_15M = { lng: -77.79047553813643, lat: 40.8119781145358 };
+
+async function setFixedBlurSalt(db) {
+  await db.query("update private.blur_salt set salt = decode($1, 'hex')", [FIXED_BLUR_TEST_SALT]);
+}
+
 /** Geodesic distance in metres from (lng,lat) to a blur_point_keyed result. */
 function distSql(lng, lat, author = alice) {
   return {
@@ -171,6 +185,7 @@ describe('blur_point_keyed coarse cell (M1)', () => {
     db = await createTestDb();
     await createUser(db, alice, 'alice@example.test');
     await createUser(db, bob, 'bob@example.test');
+    await setFixedBlurSalt(db);
   });
 
   it('maps points 1–20 m apart in the same shifted cell to identical blurred_geom', async () => {
@@ -323,34 +338,54 @@ describe('blur_point_keyed rollback', () => {
   it('restores the previous function and re-blurs; nearby points no longer share an offset', async () => {
     const db = await createTestDb();
     await createUser(db, alice, 'alice@example.test');
+    await setFixedBlurSalt(db);
 
-    // Interior of the shifted cell so the 15 m pair is in the same cell before rollback.
-    const samples = await cellSamples(db, centreLng, centreLat, alice, 40);
-    const interior = samples.find((s) => s.name === 'center');
-    const nearby = await project(db, interior.lng, interior.lat, 15.0, 0.7);
-    const beforeA = await blur(db, interior.lng, interior.lat, alice);
-    const beforeB = await blur(db, nearby.lng, nearby.lat, alice);
+    // Fixed 15 m pair (see OLD_FN_*): same coarse cell before rollback, and
+    // verified different 0.01° snaps under the old function with FIXED_BLUR_TEST_SALT.
+    const { lng: lngA, lat: latA } = OLD_FN_INTERIOR;
+    const { lng: lngB, lat: latB } = OLD_FN_NEARBY_15M;
+    const { rows: gap } = await db.query(
+      `select extensions.st_distance(
+         extensions.st_setsrid(extensions.st_makepoint($1, $2), 4326)::extensions.geography,
+         extensions.st_setsrid(extensions.st_makepoint($3, $4), 4326)::extensions.geography
+       ) d`,
+      [lngA, latA, lngB, latB],
+    );
+    assert.ok(gap[0].d > 14 && gap[0].d < 16, `fixture is ${gap[0].d} m apart, expected ~15`);
+
+    const beforeA = await blur(db, lngA, latA, alice);
+    const beforeB = await blur(db, lngB, latB, alice);
     assert.equal(beforeA.g, beforeB.g);
 
     await db.exec(down);
 
-    const afterA = await blur(db, interior.lng, interior.lat, alice);
-    const afterB = await blur(db, nearby.lng, nearby.lat, alice);
-    assert.notEqual(afterA.g, afterB.g, 'old function should give independent offsets for 15 m jitter');
+    const def = await db.query(
+      `select pg_get_functiondef('public.blur_point_keyed(extensions.geometry, uuid)'::regprocedure) as def`,
+    );
+    assert.match(def.rows[0].def, /round\(lng::numeric, 5\)/);
+    assert.match(def.rows[0].def, /round\(lat::numeric, 5\)/);
+
+    const afterA = await blur(db, lngA, latA, alice);
+    const afterB = await blur(db, lngB, latB, alice);
+    assert.notEqual(
+      afterA.g,
+      afterB.g,
+      'old function keys on the near-exact point (5 decimal degrees), so this 15 m fixture must not share a snapped output',
+    );
     // Previous definition snaps the result to 0.01°.
     const { rows: snapped } = await db.query(
       `select extensions.st_x(g) x, extensions.st_y(g) y
          from (select public.blur_point_keyed(
            extensions.st_setsrid(extensions.st_makepoint($1, $2), 4326), $3) g) q`,
-      [interior.lng, interior.lat, alice],
+      [lngA, latA, alice],
     );
     const onGrid = (v) => Math.abs(v * 100 - Math.round(v * 100)) < 1e-6;
     assert.ok(onGrid(snapped[0].x) && onGrid(snapped[0].y), `rollback result not on 0.01 grid: ${snapped[0].x},${snapped[0].y}`);
 
     // Re-applying the forward migration is safe and restores coarse-cell behaviour.
     await db.exec(up);
-    const againA = await blur(db, interior.lng, interior.lat, alice);
-    const againB = await blur(db, nearby.lng, nearby.lat, alice);
+    const againA = await blur(db, lngA, latA, alice);
+    const againB = await blur(db, lngB, latB, alice);
     assert.equal(againA.g, againB.g);
     assert.equal(againA.g, beforeA.g);
     assert.ok(againA.d >= 1500 - 0.01 && againA.d <= 3000 + 0.01);
