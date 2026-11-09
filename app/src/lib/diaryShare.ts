@@ -1,6 +1,7 @@
 import { Share } from 'react-native';
 
 import { env } from '@/lib/env';
+import { flags } from '@/lib/flags';
 
 /** Default share-link lifetime (days). Keep in sync with SQL default on create_diary_share_link. */
 export const DIARY_SHARE_DEFAULT_TTL_DAYS = 30;
@@ -18,13 +19,37 @@ export function formatViewedTimes(n: number): string {
 export const DIARY_SHARE_VIEW_COUNT_DISCLOSE =
   "You'll see how many times your link is viewed, not who viewed it.";
 
-/** Photo landmark warning (lawyer). Exact wording. */
-export const DIARY_SHARE_PHOTO_WARNING =
+/**
+ * Photo landmark warning. The LIVE string is the lawyer's exact wording and
+ * may only be shown when EXPO_PUBLIC_FLAG_PHOTO_STRIP_LIVE=1 (client re-encode
+ * and hosted strip-diary-photo are both deployed). The default SOFT string
+ * keeps the crop advice and never promises that we remove location data.
+ */
+export const DIARY_SHARE_PHOTO_WARNING_LIVE =
   'Photos can give away a spot. Signs, gates, parking areas and license plates can show where you were. Crop them out before sharing. We remove location data from the file.';
+export const DIARY_SHARE_PHOTO_WARNING_SOFT =
+  'Photos can give away a spot. Signs, gates, parking areas and license plates can show where you were. Crop them out before sharing.';
 
-/** Share-sheet "What's shared / Never / Delay" box (designer + lawyer). Crew default. */
-export const DIARY_SHARE_WHATS_SHARED =
+/** Share-sheet "What's shared" box. LIVE promises stripped photos; SOFT does not. */
+export const DIARY_SHARE_WHATS_SHARED_LIVE =
   "What's shared: date, species, flushes, hours, birds, dog name, note, and photos with location data removed. Game-land names stay in the app and with your crew.";
+export const DIARY_SHARE_WHATS_SHARED_SOFT =
+  "What's shared: date, species, flushes, hours, birds, dog name, note, and photos. Game-land names stay in the app and with your crew.";
+
+/** Current photo warning for the share sheet (reads the flag on each call). */
+export function diarySharePhotoWarning(): string {
+  return flags.photoStripLive ? DIARY_SHARE_PHOTO_WARNING_LIVE : DIARY_SHARE_PHOTO_WARNING_SOFT;
+}
+
+/** Current "What's shared" line for the share sheet (reads the flag on each call). */
+export function diaryShareWhatsShared(): string {
+  return flags.photoStripLive ? DIARY_SHARE_WHATS_SHARED_LIVE : DIARY_SHARE_WHATS_SHARED_SOFT;
+}
+
+/** @deprecated Use diarySharePhotoWarning() so the flag is read at render time. */
+export const DIARY_SHARE_PHOTO_WARNING = DIARY_SHARE_PHOTO_WARNING_SOFT;
+/** @deprecated Use diaryShareWhatsShared() so the flag is read at render time. */
+export const DIARY_SHARE_WHATS_SHARED = DIARY_SHARE_WHATS_SHARED_SOFT;
 export const DIARY_SHARE_NEVER_SHARED =
   'Never shared: exact location or coordinates, start time, or your track.';
 export const DIARY_SHARE_DELAY_NOTE =

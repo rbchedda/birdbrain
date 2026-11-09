@@ -15,11 +15,11 @@ import {
   DIARY_SHARE_DELAY_NOTE,
   DIARY_SHARE_MAX_TTL_DAYS,
   DIARY_SHARE_NEVER_SHARED,
-  DIARY_SHARE_PHOTO_WARNING,
   DIARY_SHARE_TTL_OPTIONS,
   DIARY_SHARE_VIEW_COUNT_DISCLOSE,
-  DIARY_SHARE_WHATS_SHARED,
   diaryShareExpiringSoon,
+  diarySharePhotoWarning,
+  diaryShareWhatsShared,
   diaryShareUrl,
   formatViewedTimes,
   shareDiaryLink,
@@ -236,7 +236,7 @@ export function DiarySharePanel({ clientId, synced, hasPhotos }: { clientId: str
             <SectionTitle>Share this hunt</SectionTitle>
             <Text style={ui.muted}>Audience: My crew (default).</Text>
             <View style={styles.disclose} testID="diary-share-disclose">
-              <Text style={ui.muted}>{DIARY_SHARE_WHATS_SHARED}</Text>
+              <Text style={ui.muted}>{diaryShareWhatsShared()}</Text>
               <Text style={ui.muted}>{DIARY_SHARE_NEVER_SHARED}</Text>
               <Text style={ui.muted}>{DIARY_SHARE_DELAY_NOTE}</Text>
             </View>
@@ -270,7 +270,7 @@ export function DiarySharePanel({ clientId, synced, hasPhotos }: { clientId: str
               ))}
             </View>
             {flags.shareLinkViewCounts ? <Text style={ui.muted}>{DIARY_SHARE_VIEW_COUNT_DISCLOSE}</Text> : null}
-            {hasPhotos ? <Notice tone="info">{DIARY_SHARE_PHOTO_WARNING}</Notice> : null}
+            {hasPhotos ? <Notice tone="info">{diarySharePhotoWarning()}</Notice> : null}
             <Button
               label={busy ? 'Creating…' : 'Create link'}
               icon="share-outline"
