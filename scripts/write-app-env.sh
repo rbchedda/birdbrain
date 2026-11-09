@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Writes app/.env with the public URL + anon/publishable key for the hosted project.
 # Key source: $SUPABASE_ANON_KEY, else fetched read-only via the Management API with
-# $SUPABASE_ACCESS_TOKEN. Refuses service_role/secret keys. Never prints the key.
+# $SUPABASE_ACCESS_TOKEN. Use a scoped, expiring Management API token (project
+# read / API keys only; never a long-lived account-wide PAT). Prefer setting
+# SUPABASE_ANON_KEY and skipping the token entirely. Refuses service_role/secret
+# keys. Never prints the key.
 set -euo pipefail
 REF="${SUPABASE_PROJECT_REF:-ipvcrygkulrwopgtdkwd}"
 URL="https://${REF}.supabase.co"

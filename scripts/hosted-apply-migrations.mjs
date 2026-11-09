@@ -1,6 +1,12 @@
 // Applies supabase/migrations/*.sql in order via the Management API query endpoint,
 // one transaction per file, recording each in supabase_migrations.schema_migrations
 // (CLI format). Skips already-recorded versions. Stops at first error. Never prints secrets.
+//
+// SUPABASE_ACCESS_TOKEN must be a scoped, expiring Management API token, not a
+// long-lived account-wide PAT. This endpoint runs SQL as the database owner, so
+// do not put the token in GitHub Actions unless the job uses a protected
+// Environment with required reviewers. Prefer the official supabase CLI / db
+// push from a trusted machine.
 import fs from 'node:fs'; import path from 'node:path';
 const REF = process.env.SUPABASE_PROJECT_REF || 'ipvcrygkulrwopgtdkwd';
 const TOKEN = process.env.SUPABASE_ACCESS_TOKEN; if (!TOKEN) throw new Error('SUPABASE_ACCESS_TOKEN missing');

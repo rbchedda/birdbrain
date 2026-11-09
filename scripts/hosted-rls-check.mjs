@@ -1,8 +1,12 @@
 // Hosted RLS smoke test. Anon checks via PostgREST/Storage with the anon key (from app/.env).
-// Creates two disposable confirmed email users via SQL (Management API; no service_role key),
+// Creates two disposable confirmed email users through the Auth admin API
+// (SUPABASE_AUTH_ADMIN_KEY or SUPABASE_SERVICE_ROLE_KEY; prefer a short-lived key),
 // signs in through GoTrue, runs cross-user checks, then deletes A via the app flow
-// (Storage API removal + rpc delete_my_account) and B via SQL. Prints no secrets.
+// (Storage API removal + rpc delete_my_account) and B via Auth admin. Table listing
+// and leftover SQL still use a scoped, expiring Management API token
+// (SUPABASE_ACCESS_TOKEN) when present. Prints no secrets.
 import fs from 'node:fs'; import crypto from 'node:crypto';
+import { adminCreateUser, adminDeleteUser, adminGetUser } from './auth-admin.mjs';
 import { q } from './hosted-apply-migrations.mjs';
 const env = Object.fromEntries(fs.readFileSync(new URL('../app/.env', import.meta.url), 'utf8').trim().split('\n').map((l) => l.split(/=(.*)/s).slice(0, 2)));
 const URL_ = env.EXPO_PUBLIC_SUPABASE_URL, ANON = env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -14,13 +18,13 @@ const req = async (path, { token = ANON, method = 'GET', body, headers = {} } = 
 const lit = (s) => `'${s.replaceAll("'", "''")}'`;
 const tag = crypto.randomBytes(4).toString('hex'); const pw = crypto.randomBytes(18).toString('base64url');
 async function mkUser(n) {
-  const id = crypto.randomUUID(), email = `rls-${n}-${tag}@example.invalid`;
-  await q(`insert into auth.users (instance_id,id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at,confirmation_token,recovery_token,email_change_token_new,email_change)
-    values ('00000000-0000-0000-0000-000000000000',${lit(id)},'authenticated','authenticated',${lit(email)},extensions.crypt(${lit(pw)},extensions.gen_salt('bf')),now(),'{"provider":"email","providers":["email"]}','{}',now(),now(),'','','','');
-    insert into auth.identities (id,user_id,provider_id,identity_data,provider,created_at,updated_at,last_sign_in_at)
-    values (gen_random_uuid(),${lit(id)},${lit(id)},jsonb_build_object('sub',${lit(id)},'email',${lit(email)},'email_verified',true),'email',now(),now(),now());`);
+  const email = `rls-${n}-${tag}@example.invalid`;
+  const { id } = await adminCreateUser({ url: URL_, email, password: pw });
   const r = await req('/auth/v1/token?grant_type=password', { method: 'POST', body: { email, password: pw } });
-  if (!r.j.access_token) throw new Error(`sign-in failed ${r.s} ${JSON.stringify(r.j).slice(0, 200)}`);
+  if (!r.j.access_token) {
+    await adminDeleteUser({ url: URL_, id }).catch(() => {});
+    throw new Error(`sign-in failed ${r.s} ${JSON.stringify(r.j).slice(0, 200)}`);
+  }
   return { id, token: r.j.access_token };
 }
 const tables = (await q(`select tablename from pg_tables where schemaname='public' order by 1`)).map((r) => r.tablename);
@@ -75,15 +79,16 @@ try {
   }
   const del = await req('/rest/v1/rpc/delete_my_account', { token: A.token, method: 'POST', body: {} });
   ok('A rpc delete_my_account', del.s < 300, `(${del.s} ${JSON.stringify(del.j).slice(0, 150)})`);
-  const left = (await q(`select (select count(*) from auth.users where id=${lit(A.id)}) u,(select count(*) from public.profiles where id=${lit(A.id)}) p,
+  const left = (await q(`select (select count(*) from public.profiles where id=${lit(A.id)}) p,
     (select count(*) from public.hunt_log_entries where owner_id=${lit(A.id)}) h,(select count(*) from public.diary_entries where owner_id=${lit(A.id)}) d,
     (select count(*) from public.dogs where owner_id=${lit(A.id)}) g,(select count(*) from storage.objects where (storage.foldername(name))[1]=${lit(A.id)}) o`))[0];
+  left.u = (await adminGetUser({ url: URL_, id: A.id })) ? 1 : 0;
   ok('A fully gone (user, profile, log, diary, dogs, objects)', Object.values(left).every((v) => Number(v) === 0), JSON.stringify(left));
   A = null;
 } finally {
   const ids = [A?.id, B?.id].filter(Boolean);
-  if (ids.length) await q(`delete from auth.users where id in (${ids.map(lit).join(',')})`);
-  const rest = (await q(`select count(*) n from auth.users where email like 'rls-%-${tag}@example.invalid'`))[0].n;
+  for (const id of ids) await adminDeleteUser({ url: URL_, id });
+  const rest = (await Promise.all(ids.map((id) => adminGetUser({ url: URL_, id })))).filter(Boolean).length;
   console.log('cleanup: test users remaining =', rest);
 }
 const f = results.filter((r) => !r.pass); console.log(`\n${results.length - f.length}/${results.length} passed`); process.exit(f.length ? 1 : 0);

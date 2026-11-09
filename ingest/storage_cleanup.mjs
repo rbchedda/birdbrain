@@ -1,7 +1,12 @@
 // Delete files queued in public.storage_deletion_queue through the Storage API.
 //
-//   DATABASE_URL=postgres://... SUPABASE_URL=https://<ref>.supabase.co \
+//   STORAGE_CLEANUP_DATABASE_URL=postgres://storage_cleaner... \
+//   SUPABASE_URL=https://<ref>.supabase.co \
 //   SUPABASE_SERVICE_ROLE_KEY=... node ingest/storage_cleanup.mjs
+//
+// DATABASE_URL is accepted as a fallback for the queue connection, but the
+// pooler URL should be the storage_cleaner role, not postgres. A SQL delete
+// on storage.objects is not used: it orphans the file in S3.
 //
 // The DB never deletes storage objects itself (hosted Supabase refuses SQL
 // deletes on storage.objects, and they would orphan the file anyway). Triggers
@@ -65,11 +70,13 @@ export async function runCleanup(db, storage, { batchSize = BATCH_SIZE, maxAttem
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  const { DATABASE_URL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
-  if (!DATABASE_URL || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY)
-    throw new Error('Set DATABASE_URL, SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.');
+  const databaseUrl = process.env.STORAGE_CLEANUP_DATABASE_URL || process.env.DATABASE_URL;
+  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
+  if (!databaseUrl || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY)
+    throw new Error('Set STORAGE_CLEANUP_DATABASE_URL (or DATABASE_URL), SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.');
   const { default: pg } = await import('pg');
-  const client = new pg.Client({ connectionString: DATABASE_URL });
+  const { pgClientConfig } = await import('./arcgis.mjs');
+  const client = new pg.Client(pgClientConfig(databaseUrl));
   await client.connect();
   try {
     const result = await runCleanup(client, storageClient({ url: SUPABASE_URL, serviceKey: SUPABASE_SERVICE_ROLE_KEY }));

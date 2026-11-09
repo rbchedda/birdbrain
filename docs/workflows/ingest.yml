@@ -1,0 +1,61 @@
+# Copy this file to .github/workflows/ingest.yml to take effect.
+# The default GitHub token cannot push changes under .github/workflows/
+# (missing `workflow` scope); a repo admin should copy or push it.
+# Pull PGC layers into Supabase. Layers that haven't changed since the last run
+# are skipped (editingInfo.lastEditDate), so frequent runs are cheap.
+#
+# Secret: DATABASE_URL must be the ingest_writer pooler URL (not the postgres
+# role). Do not add SUPABASE_SERVICE_ROLE_KEY to this workflow. After
+# 20261109004000 is applied, set the role password out of band and update the
+# repository secret (see the PR that added ingest_writer).
+name: Ingest PGC data
+
+on:
+  schedule:
+    - cron: '15 * * 10-12,1-2 *' # hourly during bird season (Oct-Feb), UTC
+    - cron: '15 8 * 3-9 *'       # daily the rest of the year
+  workflow_dispatch:
+    inputs:
+      sources:
+        description: 'Space-separated sources (blank = all)'
+        required: false
+      force:
+        description: 'Ignore lastEditDate'
+        type: boolean
+        default: false
+
+# Least privilege for GITHUB_TOKEN (L9).
+permissions:
+  contents: read
+
+concurrency: ingest
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --omit=dev
+      # Pass workflow_dispatch inputs through env and quote them (L9).
+      # Scheduled runs have empty inputs and ingest every source.
+      - name: Ingest PGC layers
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          INGEST_SOURCES: ${{ inputs.sources }}
+          INGEST_FORCE: ${{ inputs.force }}
+        run: |
+          set -euo pipefail
+          set -f
+          args=()
+          if [ -n "${INGEST_SOURCES:-}" ]; then
+            read -r -a args <<< "${INGEST_SOURCES}"
+          fi
+          if [ "${INGEST_FORCE:-}" = "true" ]; then
+            args+=(--force)
+          fi
+          node ingest/arcgis.mjs "${args[@]}"
