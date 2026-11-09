@@ -217,9 +217,12 @@ describe('ownership rules', () => {
 });
 
 describe('storage', () => {
-  it('only lets users upload into their own folder', async () => {
-    await as(db, 'authenticated', alice, (tx) =>
-      tx.query(`insert into storage.objects (bucket_id, name) values ('post-photos', $1)`, [`${alice}/a.jpg`]),
+  it('denies a direct authenticated insert into post-photos, even in the caller folder', async () => {
+    await assert.rejects(
+      as(db, 'authenticated', alice, (tx) =>
+        tx.query(`insert into storage.objects (bucket_id, name) values ('post-photos', $1)`, [`${alice}/a.jpg`]),
+      ),
+      /row-level security/,
     );
     await assert.rejects(
       as(db, 'authenticated', bob, (tx) =>

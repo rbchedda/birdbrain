@@ -94,7 +94,9 @@ describe('diary privacy (owner-only RLS)', () => {
 });
 
 describe('diary photos are private', () => {
-  const insertPhoto = (user, name) =>
+  const insertPhotoAsOwnerRole = (user, name) =>
+    db.query(`insert into storage.objects (bucket_id, name, owner) values ('diary-photos', $1, $2)`, [name, user]);
+  const insertPhotoAsUser = (user, name) =>
     as(db, 'authenticated', user, (tx) =>
       tx.query(`insert into storage.objects (bucket_id, name, owner) values ('diary-photos', $1, $2)`, [name, user]),
     );
@@ -104,9 +106,13 @@ describe('diary photos are private', () => {
     assert.equal(rows[0].public, false);
   });
 
-  it('lets only the owner upload to and read their folder', async () => {
-    await insertPhoto(alice, `${alice}/${entry}/p1.jpg`);
-    await assert.rejects(insertPhoto(bob, `${alice}/${entry}/evil.jpg`), /row-level security/);
+  it('denies a direct authenticated insert, even in the owner folder', async () => {
+    await assert.rejects(insertPhotoAsUser(alice, `${alice}/${entry}/p1.jpg`), /row-level security/);
+    await assert.rejects(insertPhotoAsUser(bob, `${alice}/${entry}/evil.jpg`), /row-level security/);
+  });
+
+  it('lets only the owner read their folder', async () => {
+    await insertPhotoAsOwnerRole(alice, `${alice}/${entry}/p1.jpg`);
     const mine = await as(db, 'authenticated', alice, (tx) =>
       tx.query(`select name from storage.objects where bucket_id = 'diary-photos'`),
     );

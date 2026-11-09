@@ -3,6 +3,7 @@ import type { Session as AuthSession, SupabaseClient } from '@supabase/supabase-
 
 import { parseGeometry, parsePoint, toEwkt } from '@/lib/geo';
 import { flags } from '@/lib/flags';
+import { reencodePhotoForUpload } from '@/lib/reencodePhotoForUpload';
 import { removeAllUnder, type StorageBucketApi } from '@/lib/storageCleanup';
 
 import { classifyAccess, type AccessType } from './access';
@@ -62,6 +63,33 @@ function toCounts(v: unknown): BirdCounts | null {
   const c = v as Partial<BirdCounts> | null;
   if (!c || c.flushed === undefined) return null;
   return { flushed: Number(c.flushed) || 0, roosters: Number(c.roosters) || 0, harvested: Number(c.harvested) || 0 };
+}
+
+
+/**
+ * The only upload path for diary-photos and post-photos. Re-encodes first so
+ * the original file (and its EXIF/GPS) never leaves the device, then sends
+ * the cleaned JPEG to strip-diary-photo, which is the only writer (service
+ * role). Clients cannot storage.upload into these buckets.
+ */
+async function uploadReencodedPhoto(
+  sb: SupabaseClient,
+  bucket: 'diary-photos' | 'post-photos',
+  path: string,
+  localUri: string,
+): Promise<string> {
+  const body = await reencodePhotoForUpload(localUri);
+  const buf = body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength) as ArrayBuffer;
+  const fn = await sb.functions.invoke('strip-diary-photo', {
+    headers: {
+      'x-birdbrain-bucket': bucket,
+      'x-birdbrain-path': path,
+      'content-type': 'image/jpeg',
+    },
+    body: buf,
+  });
+  if (fn.error) throw new Error(fn.error.message || "Couldn't upload your photo. Please try again.");
+  return path;
 }
 
 export function createSupabaseBackend(
@@ -760,10 +788,7 @@ export function createSupabaseBackend(
     async uploadDiaryPhoto(clientId, photo) {
       const userId = await me();
       const path = `${userId}/${clientId}/${photo.id}.jpg`;
-      const body = await (await fetch(photo.localUri)).arrayBuffer();
-      const res = await sb.storage.from('diary-photos').upload(path, body, { contentType: 'image/jpeg', upsert: true });
-      if (res.error) throw new Error(res.error.message);
-      return path;
+      return uploadReencodedPhoto(sb, 'diary-photos', path, photo.localUri);
     },
   };
   return api;

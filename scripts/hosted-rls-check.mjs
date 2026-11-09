@@ -54,7 +54,7 @@ try {
   const img = new Uint8Array([0xff, 0xd8, 0xff, 0xd9]);
   for (const [bk, p] of [['diary-photos', `${A.id}/${cid}/t.jpg`], ['post-photos', `${A.id}/t.jpg`]]) {
     const r = await req(`/storage/v1/object/${bk}/${p}`, { token: A.token, method: 'POST', body: img, headers: { 'content-type': 'image/jpeg' } });
-    ok(`A upload ${bk}`, r.s < 300, `(${r.s} ${JSON.stringify(r.j).slice(0, 120)})`);
+    ok(`A direct upload ${bk} refused (function owns writes)`, r.s >= 400, `(${r.s} ${JSON.stringify(r.j).slice(0, 120)})`);
     ok(`anon download ${bk} refused`, (await req(`/storage/v1/object/${bk}/${p}`)).s >= 400);
     ok(`B download A's ${bk} refused`, (await req(`/storage/v1/object/${bk}/${p}`, { token: B.token })).s >= 400);
     ok(`B upload into A's ${bk} folder refused`, (await req(`/storage/v1/object/${bk}/${A.id}/evil.jpg`, { token: B.token, method: 'POST', body: img, headers: { 'content-type': 'image/jpeg' } })).s >= 400);
@@ -70,13 +70,7 @@ try {
   ok("B update A's dog no-op", bu.s >= 400 || (Array.isArray(bu.j) && bu.j.length === 0));
   const bd = await req(`/rest/v1/diary_entries?entry_id=eq.${entry?.id}`, { token: B.token, method: 'PATCH', body: { details: { x: 1 } }, headers: { Prefer: 'return=representation' } });
   ok("B update A's diary no-op", bd.s >= 400 || (Array.isArray(bd.j) && bd.j.length === 0));
-  // delete flow for A: Storage API removal, then rpc
-  for (const [bk, prefix] of [['diary-photos', `${A.id}/${cid}`], ['post-photos', A.id]]) {
-    const l = await req(`/storage/v1/object/list/${bk}`, { token: A.token, method: 'POST', body: { prefix } });
-    const names = (l.j || []).filter((o) => o.id).map((o) => `${prefix}/${o.name}`);
-    const d = await req(`/storage/v1/object/${bk}`, { token: A.token, method: 'DELETE', body: { prefixes: names } });
-    ok(`A removes own ${bk} via Storage API`, d.s < 300 && names.length === 1, `(${d.s}, ${names.length} file)`);
-  }
+  // No objects were written (direct uploads are refused). Owner DELETE policy is unchanged.
   const del = await req('/rest/v1/rpc/delete_my_account', { token: A.token, method: 'POST', body: {} });
   ok('A rpc delete_my_account', del.s < 300, `(${del.s} ${JSON.stringify(del.j).slice(0, 150)})`);
   const left = (await q(`select (select count(*) from public.profiles where id=${lit(A.id)}) p,

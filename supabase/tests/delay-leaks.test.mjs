@@ -119,8 +119,9 @@ describe('edit lock after public_after', () => {
 describe('post-photos storage reads', () => {
   const seesPhoto = async (user, name) =>
     (await q(user, `select 1 from storage.objects where bucket_id = 'post-photos' and name = $1`, [name])).rows.length === 1;
+  // Writes go through the edge function (service role). Tests plant objects as the table owner.
   const upload = (user, name) =>
-    q(user, `insert into storage.objects (bucket_id, name, owner) values ('post-photos', $1, $2)`, [name, user]);
+    db.query(`insert into storage.objects (bucket_id, name, owner) values ('post-photos', $1, $2)`, [name, user]);
 
   it('hides a photo until its post is public, except from the uploader', async () => {
     const name = `${alice}/rooster.jpg`;

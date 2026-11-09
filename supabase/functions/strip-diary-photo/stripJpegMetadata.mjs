@@ -1,6 +1,7 @@
 /**
  * Strip JPEG metadata segments (EXIF / APP1, XMP, ICC APP2, IPTC APP13, comments)
  * by keeping only SOF/DHT/DQT/SOS/… image segments. Pure JS; no native modules.
+ * Keep in sync with app/src/lib/stripJpegMetadata.ts.
  * Not a full re-encode — GPS and other EXIF tags in APP1 are dropped with the segment.
  */
 const KEEP = new Set([
