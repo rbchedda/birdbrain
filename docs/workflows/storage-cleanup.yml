@@ -1,7 +1,15 @@
 # Delete files queued in public.storage_deletion_queue (e.g. photos of deleted
 # crews) through the Storage API. See ingest/storage_cleanup.mjs.
-# Requires repository secrets DATABASE_URL (direct connection, postgres role),
-# SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.
+#
+# A narrow DB function cannot delete the objects: hosted Supabase refuses SQL
+# deletes on storage.objects, and a metadata-only delete orphans the file in S3.
+# The Storage API therefore still needs a service_role (or equivalent) key.
+#
+# Copy this file to .github/workflows/ to enable it. Before doing that, create a
+# GitHub Environment named `production` with required reviewers (this repo does
+# not yet have one). Store SUPABASE_SERVICE_ROLE_KEY only on that Environment,
+# never as an unprotected repository secret. The database URL should be the
+# storage_cleaner pooler role (STORAGE_CLEANUP_DATABASE_URL), not postgres.
 name: Storage cleanup
 
 on:
@@ -9,10 +17,16 @@ on:
     - cron: '*/15 * * * *' # every 15 minutes, UTC
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency: storage-cleanup
 
 jobs:
   cleanup:
+    # Protected Environment with required reviewers must be enabled by a repo admin
+    # before this workflow is copied into .github/workflows/.
+    environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -24,6 +38,6 @@ jobs:
       - run: npm ci --omit=dev
       - run: node ingest/storage_cleanup.mjs
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          STORAGE_CLEANUP_DATABASE_URL: ${{ secrets.STORAGE_CLEANUP_DATABASE_URL }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
