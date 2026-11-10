@@ -226,12 +226,6 @@ export class NotSignedInError extends Error {
   }
 }
 
-/** Same grid as public.blur_point: snap to the center of a 0.05° cell. */
-export const blurPoint = ({ lng, lat }: { lng: number; lat: number }) => ({
-  lng: Math.round((Math.floor(lng / 0.05) * 0.05 + 0.025) * 1e6) / 1e6,
-  lat: Math.round((Math.floor(lat / 0.05) * 0.05 + 0.025) * 1e6) / 1e6,
-});
-
 export const sumCounts = (rows: { flushed: number; roosters: number; harvested: number }[]) =>
   rows.length
     ? rows.reduce(

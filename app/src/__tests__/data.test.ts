@@ -1,4 +1,3 @@
-import { blurPoint } from '@/data/backend';
 import { samplePlaces } from '@/data/places';
 import { createSampleBackend } from '@/data/sampleBackend';
 import { areaLabel, parsePoint, toEwkt } from '@/lib/geo';
@@ -30,13 +29,8 @@ describe('geometry parsing', () => {
 });
 
 describe('location privacy', () => {
-  it('blurs to the same grid cell centers as public.blur_point', () => {
-    expect(blurPoint({ lng: -76.21, lat: 40.11 })).toEqual({ lng: -76.225, lat: 40.125 });
-    expect(blurPoint({ lng: -77.0, lat: 40.0 })).toEqual({ lng: -76.975, lat: 40.025 });
-  });
-
-  it('labels a blurred area by county, never by place', () => {
-    const label = areaLabel(blurPoint(samplePlaces[1].center), samplePlaces);
+  it('labels a shared location by county, never by place', () => {
+    const label = areaLabel(samplePlaces[1].center, samplePlaces);
     expect(label).toBe('Near Lancaster County');
     expect(areaLabel(null, samplePlaces)).toBe('Location hidden');
   });

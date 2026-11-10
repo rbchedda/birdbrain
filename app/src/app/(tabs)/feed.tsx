@@ -54,7 +54,7 @@ export function CrewEmpty({ onCommunity }: { onCommunity: () => void }) {
         <Ionicons name="earth-outline" size={22} color={colors.accent} />
         <View style={{ flex: 1 }}>
           <Text style={styles.cardTitle}>Browse Community</Text>
-          <Text style={ui.muted}>Delayed, blurred posts from PA hunters</Text>
+          <Text style={ui.muted}>Posts from PA hunters, after a delay</Text>
         </View>
         <Ionicons name="chevron-forward" size={18} color={colors.muted} />
       </Pressable>
@@ -207,7 +207,7 @@ export default function FeedScreen() {
     return (
       <View style={styles.root}>
         <ScreenHeader title="Feed" />
-        <SignInPrompt why="The feed is for signed-in hunters. Posts show up the day after they’re shared, with locations blurred to about 5 km." />
+        <SignInPrompt why="The feed is for signed-in hunters. Posts go public after a delay and then show the exact location the author shared." />
       </View>
     );
   }

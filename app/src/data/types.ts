@@ -101,7 +101,7 @@ export interface Post {
   publicAfter: string | null;
   huntedOn: string | null;
   location: LocationVisibility;
-  /** Blurred ~5 km grid cell center (posts.blurred_geom). Never the exact spot. */
+  /** Exact point from posts.public_geom when the author chose to share location; otherwise null. */
   area: LngLat | null;
   counts: BirdCounts | null;
   /** Per-place breakdown. Only ever present on the author's own posts. */
@@ -118,7 +118,7 @@ export interface PostDraft {
   caption: string;
   huntedOn: string;
   counts: PlaceCount[];
-  /** Exact point for post_locations (owner-only); the server publishes only the blurred cell. */
+  /** Exact point for post_locations (owner-only). Copied to posts.public_geom when location is shared. */
   exact: LngLat | null;
   location: LocationVisibility;
   audience: 'private' | 'shared';

@@ -36,7 +36,7 @@ describe('Five-tab nav', () => {
     ['/profile', /Hunt log/],
     ['/log', /Private diary entry · not a post/],
     ['/new/log', /Private diary entry · not a post/],
-    ['/new/post', /Share with hunters\. Delayed/],
+    ['/new/post', /Share with hunters\. Goes public after a delay/],
     ['/groups', /Species groups across Pennsylvania/],
     ['/new', /What are you adding\?/],
   ])('deep link %s opens its screen', async (url, text) => {
@@ -61,7 +61,7 @@ describe('＋ chooser', () => {
     await fireEvent.press(screen.getByLabelText('New: log a hunt or post'));
     expect(await screen.findByText(/What are you adding\?/)).toBeTruthy();
     expect(screen.getByText(/Never posted\. Only you see it\./)).toBeTruthy();
-    expect(screen.getByText(/Appears 12\+ hrs after the hunt/)).toBeTruthy();
+    expect(screen.getByText(/Goes public after a 12\+ hour delay/)).toBeTruthy();
   });
 
   it('Log hunt routes to the private log with no sharing option', async () => {
@@ -77,7 +77,7 @@ describe('＋ chooser', () => {
     await setShareToCommunity(true);
     await fireEvent.press(await screen.findByLabelText('Post'));
     expect(await screen.findByText('Share (delayed)')).toBeTruthy();
-    expect(screen.getByText(/Delayed: only you see it until/)).toBeTruthy();
+    expect(screen.getByText(/Delayed: only you see this post/)).toBeTruthy();
   });
 
   it('Cancel closes the chooser', async () => {

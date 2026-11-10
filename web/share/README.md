@@ -9,7 +9,7 @@ Static stub for `feat/diary-share-link`. Served at `{EXPO_PUBLIC_SHARE_BASE_URL}
 - Send `X-Robots-Tag: noindex, nofollow` and `Referrer-Policy: no-referrer` as **HTTP headers** as well as the meta tags in `index.html`.
 - No third-party analytics, scripts, or tracking cookies. View counting is first-party only via `record_share_link_view`.
 - No OG image that contains a map. Generic title only.
-- Public payload is county + blurred point only. Hide bird totals. Coarsen dates. Location line: `≈ {County} County · area approximate`.
+- Public payload is county only after the share delay (L7). Exact hunt location is never included. Hide bird totals. Coarsen dates. Location line: `{County} County`.
 - Invalid / revoked / expired / flag-off all look the same ("isn't shared anymore").
 - Report form posts to `report_shared_diary` (no email send from this page).
 

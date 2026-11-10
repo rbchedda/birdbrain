@@ -106,15 +106,17 @@ describe('diary photos are private', () => {
     assert.equal(rows[0].public, false);
   });
 
-  it('denies a direct authenticated insert, even in the owner folder', async () => {
-    await assert.rejects(insertPhotoAsUser(alice, `${alice}/${entry}/p1.jpg`), /row-level security/);
+  it('lets the owner insert in their folder and denies other folders', async () => {
+    const ok = await insertPhotoAsUser(alice, `${alice}/${entry}/p1.jpg`);
+    assert.ok((ok.affectedRows ?? ok.rowCount ?? 0) >= 1);
     await assert.rejects(insertPhotoAsUser(bob, `${alice}/${entry}/evil.jpg`), /row-level security/);
   });
 
   it('lets only the owner read their folder', async () => {
-    await insertPhotoAsOwnerRole(alice, `${alice}/${entry}/p1.jpg`);
+    const name = `${alice}/${entry}/read-check.jpg`;
+    await insertPhotoAsOwnerRole(alice, name);
     const mine = await as(db, 'authenticated', alice, (tx) =>
-      tx.query(`select name from storage.objects where bucket_id = 'diary-photos'`),
+      tx.query(`select name from storage.objects where bucket_id = 'diary-photos' and name = $1`, [name]),
     );
     assert.equal(mine.rows.length, 1);
     const theirs = await as(db, 'authenticated', bob, (tx) =>

@@ -6,6 +6,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ProfileStatsSection, SeasonStartsCard, useProfileStats } from '@/components/stats/ProfileStatsSection';
 import { UsernameForm } from '@/components/UsernameForm';
 import { MenuRow, badgesSummary, dogsSummary, lifeSummary, useProfileData } from '@/components/profile';
+import { myPostsSummary } from '@/components/profile/myPostsSummary';
 import { backend } from '@/data';
 import { refreshPlans, startPlansSyncOnce, useAsync, useSession } from '@/data/hooks';
 import { seasonLabel } from '@/data/stats';
@@ -16,7 +17,7 @@ import { colors, fieldTarget, fonts, profileBottomPad, radius, space } from '@/t
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 /**
- * Profile: compact header with ⚙, then a menu (Hunt log, Stats, Dogs, Plans).
+ * Profile: compact header with ⚙, then a menu (Hunt log, My posts, Stats, Dogs, Plans).
  * Each row pushes its own full-screen page with a back arrow; there is no tab
  * row or swipe pager. Below the menu: this season's Stats preview, then
  * Trophies and Life list. Account, sign out, delete account and legal live in
@@ -76,6 +77,7 @@ export default function ProfileScreen() {
   const profile = useAsync(() => (me ? backend.profile(me) : Promise.resolve(null)), [me]);
   const p = useProfileData();
   const plans = usePlans(me);
+  const myPosts = useAsync(() => (me ? backend.postsBy(me) : Promise.resolve([])), [me]);
   const name = profile.data ? displayName(profile.data) : 'Profile';
   const county = homeCountyLabel(profile.data);
   const [editingUsername, setEditingUsername] = useState(false);
@@ -137,6 +139,7 @@ export default function ProfileScreen() {
         {stats.empty && <SeasonStartsCard />}
         <View style={styles.menu} testID="profile-menu" accessibilityRole="menu">
           <MenuRow testID="menu-hunt-log" icon="book-outline" label="Hunt log" summary={huntSummary(p.entries.length)} href="/profile/hunt-log" />
+          <MenuRow testID="menu-my-posts" icon="chatbubble-ellipses-outline" label="My posts" summary={myPostsSummary(myPosts.data, !!session)} href="/profile/my-posts" />
           <MenuRow testID="menu-stats" icon="bar-chart-outline" label="Stats" summary={statsSummary(stats.empty ? 0 : (stats.model.tiles.days ?? 0), stats.model.tiles.flushes ?? 0)} href="/profile/stats" />
           <MenuRow testID="menu-dogs" icon="paw-outline" label="Dogs" summary={dogsSummary(p.dogs)} href="/profile/dogs" />
           <MenuRow testID="menu-plans" icon="calendar-outline" label="Plans" summary={plansSummary(session ? plans : null, !!session)} href="/profile/plans" />

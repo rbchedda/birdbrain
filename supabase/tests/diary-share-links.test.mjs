@@ -150,7 +150,7 @@ describe('non-owner / anon cannot manage', () => {
 });
 
 describe('read_crew_shared_diary', () => {
-  it('crew member sees blurred safe fields after live_at; non-member gets nothing', async () => {
+  it('crew member sees safe fields including the place centroid after live_at; non-member gets nothing', async () => {
     const r = (await rows(bob, 'select * from public.read_crew_shared_diary($1)', [token]))[0];
     assert.equal(r.live, true);
     assert.equal(r.species, 'pheasant');

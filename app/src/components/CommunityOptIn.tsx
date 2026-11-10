@@ -7,7 +7,7 @@ import { space } from '@/theme/tokens';
 
 const rules = [
   'Shared entries post after a delay of at least 12 hours. Nothing posts live: PA law bars real-time game alerts.',
-  'Locations are blurred to an area. Your exact spots and places stay private.',
+  'After the delay, a post shows the exact location you chose to share. You can still hide it. Your hunt log stays private.',
   'No harassment, no spot-burning, no graphic content. Report anything that breaks these rules.',
 ];
 

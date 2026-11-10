@@ -25,7 +25,7 @@ const choices: Choice[] = [
   },
   {
     title: 'Post',
-    body: 'Share with hunters. Appears 12+ hrs after the hunt, location blurred.',
+    body: 'Share with hunters. Goes public after a 12+ hour delay, then shows the exact location you share.',
     tag: 'Delayed',
     icon: 'time-outline',
     mode: 'post',

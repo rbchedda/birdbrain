@@ -6,7 +6,7 @@
   <!-- Lawyer: also send these as HTTP headers at the host (X-Robots-Tag, Referrer-Policy). -->
   <meta name="robots" content="noindex, nofollow" />
   <meta name="referrer" content="no-referrer" />
-  <meta name="description" content="A shared BirdBrain hunt (location approximate)." />
+  <meta name="description" content="A shared BirdBrain hunt. County only, after a delay." />
   <!-- No Open Graph image / map. Generic title only. -->
   <meta property="og:title" content="BirdBrain · Shared hunt" />
   <meta property="og:description" content="A shared hunt diary. Exact location is never shown." />
@@ -150,13 +150,10 @@
             return;
           }
           title.textContent = 'Shared hunt';
-          var county = row.county ? ('≈ ' + row.county + ' County · area approximate') : '≈ area approximate';
+          var county = row.county ? (row.county + ' County') : 'County only';
           subtitle.textContent = county;
           // No bird counts, no SGL name, no map/OG image, no exact date.
-          var html = '<div class="card"><p class="muted">Location is approximate. Exact pin, start time, track, and bird totals are never included.</p>';
-          if (row.blurred_lng != null && row.blurred_lat != null) {
-            html += '<p class="muted">Blurred point · ' + Number(row.blurred_lat).toFixed(2) + ', ' + Number(row.blurred_lng).toFixed(2) + '</p>';
-          }
+          var html = '<div class="card"><p class="muted">This page shows the county after a delay. Exact hunt location, start time, track, and bird totals are never included.</p>';
           html += '</div>';
           content.innerHTML = html;
           report.classList.remove('hidden');
