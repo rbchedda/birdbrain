@@ -172,7 +172,7 @@ describe('Community rules', () => {
 });
 
 describe('Feed', () => {
-  it('renders visible posts with blurred areas and toggles like', async () => {
+  it('renders visible posts with shared locations and toggles like', async () => {
     await open('/feed?tab=community');
     const first = samplePosts()[0];
     expect(await screen.findByText(first.caption)).toBeTruthy();
@@ -467,10 +467,10 @@ describe('After-the-hunt log', () => {
     await fireEvent.press(screen.getByLabelText('More roosters'));
     await fireEvent.press(screen.getByLabelText('More harvested'));
     await fireEvent.changeText(screen.getByLabelText('Notes'), 'Two flushes on the creek edge');
-    expect(screen.getByText(/Delayed: only you see it until/)).toBeTruthy();
+    expect(screen.getByText(/Delayed: only you see this post/)).toBeTruthy();
 
     await fireEvent.press(screen.getByText('Share tomorrow (12h+ delay)'));
-    expect(await screen.findByText(/Posted\. Others will see it from/)).toBeTruthy();
+    expect(await screen.findByText(/Posted\. Goes public at/)).toBeTruthy();
 
     const page = await backend.feed(null, 20);
     const mine = page.posts.find((p) => p.caption === 'Two flushes on the creek edge')!;
@@ -479,14 +479,14 @@ describe('After-the-hunt log', () => {
       kind: 'harvest',
       species: 'pheasant',
       counts: { flushed: 2, roosters: 1, harvested: 1 },
-      // Blurred to the ~5 km grid cell, never the place itself.
-      area: { lng: -76.225, lat: 40.125 },
+      // Exact shared point (the place center).
+      area: { lng: -76.21, lat: 40.11 },
     });
     expect(new Date(mine.publicAfter!).getTime()).toBeGreaterThan(Date.now());
 
     await open('/feed?tab=community');
     expect(await screen.findByText('Two flushes on the creek edge')).toBeTruthy();
-    expect(screen.getByText(/Delayed · others see it/)).toBeTruthy();
+    expect(screen.getByText(/Goes public at/)).toBeTruthy();
   });
 
   it('logs a hunt to the private diary by default and shows it on the profile', async () => {

@@ -387,12 +387,6 @@ deno_version = 2
 # secret_key = "env(SECRET_VALUE)"
 
 
-# strip-diary-photo: require a valid JWT at the gateway, and the function also
-# verifies the user in code and checks the object is under the caller's folder.
-# Hosted deploy (with this flag on) still needs RBChedda's approval.
-[functions.strip-diary-photo]
-verify_jwt = true
-
 [analytics]
 enabled = true
 port = 54327

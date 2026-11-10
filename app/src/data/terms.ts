@@ -1,11 +1,12 @@
 // Wording is verbatim from the trespass/map-data liability memo
 // (birdbrain-trespass-liability.md, sections 4C and 4D; the bracketed attorney
 // note in 4D item 6 is an internal review note and is not shown). Do not edit
-// without legal review. Bump TERMS_VERSION when the terms change materially so
+// without legal review (two post-location sentences were updated 2026-11-10 for
+// delay-only exact locations and still need legal review). Bump TERMS_VERSION when the terms change materially so
 // every user sees the onboarding screen again.
 
 /** Bump when the ToS changes materially: the onboarding screen shows again. */
-export const TERMS_VERSION = '2026-10-22';
+export const TERMS_VERSION = '2026-11-10';
 
 /** 4C onboarding acceptance screen. */
 export const consentTitle = "Before you use BirdBrain maps:";
@@ -22,7 +23,7 @@ export const tosSectionTitle = "Maps, Data and Your Responsibility";
 export const tosSection: readonly { title: string; body: string }[] = [
   {
     "title": "Map data accuracy.",
-    "body": "Map data is approximate. Boundaries, stocking locations, dove fields, hunting zones and other map information come mainly from Pennsylvania Game Commission data. We show PGC shapes as published, but may rename fields, change display styling, and update data on a schedule, so what you see may be outdated, incomplete or wrong, and it is not a legal survey. Locations in posts by other users are delayed and generalized on purpose and are not exact. Always confirm boundaries, posted signs and current rules on the ground and with official sources before you hunt."
+    "body": "Map data is approximate. Boundaries, stocking locations, dove fields, hunting zones and other map information come mainly from Pennsylvania Game Commission data. We show PGC shapes as published, but may rename fields, change display styling, and update data on a schedule, so what you see may be outdated, incomplete or wrong, and it is not a legal survey. Locations in posts by other users go public after a delay and then show the exact location the author shared. Always confirm boundaries, posted signs and current rules on the ground and with official sources before you hunt."
   },
   {
     "title": "No permission to enter land.",
@@ -38,7 +39,7 @@ export const tosSection: readonly { title: string; body: string }[] = [
   },
   {
     "title": "User-posted locations.",
-    "body": "Locations, pins and reports posted by users are their content, not ours. They are not verified and may be wrong, blurred or delayed on purpose. Never rely on them for boundaries or access, and don't post private land without the owner's consent."
+    "body": "Locations, pins and reports posted by users are their content, not ours. They are not verified and may be wrong. Posts go public after a delay, then show the exact location; do not treat them as a survey. Never rely on them for boundaries or access, and don't post private land without the owner's consent."
   },
   {
     "title": "As-is; limitation of liability.",

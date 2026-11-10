@@ -3,7 +3,6 @@ import type { Session as AuthSession, SupabaseClient } from '@supabase/supabase-
 
 import { parseGeometry, parsePoint, toEwkt } from '@/lib/geo';
 import { flags } from '@/lib/flags';
-import { reencodePhotoForUpload } from '@/lib/reencodePhotoForUpload';
 import { removeAllUnder, type StorageBucketApi } from '@/lib/storageCleanup';
 
 import { classifyAccess, type AccessType } from './access';
@@ -16,7 +15,7 @@ import type { Author, BirdCounts, DiaryDetails, DiaryShareLink, DiaryShareStatus
 // them too), so embeds name the foreign key column.
 const POST_COLUMNS = [
   'id, author_id, kind, species, caption, created_at, public_after, hunted_on',
-  'location_visibility, blurred_geom, counts',
+  'location_visibility, public_geom, counts',
   'author:profiles!author_id(id, username, display_name)',
   'group:groups(name)',
   'likes(count)',
@@ -67,28 +66,21 @@ function toCounts(v: unknown): BirdCounts | null {
 
 
 /**
- * The only upload path for diary-photos and post-photos. Re-encodes first so
- * the original file (and its EXIF/GPS) never leaves the device, then sends
- * the cleaned JPEG to strip-diary-photo, which is the only writer (service
- * role). Clients cannot storage.upload into these buckets.
+ * Direct authenticated upload to the owner's folder in diary-photos or
+ * post-photos. Photos are stored as uploaded (no EXIF strip).
  */
-async function uploadReencodedPhoto(
+async function uploadPhoto(
   sb: SupabaseClient,
   bucket: 'diary-photos' | 'post-photos',
   path: string,
   localUri: string,
 ): Promise<string> {
-  const body = await reencodePhotoForUpload(localUri);
-  const buf = body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength) as ArrayBuffer;
-  const fn = await sb.functions.invoke('strip-diary-photo', {
-    headers: {
-      'x-birdbrain-bucket': bucket,
-      'x-birdbrain-path': path,
-      'content-type': 'image/jpeg',
-    },
-    body: buf,
-  });
-  if (fn.error) throw new Error(fn.error.message || "Couldn't upload your photo. Please try again.");
+  const res = await fetch(localUri);
+  if (!res.ok) throw new Error("Couldn't read your photo. Please try again.");
+  const body = await res.arrayBuffer();
+  const contentType = res.headers.get('content-type') || 'image/jpeg';
+  const up = await sb.storage.from(bucket).upload(path, body, { contentType, upsert: true });
+  if (up.error) throw new Error(up.error.message || "Couldn't upload your photo. Please try again.");
   return path;
 }
 
@@ -133,7 +125,7 @@ export function createSupabaseBackend(
         publicAfter: r.public_after,
         huntedOn: r.hunted_on,
         location: r.location_visibility,
-        area: parsePoint(r.blurred_geom),
+        area: parsePoint(r.public_geom),
         counts: toCounts(r.counts),
         likes: r.likes?.[0]?.count ?? 0,
         comments: r.comments?.[0]?.count ?? 0,
@@ -361,7 +353,7 @@ export function createSupabaseBackend(
           .single(),
       ) as Row;
       try {
-        // Exact point is owner-only; the trigger publishes the blurred grid cell.
+        // Exact point is owner-only in post_locations; the trigger copies it to public_geom when shared.
         if (draft.exact) {
           check(await sb.from('post_locations').insert({ post_id: row.id, geom: toEwkt(draft.exact) }));
         }
@@ -788,7 +780,7 @@ export function createSupabaseBackend(
     async uploadDiaryPhoto(clientId, photo) {
       const userId = await me();
       const path = `${userId}/${clientId}/${photo.id}.jpg`;
-      return uploadReencodedPhoto(sb, 'diary-photos', path, photo.localUri);
+      return uploadPhoto(sb, 'diary-photos', path, photo.localUri);
     },
   };
   return api;

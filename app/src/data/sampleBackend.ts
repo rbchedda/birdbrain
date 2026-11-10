@@ -2,7 +2,7 @@ import { readJson, writeJson } from '@/lib/localStore';
 import { flags } from '@/lib/flags';
 import { publicAfterET } from '@/lib/time';
 
-import { blurPoint, crewError, postKind, sumCounts, type Backend, type FeedPage, type HuntLogUpload, type LeaveCrewResult, type ServerPlan, type Session } from './backend';
+import { crewError, postKind, sumCounts, type Backend, type FeedPage, type HuntLogUpload, type LeaveCrewResult, type ServerPlan, type Session } from './backend';
 import { samplePlaces, sampleStocking } from './places';
 import { sampleAuthors, sampleComments, sampleMe, samplePosts } from './posts';
 import { containsObjectionable, OBJECTIONABLE_MESSAGE } from './moderation';
@@ -81,7 +81,7 @@ const session: Session = { userId: sampleMe.id, email: null };
 
 /**
  * Offline backend. Applies the same rules the database enforces (next-day
- * delay, blurred locations, blocks hiding both ways) so the UI behaves the
+ * delay, then exact shared locations, blocks hiding both ways) so the UI behaves the
  * same with or without Supabase. Your own posts persist on this device.
  */
 export function createSampleBackend(now: () => Date = () => new Date()): Backend {
@@ -202,7 +202,7 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
         publicAfter: publicAfterET(created).toISOString(),
         huntedOn: draft.huntedOn,
         location: draft.location,
-        area: draft.location === 'blurred' && draft.exact ? blurPoint(draft.exact) : null,
+        area: draft.location === 'blurred' && draft.exact ? draft.exact : null,
         counts: sumCounts(draft.counts),
         placeCounts: draft.counts,
         likes: 0,

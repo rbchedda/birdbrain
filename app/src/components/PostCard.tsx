@@ -120,10 +120,6 @@ export function PostCard({
       {post.photoTint && (
         <View style={[styles.photo, { backgroundColor: post.photoTint }]} accessibilityLabel="Harvest photo">
           <Ionicons name="image-outline" size={36} color="rgba(242,244,239,0.5)" />
-          <View style={styles.blurBadge}>
-            <Ionicons name="eye-off-outline" size={12} color={colors.text} />
-            <Text style={styles.blurText}>Location blurred</Text>
-          </View>
         </View>
       )}
 
@@ -206,19 +202,6 @@ const styles = StyleSheet.create({
   meta: { fontFamily: fonts.body, color: colors.muted, fontSize: 13 },
   more: { width: touchTarget, height: touchTarget, alignItems: 'center', justifyContent: 'center', marginRight: -space.sm },
   photo: { aspectRatio: 4 / 3, alignItems: 'center', justifyContent: 'center' },
-  blurBadge: {
-    position: 'absolute',
-    left: space.md,
-    bottom: space.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(14,26,19,0.8)',
-  },
-  blurText: { fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.text },
   visibility: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: space.md, paddingTop: space.md },
   visibilityText: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.text },
   caption: { fontFamily: fonts.body, color: colors.text, fontSize: 15, lineHeight: 21, paddingHorizontal: space.md, paddingTop: space.md },

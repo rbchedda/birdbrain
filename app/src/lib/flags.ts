@@ -39,8 +39,7 @@ export const flags = {
   plans: process.env.EXPO_PUBLIC_FLAG_PLANS !== '0',
 
   /**
-   * diaryShare: OFF until hosted has share_links + diary_share_status (and
-   * strip-diary-photo is applied). While off: no Share UI, no share RPCs.
+   * diaryShare: OFF until hosted has share_links + diary_share_status. While off: no Share UI, no share RPCs.
    */
   get diaryShare() {
     return process.env.EXPO_PUBLIC_FLAG_DIARY_SHARE === '1';
@@ -59,16 +58,5 @@ export const flags = {
    */
   get shareLinkViewCounts() {
     return process.env.EXPO_PUBLIC_FLAG_SHARE_LINK_VIEW_COUNTS === '1';
-  },
-
-  /**
-   * photoStripLive: OFF until the hosted strip-diary-photo function is deployed
-   * with verify_jwt, the photo-function-owns-upload migration is applied, and a
-   * fieldtest build includes expo-image-manipulator. While off, share-sheet
-   * copy uses softened wording and never promises that we remove location data.
-   * Uploads still go through the function; this flag only controls the copy.
-   */
-  get photoStripLive() {
-    return process.env.EXPO_PUBLIC_FLAG_PHOTO_STRIP_LIVE === '1';
   },
 };

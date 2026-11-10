@@ -379,7 +379,7 @@ describe('repo L6/L7 public share hardening (flags stay off by default)', () => 
 });
 
 describe('live I2 private schema RLS', () => {
-  it('enables RLS without policies and leaves definer helpers working', async () => {
+  it('enables RLS without policies on private.test_accounts and leaves definer helpers working', async () => {
     const rls = (
       await db.query(`
         select c.relname, c.relrowsecurity as rls, c.relforcerowsecurity as forced
@@ -389,20 +389,19 @@ describe('live I2 private schema RLS', () => {
     ).rows;
     assert.deepEqual(
       rls.map((r) => [r.relname, r.rls, r.forced]),
-      [
-        ['blur_salt', true, false],
-        ['test_accounts', true, false],
-      ],
+      [['test_accounts', true, false]],
     );
     assert.equal((await run(smoke, 'select public.is_test_account() v')).rows[0].v, true);
-    const blur = (
-      await db.query(
-        `select extensions.st_x(public.blur_point_keyed(extensions.st_setsrid(extensions.st_makepoint(-77.85, 40.80), 4326), $1)) x`,
-        [alice],
-      )
-    ).rows[0].x;
-    assert.equal(typeof blur, 'number');
-    await assert.rejects(run(alice, 'select * from private.blur_salt'), /permission denied|does not exist/);
+    assert.equal((await db.query(`select to_regclass('private.blur_salt') is null as gone`)).rows[0].gone, true);
+    assert.equal(
+      (
+        await db.query(`
+          select count(*)::int n from pg_proc p
+            join pg_namespace n on n.oid = p.pronamespace
+           where n.nspname = 'public' and p.proname = 'blur_point_keyed'`)
+      ).rows[0].n,
+      0,
+    );
   });
 });
 

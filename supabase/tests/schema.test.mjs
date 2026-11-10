@@ -89,17 +89,17 @@ describe('post location privacy', () => {
     await db.query(`update public.posts set public_after = now() - interval '1 minute' where id = $1`, [postId]);
   });
 
-  it('offsets the public location 1.5-3 km from the true point (coarse-cell keyed blur, M1)', async () => {
+  it('publishes the exact location in public_geom after the delay', async () => {
     const { rows } = await as(db, 'authenticated', bob, (tx) =>
       tx.query(
-        `select extensions.st_x(blurred_geom) x, extensions.st_y(blurred_geom) y,
-                extensions.st_distance(blurred_geom::extensions.geography,
+        `select extensions.st_x(public_geom) x, extensions.st_y(public_geom) y,
+                extensions.st_distance(public_geom::extensions.geography,
                   extensions.st_setsrid(extensions.st_makepoint(-77.7912, 40.8123), 4326)::extensions.geography) d
            from public.posts where id = $1`,
         [postId],
       ),
     );
-    assert.ok(rows[0].d >= 1500 - 0.01 && rows[0].d <= 3000 + 0.01, `offset was ${rows[0].d} m`);
+    assert.ok(rows[0].d < 0.01, `offset was ${rows[0].d} m`);
   });
 
   it('hides the exact location from other users', async () => {
@@ -112,11 +112,11 @@ describe('post location privacy', () => {
     assert.equal(rows.length, 1);
   });
 
-  it('does not let clients write blurred_geom directly', async () => {
+  it('does not let clients write public_geom directly', async () => {
     await assert.rejects(
       as(db, 'authenticated', alice, (tx) =>
         tx.query(
-          `update public.posts set blurred_geom = extensions.st_setsrid(extensions.st_makepoint(-77.7912, 40.8123), 4326)
+          `update public.posts set public_geom = extensions.st_setsrid(extensions.st_makepoint(-77.7912, 40.8123), 4326)
             where id = $1`,
           [postId],
         ),
@@ -126,7 +126,7 @@ describe('post location privacy', () => {
   });
 
   it('clears the public location when hidden; restoring is locked once public', async () => {
-    const read = () => db.query('select blurred_geom is null hidden from public.posts where id = $1', [postId]);
+    const read = () => db.query('select public_geom is null hidden from public.posts where id = $1', [postId]);
     await as(db, 'authenticated', alice, (tx) =>
       tx.query(`update public.posts set location_visibility = 'hidden' where id = $1`, [postId]),
     );
@@ -217,13 +217,11 @@ describe('ownership rules', () => {
 });
 
 describe('storage', () => {
-  it('denies a direct authenticated insert into post-photos, even in the caller folder', async () => {
-    await assert.rejects(
-      as(db, 'authenticated', alice, (tx) =>
-        tx.query(`insert into storage.objects (bucket_id, name) values ('post-photos', $1)`, [`${alice}/a.jpg`]),
-      ),
-      /row-level security/,
+  it('lets the owner insert into post-photos in their folder, and denies other folders', async () => {
+    const ok = await as(db, 'authenticated', alice, (tx) =>
+      tx.query(`insert into storage.objects (bucket_id, name) values ('post-photos', $1)`, [`${alice}/a.jpg`]),
     );
+    assert.ok((ok.affectedRows ?? ok.rowCount ?? 0) >= 1);
     await assert.rejects(
       as(db, 'authenticated', bob, (tx) =>
         tx.query(`insert into storage.objects (bucket_id, name) values ('post-photos', $1)`, [`${alice}/b.jpg`]),

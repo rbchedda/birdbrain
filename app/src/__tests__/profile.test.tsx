@@ -50,7 +50,7 @@ beforeEach(async () => {
 });
 
 describe('Profile hub', () => {
-  it('leads with the menu (Hunt log, Stats, Dogs, Plans), then the stats preview, Trophies and Life list', async () => {
+  it('leads with the menu (Hunt log, My posts, Stats, Dogs, Plans), then the stats preview, Trophies and Life list', async () => {
     await seed();
     await open('/profile');
     expect(await screen.findByLabelText('1 days afield')).toBeTruthy();

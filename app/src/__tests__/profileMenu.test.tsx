@@ -29,17 +29,18 @@ beforeEach(async () => {
 
 const ROWS = [
   ['menu-hunt-log', 'Hunt log', '/profile/hunt-log'],
+  ['menu-my-posts', 'My posts', '/profile/my-posts'],
   ['menu-stats', 'Stats', '/profile/stats'],
   ['menu-dogs', 'Dogs', '/profile/dogs'],
   ['menu-plans', 'Plans', '/profile/plans'],
 ] as const;
 
 describe('Profile is a menu', () => {
-  it('lists Hunt log, Stats, Dogs and Plans as four tappable rows in order, keeps Settings and the Stats preview', async () => {
+  it('lists Hunt log, My posts, Stats, Dogs and Plans as five tappable rows in order, keeps Settings and the Stats preview', async () => {
     await open('/profile');
     const menu = await screen.findByTestId('profile-menu');
     const rows = within(menu).getAllByRole('button');
-    expect(rows).toHaveLength(4);
+    expect(rows).toHaveLength(5);
     ROWS.forEach(([, label], i) => expect(rows[i].props.accessibilityLabel).toMatch(new RegExp(`^${label}\\. `)));
     expect(screen.getByLabelText('Settings')).toBeTruthy();
     // No hunts yet: one "Your season starts here" card instead of the stats preview (review T1).
@@ -51,7 +52,7 @@ describe('Profile is a menu', () => {
     await open('/profile');
     await screen.findByTestId('profile-menu');
     expect(screen.queryByRole('tablist')).toBeNull();
-    // Only the app's bottom tab bar has tabs (Map, Feed, Guide, Profile); none are Hunt log, Stats, Dogs or Plans.
+    // Only the app's bottom tab bar has tabs (Map, Feed, Guide, Profile); none are Hunt log, My posts, Stats, Dogs or Plans.
     expect(screen.queryAllByRole('tab').map((t) => t.props.accessibilityLabel)).toEqual(['Map', 'Feed', 'Guide', 'Profile']);
   });
 
@@ -61,7 +62,7 @@ describe('Profile is a menu', () => {
     expect(screen).toHavePathname(path);
     expect(await screen.findByLabelText('Back')).toBeTruthy();
     expect(screen.getAllByRole('header').some((h) => h.props.children === label)).toBe(true);
-    // The old Hunt log | Stats | Dogs | Plans row is gone from every sub page.
+    // The old Hunt log | My posts | Stats | Dogs | Plans row is gone from every sub page.
     expect(screen.queryByRole('tablist')).toBeNull();
     expect(screen.queryAllByRole('tab')).toHaveLength(0);
     expect(screen.queryByTestId('profile-menu')).toBeNull();

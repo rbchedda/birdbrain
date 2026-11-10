@@ -65,7 +65,7 @@ To use a hosted project: `npx supabase login`, `npx supabase link`, then
 
 Privacy and safety model:
 
-- A post's exact location is stored in `post_locations`, which only the author can read. Everyone else sees `posts.blurred_geom`, a trigger-derived point snapped to a ~5 km grid. Saved posts and saved spots are owner-only.
+- A post's exact location is stored in `post_locations` (author-only). When the author chooses to share it, a trigger copies that point to `posts.public_geom`. Other users can see the post — and that exact point — only after the delay. Saved posts and saved spots are owner-only.
 - Posts are hidden from other users until the later of midnight Eastern on the day after they are created or 12 hours after posting (`posts.public_after`, set by trigger via `min_public_delay()`). PA law bars using phones to alert another hunter to live game, so nothing in BirdBrain is real-time. Comments and likes follow the post's visibility.
 - Which places a hunter logged and the per-place bird counts live in `post_place_counts`, author-only like `post_locations`. A trigger copies only the totals into `posts.counts`.
 - Users can block each other (`user_blocks`, hides posts and comments both ways) and report posts, comments or profiles (`reports`). Moderators work the `reports` queue with the service role. Apple requires both for apps with user content, TestFlight included.

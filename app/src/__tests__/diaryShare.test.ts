@@ -4,11 +4,9 @@ import {
   DIARY_SHARE_DELAY_NOTE,
   DIARY_SHARE_MAX_TTL_DAYS,
   DIARY_SHARE_NEVER_SHARED,
-  DIARY_SHARE_PHOTO_WARNING_LIVE,
-  DIARY_SHARE_PHOTO_WARNING_SOFT,
+  DIARY_SHARE_PHOTO_WARNING,
   DIARY_SHARE_VIEW_COUNT_DISCLOSE,
-  DIARY_SHARE_WHATS_SHARED_LIVE,
-  DIARY_SHARE_WHATS_SHARED_SOFT,
+  DIARY_SHARE_WHATS_SHARED,
   diaryShareExpiringSoon,
   diarySharePhotoWarning,
   diaryShareUrl,
@@ -75,38 +73,22 @@ describe('diaryShare helpers', () => {
     expect(diaryShareExpiringSoon(new Date(now - 1000).toISOString(), now)).toBe(false);
   });
 
-  it("exposes What's shared / Never / Delay and lawyer photo/view copy", () => {
-    expect(DIARY_SHARE_WHATS_SHARED_SOFT).toMatch(/What's shared/);
+  it("exposes What's shared / Never / Delay and photo/view copy", () => {
+    expect(DIARY_SHARE_WHATS_SHARED).toMatch(/What's shared/);
     expect(DIARY_SHARE_NEVER_SHARED).toMatch(/Never shared/);
     expect(DIARY_SHARE_DELAY_NOTE).toMatch(/midnight Eastern/);
-    expect(DIARY_SHARE_PHOTO_WARNING_SOFT).toMatch(/^Photos can give away a spot/);
+    expect(DIARY_SHARE_PHOTO_WARNING).toMatch(/^Photos can give away a spot/);
     expect(DIARY_SHARE_VIEW_COUNT_DISCLOSE).toBe(
       "You'll see how many times your link is viewed, not who viewed it.",
     );
   });
 
-  it('defaults share copy to softened wording that does not promise stripping', () => {
-    delete process.env.EXPO_PUBLIC_FLAG_PHOTO_STRIP_LIVE;
-    expect(flags.photoStripLive).toBe(false);
-    expect(diarySharePhotoWarning()).toBe(DIARY_SHARE_PHOTO_WARNING_SOFT);
-    expect(diaryShareWhatsShared()).toBe(DIARY_SHARE_WHATS_SHARED_SOFT);
-    expect(diarySharePhotoWarning()).not.toMatch(/location data/);
+  it('says photos are shared as uploaded and does not promise location stripping', () => {
+    expect(diarySharePhotoWarning()).toBe(DIARY_SHARE_PHOTO_WARNING);
+    expect(diaryShareWhatsShared()).toBe(DIARY_SHARE_WHATS_SHARED);
+    expect(diarySharePhotoWarning()).toMatch(/Photos are shared as uploaded/);
     expect(diarySharePhotoWarning()).not.toMatch(/We remove/);
+    expect(diaryShareWhatsShared()).toMatch(/photos as uploaded/);
     expect(diaryShareWhatsShared()).not.toMatch(/location data removed/);
-    expect(diarySharePhotoWarning()).toBe(
-      'Photos can give away a spot. Signs, gates, parking areas and license plates can show where you were. Crop them out before sharing.',
-    );
-    expect(diaryShareWhatsShared()).toBe(
-      "What's shared: date, species, flushes, hours, birds, dog name, note, and photos. Game-land names stay in the app and with your crew.",
-    );
-  });
-
-  it('uses the lawyer stripping-promise copy only when the live flag is on', () => {
-    process.env.EXPO_PUBLIC_FLAG_PHOTO_STRIP_LIVE = '1';
-    expect(flags.photoStripLive).toBe(true);
-    expect(diarySharePhotoWarning()).toBe(DIARY_SHARE_PHOTO_WARNING_LIVE);
-    expect(diaryShareWhatsShared()).toBe(DIARY_SHARE_WHATS_SHARED_LIVE);
-    expect(diarySharePhotoWarning()).toMatch(/We remove location data from the file/);
-    expect(diaryShareWhatsShared()).toMatch(/photos with location data removed/);
   });
 });

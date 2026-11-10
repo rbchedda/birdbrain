@@ -23,6 +23,7 @@ const entryLabel = (e: JournalEntry) =>
 const entryLine = (e: JournalEntry) => ['Hunt', e.huntedOn ? formatDay(e.huntedOn) : null, copy.waiting].filter(Boolean).join(' · ');
 import { emptyDiaryDetails, type DiaryDetails } from '@/data/types';
 import { loggableSpecies, placeTypeLabel, speciesLabel, type LocationVisibility, type Place, type LoggableSpecies, type PlaceCount, type Species } from '@/data/types';
+import { goesPublicLabel } from '@/data/visibility';
 import { addDays, etParts, formatDay, formatTime, publicAfterET, todayET } from '@/lib/time';
 import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
 
@@ -149,9 +150,9 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
   if (!sharing) {
     return (
       <View style={styles.root}>
-        <ScreenHeader title="Post" subtitle="Share with hunters. Delayed, location blurred." back />
+        <ScreenHeader title="Post" subtitle="Share with hunters. Goes public after a delay, then shows the exact location you share." back />
         <ScrollView contentContainerStyle={styles.body}>
-          <Notice>Your diary is private by default. Turn on “Share to community” to post delayed, blurred entries.</Notice>
+          <Notice>Your diary is private by default. Turn on “Share to community” to post after a delay.</Notice>
           <CommunityOptIn />
         </ScrollView>
       </View>
@@ -162,7 +163,7 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScreenHeader
         title={isPost ? 'Post' : 'Log hunt'}
-        subtitle={isPost ? 'Share with hunters. Delayed, location blurred.' : 'Saves to your private Hunt Log. Not a post.'}
+        subtitle={isPost ? 'Share with hunters. Goes public after a delay, then shows the exact location you share.' : 'Saves to your private Hunt Log. Not a post.'}
         back
       />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
@@ -170,12 +171,12 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
           <Notice tone="success">
             {done === 'private'
               ? 'Saved to your private log on this device. It backs up when you’re online.'
-              : `Posted. Others will see it from ${formatDay(etParts(publicAt).ymd)} at ${formatTime(publicAt)} ET.`}
+              : `Posted. ${goesPublicLabel(publicAt.toISOString())}. You’ll find it in My posts.`}
           </Notice>
         )}
         {done && (
           <View style={styles.row}>
-            <Button label={done === 'private' ? 'My log' : 'View in feed'} onPress={() => router.push(done === 'private' ? '/profile/hunt-log' : '/feed')} style={{ flex: 1 }} />
+            <Button label={done === 'private' ? 'My log' : 'View in My posts'} onPress={() => router.push(done === 'private' ? '/profile/hunt-log' : '/profile/my-posts')} style={{ flex: 1 }} />
             <Button label="Log another" onPress={() => setDone(null)} style={{ flex: 1 }} />
           </View>
         )}
@@ -239,7 +240,7 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
 
         <View style={styles.photo} accessibilityLabel="Photo upload coming soon">
           <Ionicons name="camera-outline" size={24} color={colors.muted} />
-          <Text style={ui.muted}>Photos are coming soon. They’ll be stripped of GPS before upload.</Text>
+          <Text style={ui.muted}>Photos are coming soon.</Text>
         </View>
 
         <SectionTitle>Who sees it</SectionTitle>
@@ -254,12 +255,12 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
         ) : (
           <>
             <Notice>
-              Delayed: only you see it until {formatDay(etParts(publicAt).ymd)} {formatTime(publicAt)} ET, then it’s public
+              Delayed: only you see this post. {goesPublicLabel(publicAt.toISOString())}. Then it’s public
               to signed-in hunters. PA law bars real-time game alerts, so nothing posts live.
             </Notice>
             {exact ? (
               <View style={ui.row}>
-                <Chip label="Show ~5 km area" icon="eye-off-outline" active={location === 'blurred'} onPress={() => setLocation('blurred')} />
+                <Chip label="Show exact location" icon="location-outline" active={location === 'blurred'} onPress={() => setLocation('blurred')} />
                 <Chip label="Hide location" icon="close-circle-outline" active={location === 'hidden'} onPress={() => setLocation('hidden')} />
               </View>
             ) : (

@@ -47,7 +47,7 @@ export function distanceKm(a: LngLat, b: LngLat) {
 }
 
 /**
- * Human label for a blurred ~5 km cell: the county of the nearest known place.
+ * Human label for a shared post location: the county of the nearest known place.
  * Deliberately coarse, never names the place itself.
  */
 export function areaLabel(area: LngLat | null, places: Place[]) {
