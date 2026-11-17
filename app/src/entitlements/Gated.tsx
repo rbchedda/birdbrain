@@ -7,6 +7,7 @@ import { Button, ui } from '@/components/ui';
 import { colors, fonts, radius, space } from '@/theme/tokens';
 
 import { legal } from '@/lib/env';
+import { flags } from '@/lib/flags';
 
 import { DISCLOSURE, PLACEHOLDER_PRICE_NOTE, PRODUCTS } from './config';
 import { useEntitlements } from './EntitlementsContext';
@@ -60,6 +61,8 @@ export function UpgradeSheet() {
   };
   const season = PRODUCTS.season_pass_yearly;
   const weekend = PRODUCTS.weekend_pass;
+  // v1: paywall hidden, so no upgrade sheet at all (no prices, passes or "coming soon").
+  if (!flags.paywall) return null;
   return (
     <Modal visible={upgradeFor !== null} transparent animationType="slide" onRequestClose={() => showUpgrade(null)}>
       <View style={styles.backdrop}>

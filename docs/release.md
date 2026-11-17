@@ -14,6 +14,7 @@ Owner: RBChedda. Tick these off in order. Anything that creates an Expo or Apple
 - [ ] **Hosted Supabase Auth redirect URLs.** In the Supabase dashboard → Authentication → URL Configuration, add `birdbrain://**` and `exp://**` to Redirect URLs (they're empty on the hosted project; the dev token lacks `auth_config_write`, so this is a manual step). Needed for magic-link / OAuth returns in TestFlight builds.
 
 ## Feature flags (set per profile in `eas.json` → `build.<profile>.env`; production leaves `EXPO_PUBLIC_PURCHASES_PROVIDER` unset → Unavailable until RevenueCat, and a test enforces it never says mock)
+- **v1 launches free (RBChedda, Nov 17 2026):** leave `EXPO_PUBLIC_FLAG_PAYWALL` unset in every EAS profile. With it off every feature is free, no paywall/pass copy shows, and no purchase provider is created. The RevenueCat items below are for a later paid release.
 - [ ] `EXPO_PUBLIC_PURCHASES_PROVIDER=revenuecat` for production once RevenueCat exists (BLOCKED: no account). Set `EXPO_PUBLIC_REVENUECAT_IOS_KEY` (public SDK key) as an EAS env var.
 - [ ] RevenueCat: products `weekend_pass` (non-renewing) and `season_pass_yearly` (auto-renew + intro offer) created in App Store Connect and attached to the `pro` entitlement. Paid Apps agreement, tax and banking done.
 - [ ] `EXPO_PUBLIC_FLAG_APPLE_SIGN_IN=1` only after the Apple sign-in capability is on for the bundle id **and** the Supabase Apple provider is configured. If any third-party sign-in ships, Guideline 4.8 requires Apple sign-in too.
@@ -39,9 +40,9 @@ Owner: RBChedda. Tick these off in order. Anything that creates an Expo or Apple
 - [ ] Privacy Policy, Terms, support URL and support inbox live and set as EAS env vars (`docs/launch/publish-checklist.md`). Privacy "nutrition label": location (app functionality, not tracking), account info, user content (posts/diary). No purchases while the v1 paywall is hidden.
 - [ ] Age rating questionnaire (hunting: realistic violence "none"; check the weapons references answer).
 - [ ] Export compliance: `usesNonExemptEncryption: false` is set (HTTPS only).
-- [ ] Review notes: a demo account, how to reach the paywall, and that passes are placeholders until RevenueCat is live.
+- [ ] Review notes: a demo account. v1 has no in-app purchases (paywall flag off), so there is no paywall to describe.
 - [ ] Account deletion is reachable in-app (Guideline 5.1.1(v)).
-- [ ] Subscription disclosure on the paywall (3.1.2): already covered by tests.
+- [ ] Subscription disclosure on the paywall (3.1.2): already covered by tests (paid release only; hidden in v1).
 - [ ] Submit for review by **Dec 21**. Apple's holiday slowdown is usually about Dec 22–27, so submit early.
 
 ## To add later: permission strings

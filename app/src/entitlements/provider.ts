@@ -1,3 +1,5 @@
+import { flags } from '@/lib/flags';
+
 import { PRODUCTS, type ProductConfig } from './config';
 import type { EntitlementState } from './state';
 
@@ -63,8 +65,10 @@ export function providerFlag(raw: string | undefined = process.env.EXPO_PUBLIC_P
  * RevenueCat gets UnavailablePurchaseProvider (premium locked, no buy buttons).
  */
 export function createPurchaseProvider(
-  opts: { flag?: string; loadRevenueCat?: () => PurchaseProvider; isDev?: boolean } = {},
+  opts: { flag?: string; loadRevenueCat?: () => PurchaseProvider; isDev?: boolean; paywall?: boolean } = {},
 ): PurchaseProvider {
+  // Paywall hidden (v1): never load RevenueCat or the mock store; nothing can be bought.
+  if (!(opts.paywall ?? flags.paywall)) return new UnavailablePurchaseProvider();
   const dev = opts.isDev ?? isDevBuild();
   const fallback = (): PurchaseProvider => (dev ? new MockPurchaseProvider() : new UnavailablePurchaseProvider());
   if (providerFlag(opts.flag ?? process.env.EXPO_PUBLIC_PURCHASES_PROVIDER) !== 'revenuecat') return fallback();

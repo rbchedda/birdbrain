@@ -32,6 +32,14 @@ import { legal } from '@/lib/env';
 import { StockingList } from '@/components/StockingList';
 import { samplePlaces } from '@/data/places';
 
+// These tests cover the paid tier, which v1 hides (EXPO_PUBLIC_FLAG_PAYWALL off by default).
+beforeAll(() => {
+  process.env.EXPO_PUBLIC_FLAG_PAYWALL = '1';
+});
+afterAll(() => {
+  delete process.env.EXPO_PUBLIC_FLAG_PAYWALL;
+});
+
 const NOW = Date.parse('2026-10-22T14:00:00Z');
 const premium = { active: ['season_pass'], seasonPassExpiresAt: NOW + 1e9 };
 
