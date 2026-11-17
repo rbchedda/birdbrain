@@ -24,7 +24,17 @@
  * crew card are hidden, and supabase plans upsert/select never mention those
  * columns (fieldtest against hosted stays safe). Owner-only verdict still shows.
  */
+/**
+ * paywall: OFF for v1 (RBChedda, Nov 17 2026: launch free, paywall hidden).
+ * While off: every feature is usable for free, the upgrade sheet never renders,
+ * no pass/price/"Passes coming soon" copy is shown, and no purchase provider
+ * (RevenueCat or mock) is created. The RevenueCat code stays in place behind it.
+ * EXPO_PUBLIC_FLAG_PAYWALL=1 restores the paid tier (needs a RevenueCat account).
+ */
 export const flags = {
+  get paywall() {
+    return process.env.EXPO_PUBLIC_FLAG_PAYWALL === '1';
+  },
   /** Read on each access so tests can flip them; builds still inline the env var. */
   get statsShare() {
     return process.env.EXPO_PUBLIC_FLAG_STATS_SHARE === '1';

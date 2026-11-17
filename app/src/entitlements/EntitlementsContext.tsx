@@ -1,6 +1,7 @@
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { backend } from '@/data';
+import { flags } from '@/lib/flags';
 import { gate } from '@/lib/gate';
 
 import type { ProductConfig } from './config';
@@ -41,7 +42,9 @@ export function EntitlementsProvider({
   now?: () => number;
 }) {
   const [state, setState] = useState(initialState);
-  const [upgradeFor, showUpgrade] = useState<Feature | null>(null);
+  const [upgradeFor, setUpgradeFor] = useState<Feature | null>(null);
+  // Paywall hidden (v1): asking for the upgrade sheet is a no-op.
+  const showUpgrade = useCallback((f: Feature | null) => setUpgradeFor(flags.paywall ? f : null), []);
   useEffect(() => {
     provider.getEntitlements().then((s) => s.active.length || s.weekendPassExpiresAt ? setState(s) : undefined).catch(() => {});
   }, [provider]);
@@ -71,7 +74,7 @@ export function EntitlementsProvider({
       upgradeFor,
       showUpgrade,
     }),
-    [state, provider, clock, purchase, restore, upgradeFor],
+    [state, provider, clock, purchase, restore, upgradeFor, showUpgrade],
   );
   return <EntitlementsCtx.Provider value={value}>{children}</EntitlementsCtx.Provider>;
 }

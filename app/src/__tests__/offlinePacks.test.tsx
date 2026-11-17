@@ -22,6 +22,14 @@ import type { TileStore } from '@/offline/store';
 import { serveTile } from '@/offline/tileServer';
 import { countTiles } from '@/offline/tiles';
 
+// These tests cover the paid tier, which v1 hides (EXPO_PUBLIC_FLAG_PAYWALL off by default).
+beforeAll(() => {
+  process.env.EXPO_PUBLIC_FLAG_PAYWALL = '1';
+});
+afterAll(() => {
+  delete process.env.EXPO_PUBLIC_FLAG_PAYWALL;
+});
+
 declare function require(name: 'fs'): { readdirSync(p: string): string[]; readFileSync(p: string, e: 'utf8'): string };
 declare function require(name: 'path'): { join(...p: string[]): string };
 declare const __dirname: string;

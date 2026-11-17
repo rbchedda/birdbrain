@@ -1,3 +1,5 @@
+import { flags } from '@/lib/flags';
+
 import { ENTITLEMENT_ID } from './config';
 import { isPremium, isSafetyFeature, type Feature } from './features';
 
@@ -21,6 +23,8 @@ export function hasPremium(s: EntitlementState, now: number = Date.now()): boole
 export function canUse(feature: Feature, s: EntitlementState, now: number = Date.now()): boolean {
   if (isSafetyFeature(feature)) return true;
   if (!isPremium(feature)) return true;
+  // v1 launches free: with the paywall flag off every feature is unlocked (lib/flags.ts).
+  if (!flags.paywall) return true;
   // Field-test builds only (EXPO_PUBLIC_FIELDTEST_UNLOCK=1): every premium feature unlocked client-side.
   if (process.env.EXPO_PUBLIC_FIELDTEST_UNLOCK === '1') return true;
   return hasPremium(s, now);
