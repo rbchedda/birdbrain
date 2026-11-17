@@ -63,7 +63,8 @@
         <p class="muted" id="report-status"></p>
       </form>
     </div>
-    <p class="muted" style="margin-top:2rem">Shared from <a class="app" href="https://birdbrain.app">BirdBrain</a>. Exact pin, bird totals, dogs, photos, and account details are never shown here.</p>
+    <p class="muted" style="margin-top:2rem">Shared from <a class="app" id="app-link">BirdBrain</a>. Exact pin, bird totals, dogs, photos, and account details are never shown here.</p>
+    <p class="muted hidden" id="legal-links"><a id="privacy-link">Privacy Policy</a> · <a id="terms-link">Terms of Service</a></p>
   </main>
   <!-- First-party page only: no third-party analytics, scripts, or tracking cookies. -->
   <script src="./config.js"></script>
@@ -76,6 +77,18 @@
       var content = document.getElementById('content');
       var report = document.getElementById('report');
       var cfg = window.BIRDBRAIN_SHARE || {};
+
+      // Footer links come from config.js (appUrl, privacyUrl, termsUrl). Unset or
+      // TODO_PUBLISH placeholders leave the links inert/hidden (docs/launch/publish-checklist.md).
+      function published(u) {
+        return typeof u === 'string' && /^https:\/\//.test(u) && u.indexOf('TODO_PUBLISH') === -1;
+      }
+      if (published(cfg.appUrl)) document.getElementById('app-link').href = cfg.appUrl;
+      if (published(cfg.privacyUrl) && published(cfg.termsUrl)) {
+        document.getElementById('privacy-link').href = cfg.privacyUrl;
+        document.getElementById('terms-link').href = cfg.termsUrl;
+        document.getElementById('legal-links').classList.remove('hidden');
+      }
 
       function fail(_msg) {
         // Identical copy for invalid / revoked / expired / flag-off / misconfig (lawyer).

@@ -73,7 +73,7 @@ import {
   STOCKING_LINE,
   STOCKING_PIN_NOTE,
 } from '@/data/mapNotice';
-import { legal } from '@/lib/env';
+import { mapErrorReportLink } from '@/lib/env';
 import {
   DEVICE,
   dismissNoticeFor,
@@ -751,9 +751,7 @@ function PlaceDetails({
   const [saveError, setSaveError] = useState<string>();
   const layerDate = layerDateFor(place.type, useDataSources());
   const reportError = () =>
-    Linking.openURL(
-      `${legal.mapErrorReportUrl}?place=${encodeURIComponent(place.id)}&name=${encodeURIComponent(place.name)}`,
-    ).catch(() => {});
+    Linking.openURL(mapErrorReportLink(place)).catch(() => {});
 
   useEffect(() => {
     let live = true;
