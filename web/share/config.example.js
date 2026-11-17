@@ -8,4 +8,9 @@ window.BIRDBRAIN_SHARE = {
   supabaseUrl: 'https://YOUR_PROJECT.supabase.co',
   // Public anon / publishable key only (never the service role).
   supabaseAnonKey: 'YOUR_ANON_KEY',
+  // Footer links (https only). Same pages as the app's EXPO_PUBLIC_* launch links;
+  // see docs/launch/publish-checklist.md. TODO_PUBLISH values are ignored.
+  appUrl: 'https://birdbrain.invalid/TODO_PUBLISH/app',
+  privacyUrl: 'https://birdbrain.invalid/TODO_PUBLISH/privacy',
+  termsUrl: 'https://birdbrain.invalid/TODO_PUBLISH/terms',
 };

@@ -1,12 +1,13 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Text, TextInput, View } from 'react-native';
+import { Linking, Text, TextInput, View } from 'react-native';
 
 import { LegalLinks } from '@/components/LegalLinks';
 import { Button, Chip, Notice, SectionTitle, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { useAsync, useSession } from '@/data/hooks';
 import { displayName } from '@/data/types';
+import { isPlaceholderLink, legal, supportLink } from '@/lib/env';
 import { offlinePacks } from '@/offline';
 import { colors, space } from '@/theme/tokens';
 
@@ -136,6 +137,14 @@ export function AccountSettings() {
             <Button label="Cancel" onPress={() => setConfirmDelete(false)} />
           </>
         ))}
+      <SectionTitle>Help</SectionTitle>
+      <Button
+        label="Contact support"
+        icon="help-circle-outline"
+        testID="contact-support"
+        onPress={() => Linking.openURL(supportLink()).catch(() => {})}
+      />
+      {!isPlaceholderLink(legal.supportEmail) && <Text style={ui.muted}>Email {legal.supportEmail}</Text>}
       <SectionTitle>Legal</SectionTitle>
       <Button label="Community rules" icon="document-text-outline" onPress={() => router.push('/rules')} />
       <Button label="Data sources" icon="layers-outline" onPress={() => router.push('/data-sources')} />

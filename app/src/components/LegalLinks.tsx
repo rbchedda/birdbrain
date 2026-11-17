@@ -5,7 +5,7 @@ import { ui } from '@/components/ui';
 import { legal } from '@/lib/env';
 import { colors, space } from '@/theme/tokens';
 
-/** Privacy policy and terms links (placeholder URLs, see lib/env.ts), plus Guide photo credits on Profile. */
+/** Privacy policy and terms links (configured in lib/env.ts; placeholders until published), plus Guide photo credits on Profile. */
 export function LegalLinks({ credits = false }: { credits?: boolean }) {
   return (
     <View style={styles.row}>

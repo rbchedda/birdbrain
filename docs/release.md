@@ -35,8 +35,8 @@ Owner: RBChedda. Tick these off in order. Anything that creates an Expo or Apple
   - [ ] offline Hunt Log
 
 ## Dec 14 → Dec 21: store listing and submission
-- [ ] Screenshots (6.9" and 6.5" iPhone, plus iPad if `supportsTablet` stays true), app icon 1024², subtitle, keywords, description, support URL.
-- [ ] Privacy Policy URL and Terms URL live (same as `legal` in the app). Privacy "nutrition label": location (app functionality, not tracking), photos, account info, purchases.
+- [ ] Screenshots (6.9" and 6.5" iPhone; v1 is iPhone only, `supportsTablet: false`), app icon 1024², subtitle, keywords, description, support URL.
+- [ ] Privacy Policy, Terms, support URL and support inbox live and set as EAS env vars (`docs/launch/publish-checklist.md`). Privacy "nutrition label": location (app functionality, not tracking), account info, user content (posts/diary). No purchases while the v1 paywall is hidden.
 - [ ] Age rating questionnaire (hunting: realistic violence "none"; check the weapons references answer).
 - [ ] Export compliance: `usesNonExemptEncryption: false` is set (HTTPS only).
 - [ ] Review notes: a demo account, how to reach the paywall, and that passes are placeholders until RevenueCat is live.

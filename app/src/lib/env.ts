@@ -24,16 +24,64 @@ export const useSampleData =
   process.env.EXPO_PUBLIC_USE_SAMPLE_DATA === '1' || process.env.NODE_ENV === 'test';
 
 /**
- * Legal links shown on sign-in and profile.
- * TODO(P0.6): replace these placeholders with the real hosted privacy policy
- * and terms of service before store submission.
+ * Launch links: privacy policy, terms, support and map-error reporting.
+ * ONE config spot: each comes from an EXPO_PUBLIC_* variable (set it as an EAS
+ * env var for production builds, or in app/.env locally). Until a real page is
+ * published the fallback is an obvious placeholder on the reserved `.invalid`
+ * TLD carrying the TODO_PUBLISH marker, which never resolves and is easy to grep.
+ * app.config.ts warns at build time while any of them is still a placeholder.
+ * What to publish, and where: docs/launch/publish-checklist.md.
  */
+export const TODO_PUBLISH = 'TODO_PUBLISH';
+const PLACEHOLDER = `https://birdbrain.invalid/${TODO_PUBLISH}`;
+const or = (value: string | undefined, fallback: string) => value?.trim() || fallback;
+
 export const legal = {
-  privacyPolicyUrl: 'https://example.com/birdbrain/privacy-TODO',
-  termsUrl: 'https://example.com/birdbrain/terms-TODO',
-  /** Placeholder until a support inbox exists; gets ?place=<id>&name=<name>. */
-  mapErrorReportUrl: 'https://example.com/birdbrain/map-error-TODO',
+  // Getters so tests can flip the env; Expo still inlines each EXPO_PUBLIC_* at build time.
+  get privacyPolicyUrl() {
+    return or(process.env.EXPO_PUBLIC_PRIVACY_URL, `${PLACEHOLDER}/privacy`);
+  },
+  get termsUrl() {
+    return or(process.env.EXPO_PUBLIC_TERMS_URL, `${PLACEHOLDER}/terms`);
+  },
+  /** Support page (also the App Store Connect "Support URL"). */
+  get supportUrl() {
+    return or(process.env.EXPO_PUBLIC_SUPPORT_URL, `${PLACEHOLDER}/support`);
+  },
+  /** Support inbox shown in Settings → Help. */
+  get supportEmail() {
+    return or(process.env.EXPO_PUBLIC_SUPPORT_EMAIL, `${TODO_PUBLISH}@birdbrain.invalid`);
+  },
+  /** Map data error report: an https form URL (gets ?place=<id>&name=<name>) or a mailto: address. */
+  get mapErrorReportUrl() {
+    return or(process.env.EXPO_PUBLIC_MAP_ERROR_URL, `${PLACEHOLDER}/map-error`);
+  },
 };
+
+export type LaunchLink = 'privacyPolicyUrl' | 'termsUrl' | 'supportUrl' | 'supportEmail' | 'mapErrorReportUrl';
+export const LAUNCH_LINKS: readonly LaunchLink[] = ['privacyPolicyUrl', 'termsUrl', 'supportUrl', 'supportEmail', 'mapErrorReportUrl'];
+
+export const isPlaceholderLink = (value: string): boolean => value.includes(TODO_PUBLISH);
+/** Launch links still on their placeholder; must be empty before store submission. */
+export const unpublishedLinks = (): LaunchLink[] => LAUNCH_LINKS.filter((k) => isPlaceholderLink(legal[k]));
+
+/** Where "Contact support" goes: the support page, else a mail to the support inbox. */
+export function supportLink(): string {
+  if (!isPlaceholderLink(legal.supportUrl)) return legal.supportUrl;
+  if (!isPlaceholderLink(legal.supportEmail)) return `mailto:${legal.supportEmail}?subject=${encodeURIComponent('BirdBrain support')}`;
+  return legal.supportUrl;
+}
+
+/** "Report a map error" link for one place, for either a form URL or a mailto: address. */
+export function mapErrorReportLink(place: { id: string; name: string }): string {
+  const base = legal.mapErrorReportUrl;
+  if (base.startsWith('mailto:')) {
+    const subject = encodeURIComponent(`BirdBrain map error: ${place.name}`);
+    const body = encodeURIComponent(`Place: ${place.name} (${place.id})\n\nWhat looks wrong:\n`);
+    return `${base}${base.includes('?') ? '&' : '?'}subject=${subject}&body=${body}`;
+  }
+  return `${base}${base.includes('?') ? '&' : '?'}place=${encodeURIComponent(place.id)}&name=${encodeURIComponent(place.name)}`;
+}
 
 /** Minimum age to use BirdBrain (COPPA / store policy). */
 export const MIN_AGE = 13;
