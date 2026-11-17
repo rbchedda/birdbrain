@@ -17,7 +17,7 @@ afterAll(() => {
 
 it('Settings → Help → Contact support opens the configured support page', async () => {
   process.env.EXPO_PUBLIC_SUPPORT_URL = 'https://bb.test/support';
-  const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+  const open = jest.spyOn(Linking, 'openURL').mockResolvedValue();
   await renderRouter('./src/app', { initialUrl: '/profile/settings' });
   await fireEvent.press(await screen.findByTestId('contact-support'));
   expect(open).toHaveBeenCalledWith('https://bb.test/support');
