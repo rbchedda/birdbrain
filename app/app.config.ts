@@ -11,7 +11,9 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 export const IOS_BUNDLE_ID = process.env.BIRDBRAIN_IOS_BUNDLE_ID || 'com.rbchedda.birdbrain';
 
 // Location is foreground / When In Use only (app.json: expo-location plugin, no background).
-// No camera or photo-library strings yet (photos are "coming soon"); see docs/release.md.
+// Photos (v1): expo-image-picker plugin in app.json sets NSPhotoLibraryUsageDescription and
+// NSCameraUsageDescription ("Photos are shared as uploaded"); microphone is off. Photos never ask
+// for location. Adding the plugin needs a new native build (not an OTA update); see docs/release.md.
 
 // Launch links (src/lib/env.ts). Unset = TODO_PUBLISH placeholder in the app; see
 // docs/launch/publish-checklist.md. Warn loudly at config/build time, never print values.

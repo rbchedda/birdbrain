@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { PhotoPicker } from '@/components/Photos';
 import { ScreenHeader } from '@/components/Screen';
 import { Button, Chip, Notice, SectionTitle, Stepper, ui } from '@/components/ui';
 import { listDogs, saveDog } from '@/data/dogs';
@@ -22,6 +23,7 @@ import {
   type PostDraft,
   type Species,
 } from '@/data/types';
+import { MAX_DIARY_PHOTOS } from '@/lib/photos';
 import { addDays, formatDay, todayET } from '@/lib/time';
 import { colors, fonts, radius, space, touchTarget } from '@/theme/tokens';
 
@@ -298,9 +300,13 @@ export function DiaryForm({
       <TextInput value={v.notes} onChangeText={(notes) => setV({ ...v, notes })} multiline maxLength={2000} placeholder="Dog work, cover, conditions…" placeholderTextColor={colors.muted} style={[ui.input, { minHeight: 96, textAlignVertical: 'top' }]} accessibilityLabel="Notes" />
 
       <SectionTitle>Photos</SectionTitle>
-      <Text style={ui.muted}>
-        {d.photos.length ? `${d.photos.length} private photo${d.photos.length > 1 ? 's' : ''}. ` : ''}Photos stay private to you and back up to your account only.
-      </Text>
+      <PhotoPicker
+        photos={d.photos}
+        max={MAX_DIARY_PHOTOS}
+        onAdd={(p) => setV((s) => ({ ...s, details: { ...s.details, photos: [...s.details.photos, { id: p.id, localUri: p.localUri, mimeType: p.mimeType, path: null }].slice(0, MAX_DIARY_PHOTOS) } }))}
+        onRemove={(id) => setV((s) => ({ ...s, details: { ...s.details, photos: s.details.photos.filter((x) => x.id !== id) } }))}
+        note="Private to you. They back up to your account as uploaded, once you’re online."
+      />
 
     </>
   );

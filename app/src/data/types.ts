@@ -110,6 +110,9 @@ export interface Post {
   comments: number;
   likedByMe: boolean;
   group: string | null;
+  /** Storage path in the private post-photos bucket (<author_id>/<photo id>.<ext>), or null. Reads are gated by RLS (delay + blocks). */
+  photoPath?: string | null;
+  /** Sample data only: a colour block standing in for a photo. */
   photoTint?: string;
 }
 
@@ -123,6 +126,15 @@ export interface PostDraft {
   location: LocationVisibility;
   audience: 'private' | 'shared';
   groupSlug: string | null;
+  /** Optional single photo (posts.photo_path), uploaded as-is to post-photos/<uid>/ when the post is created. */
+  photo?: LocalPhoto | null;
+}
+
+/** A photo on this device, ready to upload. */
+export interface LocalPhoto {
+  id: string;
+  localUri: string;
+  mimeType?: string | null;
 }
 
 export interface Comment {
@@ -285,10 +297,12 @@ export interface DiaryWeather {
   precip: string | null;
 }
 
-/** A private photo. localUri until uploaded; path is <user_id>/<entry client_id>/<photo id>.jpg in the private diary-photos bucket. */
+/** A private photo. localUri until uploaded; path is <user_id>/<entry client_id>/<photo id>.<ext> in the private diary-photos bucket. */
 export interface DiaryPhoto {
   id: string;
   localUri?: string | null;
+  /** MIME type picked on this device (decides the upload's content type and extension). */
+  mimeType?: string | null;
   path: string | null;
 }
 

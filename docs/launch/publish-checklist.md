@@ -16,7 +16,7 @@ shows which env vars are still missing.
 
 | # | What | Needs to say / do | App env var (EAS env, production) | Also used in |
 |---|---|---|---|---|
-| 1 | **Privacy Policy page** (public https) | What BirdBrain collects: email/account, location while the app is open (When In Use), posts, diary entries and private photos, crew data, consent records; posts go public only after the delay; account deletion in Settings; no tracking/ads; support contact. Legal review is on hold (Joshua's call). | `EXPO_PUBLIC_PRIVACY_URL` | App Store Connect → App Privacy → Privacy Policy URL; web/share `config.js` `privacyUrl` |
+| 1 | **Privacy Policy page** (public https) | What BirdBrain collects: email/account, location while the app is open (When In Use), posts and their photos, diary entries and their private photos, crew data, consent records; posts (and a post's photo) go public only after the delay; photos are stored and shared as uploaded (BirdBrain does not edit them or remove location or other data saved in the file); account deletion in Settings; no tracking/ads; support contact. Legal review is on hold (Joshua's call). | `EXPO_PUBLIC_PRIVACY_URL` | App Store Connect → App Privacy → Privacy Policy URL; web/share `config.js` `privacyUrl` |
 | 2 | **Terms of Service page** (public https) | Full ToS matching in-app `TERMS_VERSION` `2026-11-10` (the in-app "Maps, Data and Your Responsibility" section is a subset). | `EXPO_PUBLIC_TERMS_URL` | App Store Connect → License Agreement (optional, else Apple's standard EULA); web/share `config.js` `termsUrl` |
 | 3 | **Support page** (public https) | How to contact support, how to delete your account, FAQ (optional). Apple requires a working Support URL. | `EXPO_PUBLIC_SUPPORT_URL` | App Store Connect → App Information → **Support URL** (required) |
 | 4 | **Support inbox** (a real mailbox someone reads) | Receives support mail and, if you use mailto for #5, map error reports. | `EXPO_PUBLIC_SUPPORT_EMAIL` | Shown in Settings → Help; listed on the Support page; App Review contact |
@@ -45,6 +45,7 @@ Any static host works (GitHub Pages, Netlify, Cloudflare Pages, the web/share ho
 ## 3. Also needed for v1 (not URLs, listed so nothing is missed)
 
 - Paywall stays hidden: do **not** set `EXPO_PUBLIC_FLAG_PAYWALL` in the production EAS env.
-- App Privacy labels: no "Purchases" while the paywall is hidden.
+- App Privacy labels: no "Purchases" while the paywall is hidden. **Add "Photos or Videos"** under User Content (app functionality, linked to the user, not tracking): v1 posts and diary entries carry photos.
+- Photos ship in v1 (RBChedda, Nov 17 2026: "Pictures need to be in it."). expo-image-picker is native, so the first TestFlight build must be a **new EAS build**, not an OTA update.
 - iPhone-only: `supportsTablet: false` is set; upload iPhone 6.9" and 6.5" screenshots only.
 - Confirm the bundle ID `com.rbchedda.birdbrain` before creating the App Store Connect record.

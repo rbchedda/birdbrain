@@ -3,11 +3,12 @@ import type { Session as AuthSession, SupabaseClient } from '@supabase/supabase-
 
 import { parseGeometry, parsePoint, toEwkt } from '@/lib/geo';
 import { flags } from '@/lib/flags';
+import { photoExtension } from '@/lib/photoRules';
 import { removeAllUnder, type StorageBucketApi } from '@/lib/storageCleanup';
 
 import { classifyAccess, type AccessType } from './access';
 import { planUpsertCols, plansSelectColumns } from './plansHostedColumns';
-import { crewError, NotSignedInError, postKind, type Backend, type LeaveCrewResult, type PlanReminder, type ServerHuntLog, type Session } from './backend';
+import { crewError, NotSignedInError, postKind, type Backend, type PhotoBucket, type LeaveCrewResult, type PlanReminder, type ServerHuntLog, type Session } from './backend';
 import placeDetailQuery from './placeDetailQuery.json';
 import type { Author, BirdCounts, DiaryDetails, DiaryShareLink, DiaryShareStatus, Crew, Comment, Place, PlaceType, Post, Profile, Species, StockingEvent } from './types';
 
@@ -15,7 +16,7 @@ import type { Author, BirdCounts, DiaryDetails, DiaryShareLink, DiaryShareStatus
 // them too), so embeds name the foreign key column.
 const POST_COLUMNS = [
   'id, author_id, kind, species, caption, created_at, public_after, hunted_on',
-  'location_visibility, public_geom, counts',
+  'location_visibility, public_geom, counts, photo_path',
   'author:profiles!author_id(id, username, display_name)',
   'group:groups(name)',
   'likes(count)',
@@ -71,14 +72,16 @@ function toCounts(v: unknown): BirdCounts | null {
  */
 async function uploadPhoto(
   sb: SupabaseClient,
-  bucket: 'diary-photos' | 'post-photos',
+  bucket: PhotoBucket,
   path: string,
   localUri: string,
+  mimeType?: string | null,
 ): Promise<string> {
   const res = await fetch(localUri);
   if (!res.ok) throw new Error("Couldn't read your photo. Please try again.");
   const body = await res.arrayBuffer();
-  const contentType = res.headers.get('content-type') || 'image/jpeg';
+  // React Native's fetch of a file:// URI has no content-type; the picker's MIME type wins.
+  const contentType = mimeType || res.headers.get('content-type') || 'image/jpeg';
   const up = await sb.storage.from(bucket).upload(path, body, { contentType, upsert: true });
   if (up.error) throw new Error(up.error.message || "Couldn't upload your photo. Please try again.");
   return path;
@@ -131,6 +134,7 @@ export function createSupabaseBackend(
         comments: r.comments?.[0]?.count ?? 0,
         likedByMe: liked.has(r.id),
         group: r.group?.name ?? null,
+        photoPath: r.photo_path ?? null,
       }));
   }
 
@@ -337,21 +341,36 @@ export function createSupabaseBackend(
       const group = draft.groupSlug
         ? (check(await sb.from('groups').select('id').eq('slug', draft.groupSlug).maybeSingle()) as Row | null)
         : null;
-      const row = check(
-        await sb
-          .from('posts')
-          .insert({
-            author_id: userId,
-            kind: postKind(draft),
-            species: draft.species,
-            caption: draft.caption || null,
-            group_id: group?.id ?? null,
-            location_visibility: draft.location,
-            hunted_on: draft.huntedOn,
-          })
-          .select('id')
-          .single(),
-      ) as Row;
+      // Photo first, so photo_path is set on insert (editing it later would restart the delay).
+      // Stored as uploaded in the author's own folder; nobody else can read it until the post is visible (can_read_post_photo).
+      const photoPath = draft.photo
+        ? await uploadPhoto(sb, 'post-photos', `${userId}/${draft.photo.id}.${photoExtension(draft.photo.mimeType)}`, draft.photo.localUri, draft.photo.mimeType)
+        : null;
+      const removeUploaded = async () => {
+        if (photoPath) await sb.storage.from('post-photos').remove([photoPath]).catch(() => undefined);
+      };
+      let row: Row;
+      try {
+        row = check(
+          await sb
+            .from('posts')
+            .insert({
+              author_id: userId,
+              kind: postKind(draft),
+              species: draft.species,
+              caption: draft.caption || null,
+              group_id: group?.id ?? null,
+              location_visibility: draft.location,
+              hunted_on: draft.huntedOn,
+              photo_path: photoPath,
+            })
+            .select('id')
+            .single(),
+        ) as Row;
+      } catch (e) {
+        await removeUploaded();
+        throw e;
+      }
       try {
         // Exact point is owner-only in post_locations; the trigger copies it to public_geom when shared.
         if (draft.exact) {
@@ -367,6 +386,7 @@ export function createSupabaseBackend(
         if (counts.length) check(await sb.from('post_place_counts').insert(counts));
       } catch (e) {
         await sb.from('posts').delete().eq('id', row.id);
+        await removeUploaded();
         throw e;
       }
       const post = await api.post(row.id);
@@ -375,7 +395,14 @@ export function createSupabaseBackend(
     },
 
     async deletePost(id) {
+      const userId = await me();
+      const row = check(await sb.from('posts').select('photo_path').eq('id', id).eq('author_id', userId).maybeSingle()) as Row | null;
       check(await sb.from('posts').delete().eq('id', id));
+      // Best effort: the photo goes with the post (owner-only delete policy). A miss leaves an unreadable orphan,
+      // since can_read_post_photo needs a post row pointing at it.
+      if (row?.photo_path && String(row.photo_path).startsWith(`${userId}/`)) {
+        await sb.storage.from('post-photos').remove([row.photo_path]).catch(() => undefined);
+      }
     },
 
     async setLiked(postId, liked) {
@@ -779,8 +806,14 @@ export function createSupabaseBackend(
 
     async uploadDiaryPhoto(clientId, photo) {
       const userId = await me();
-      const path = `${userId}/${clientId}/${photo.id}.jpg`;
-      return uploadPhoto(sb, 'diary-photos', path, photo.localUri);
+      const path = `${userId}/${clientId}/${photo.id}.${photoExtension(photo.mimeType)}`;
+      return uploadPhoto(sb, 'diary-photos', path, photo.localUri, photo.mimeType);
+    },
+
+    async photoUrl(bucket, path) {
+      // Storage RLS decides who may read; a denied or missing object just shows no photo.
+      const res = await sb.storage.from(bucket).createSignedUrl(path, 60 * 60);
+      return res.error || !res.data?.signedUrl ? null : res.data.signedUrl;
     },
   };
   return api;
