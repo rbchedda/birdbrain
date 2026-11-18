@@ -1,5 +1,6 @@
 import { isNetworkError, reportSignal } from '@/lib/connectivity';
 import { newClientId, readJson, updateJson, writeJson } from '@/lib/localStore';
+import { resolveLocalPhoto } from '@/lib/photoStore';
 
 import { NotSignedInError, postKind, sumCounts, type Backend, type HuntLogUpload, type ServerHuntLog } from './backend';
 import { emptyDiaryDetails, type Author, type DiaryDetails, type Post, type PostDraft } from './types';
@@ -188,7 +189,7 @@ async function uploadPhotos(backend: Backend, e: JournalEntry): Promise<JournalE
   if (!missing.length) return e;
   const paths = new Map<string, string>();
   for (const p of missing) {
-    paths.set(p.id, await backend.uploadDiaryPhoto(e.clientId, { id: p.id, localUri: p.localUri! }));
+    paths.set(p.id, await backend.uploadDiaryPhoto(e.clientId, { id: p.id, localUri: resolveLocalPhoto(p.localUri)!, mimeType: p.mimeType ?? null }));
     // Recording a path is not a content edit, so it applies whatever the rev.
     await update((cur) =>
       cur.map((x) =>

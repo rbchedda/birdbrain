@@ -62,6 +62,14 @@
           "locationAlwaysAndWhenInUsePermission": false,
           "locationAlwaysPermission": false
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "BirdBrain uses your photo library so you can add a picture to a post or your private hunt diary. Photos are shared as uploaded, so crop out anything you don't want seen.",
+          "cameraPermission": "BirdBrain uses the camera so you can take a picture for a post or your private hunt diary. Photos are shared as uploaded, so crop out anything you don't want seen.",
+          "microphonePermission": false
+        }
       ]
     ],
     "experiments": {

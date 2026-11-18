@@ -8,7 +8,9 @@ import { SignInSheet } from '@/components/SignInSheet';
 import { useShareToCommunity } from '@/lib/shareToCommunity';
 import { needsAccount } from '@/lib/gate';
 import { readJson, writeJson } from '@/lib/localStore';
+import { PhotoPicker } from '@/components/Photos';
 import { ScreenHeader } from '@/components/Screen';
+import { MAX_POST_PHOTOS, type PickedPhoto } from '@/lib/photos';
 import { Button, Chip, Notice, SectionTitle, Stepper, ui } from '@/components/ui';
 import { backend } from '@/data';
 import { useJournal, usePlaces, useSession } from '@/data/hooks';
@@ -73,6 +75,7 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
   const [huntedOn, setHuntedOn] = useState(todayET());
   const [counts, setCounts] = useState<PlaceCount[]>([]);
   const [caption, setCaption] = useState('');
+  const [photo, setPhoto] = useState<PickedPhoto | null>(null);
   const [chosenAudience, setAudience] = useState<'shared' | 'private'>('shared');
   const audience = isPost && sharing ? chosenAudience : 'private';
   const [location, setLocation] = useState<LocationVisibility>('blurred');
@@ -108,6 +111,7 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
   const reset = () => {
     setCounts([]);
     setCaption('');
+    setPhoto(null);
     setSpecies(null);
     setToGroup(false);
     setHuntedOn(todayET());
@@ -126,10 +130,13 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
       location: exact ? location : ('hidden' as const),
       audience,
       groupSlug: toGroup && species ? (groupFor[species as LoggableSpecies] ?? null) : null,
+      photo: audience === 'shared' ? photo : null,
     };
     try {
       if (audience === 'private') {
-        await addJournalEntry(draft, { id: session?.userId ?? 'me', username: null, displayName: 'You' });
+        // Private: the photo rides the diary's backup queue (uploads when online).
+        const details = photo ? { ...emptyDiaryDetails(), species: species ? [species] : [], photos: [{ id: photo.id, localUri: photo.localUri, mimeType: photo.mimeType, path: null }] } : undefined;
+        await addJournalEntry(draft, { id: session?.userId ?? 'me', username: null, displayName: 'You' }, details);
       } else {
         await backend.createPost(draft);
       }
@@ -142,7 +149,7 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
     }
   };
 
-  const empty = !caption.trim() && counts.length === 0;
+  const empty = !caption.trim() && counts.length === 0 && !photo;
 
   // Log hunt (redesign mockups 02/02b): essentials above the fold, sticky Save hunt.
   if (!isPost) return <LogHuntSheet />;
@@ -238,10 +245,19 @@ export function LogForm({ mode: fixedMode }: { mode?: 'diary' | 'post' }) {
           accessibilityLabel="Notes"
         />
 
-        <View style={styles.photo} accessibilityLabel="Photo upload coming soon">
-          <Ionicons name="camera-outline" size={24} color={colors.muted} />
-          <Text style={ui.muted}>Photos are coming soon.</Text>
-        </View>
+        <SectionTitle>Photo</SectionTitle>
+        <PhotoPicker
+          bucket="post-photos"
+          photos={photo ? [photo] : []}
+          max={MAX_POST_PHOTOS}
+          onAdd={setPhoto}
+          onRemove={() => setPhoto(null)}
+          note={
+            audience === 'private'
+              ? 'Private: only you can see it.'
+              : 'Goes public with the post, after the delay. Photos are shared as uploaded. Signs, gates, parking areas and plates can show where you were, so crop them out first.'
+          }
+        />
 
         <SectionTitle>Who sees it</SectionTitle>
         {isPost && (
@@ -547,15 +563,4 @@ const styles = StyleSheet.create({
   offlineTitle: { fontFamily: fonts.heading, fontSize: 22, color: colors.text },
   offlineBody: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.muted },
   pick: { minHeight: touchTarget, justifyContent: 'center', paddingVertical: space.xs },
-  photo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    padding: space.lg,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: colors.border,
-    marginTop: space.sm,
-  },
 });

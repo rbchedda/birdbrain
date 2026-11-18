@@ -30,6 +30,8 @@ export function crewError(message: string): string {
   return message;
 }
 
+export type PhotoBucket = 'post-photos' | 'diary-photos';
+
 export type LeaveCrewResult = 'left' | 'promoted' | 'deleted';
 
 export interface Session {
@@ -173,7 +175,13 @@ export interface Backend {
   /** Idempotent upsert of a private hunt log entry by its client UUID (owner-only). */
   upsertHuntLogEntry(entry: HuntLogUpload): Promise<HuntLogUpsertResult>;
   /** Upload a private diary photo (idempotent by path); returns its storage path. */
-  uploadDiaryPhoto(clientId: string, photo: { id: string; localUri: string }): Promise<string>;
+  uploadDiaryPhoto(clientId: string, photo: { id: string; localUri: string; mimeType?: string | null }): Promise<string>;
+  /**
+   * A short-lived URL to show a stored photo, or null if it can't be shown.
+   * Storage RLS decides: own photos always; another user's post photo only once
+   * the post is visible (delay + blocks). Diary photos are owner-only.
+   */
+  photoUrl(bucket: PhotoBucket, path: string): Promise<string | null>;
   /** Every hunt log entry the signed-in user has saved (owner-only RLS). Restores a new device or reinstall. */
   listHuntLogEntries(): Promise<ServerHuntLog[]>;
   /** Delete a private hunt log entry (and its diary details and photos) by client UUID. Idempotent; owner-only. */

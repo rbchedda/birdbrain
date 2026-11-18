@@ -1,5 +1,6 @@
 import { readJson, writeJson } from '@/lib/localStore';
 import { flags } from '@/lib/flags';
+import { photoExtension } from '@/lib/photoRules';
 import { publicAfterET } from '@/lib/time';
 
 import { crewError, postKind, sumCounts, type Backend, type FeedPage, type HuntLogUpload, type LeaveCrewResult, type ServerPlan, type Session } from './backend';
@@ -209,6 +210,8 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
         comments: 0,
         likedByMe: false,
         group: sampleGroups.find((g) => g.slug === draft.groupSlug)?.name ?? null,
+        // No server here: the photo stays on this device and the post points at it.
+        photoPath: draft.photo?.localUri ?? null,
       };
       s.posts = [post, ...s.posts];
       await persist(s);
@@ -501,7 +504,11 @@ export function createSampleBackend(now: () => Date = () => new Date()): Backend
 
     // Offline: photos stay on the device; the path mirrors the private bucket layout.
     async uploadDiaryPhoto(clientId, photo) {
-      return `${sampleMe.id}/${clientId}/${photo.id}.jpg`;
+      return `${sampleMe.id}/${clientId}/${photo.id}.${photoExtension(photo.mimeType)}`;
+    },
+    // Sample posts keep a device URI as their "path"; bucket paths have no file here.
+    async photoUrl(_bucket, path) {
+      return /^(file|content|blob|data|https?|ph|assets-library):/.test(path) ? path : null;
     },
   };
 }

@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { StoredPhoto } from '@/components/Photos';
 import { ActionMenu, ReportSheet, type MenuAction } from '@/components/Sheets';
 import { Tag } from '@/components/Tag';
 import { backend } from '@/data';
@@ -117,7 +118,11 @@ export function PostCard({
         )}
       </View>
 
-      {post.photoTint && (
+      {post.photoPath ? (
+        <StoredPhoto bucket="post-photos" path={post.photoPath} label={`Photo from ${name}`} testID="post-photo" />
+      ) : null}
+
+      {!post.photoPath && post.photoTint && (
         <View style={[styles.photo, { backgroundColor: post.photoTint }]} accessibilityLabel="Harvest photo">
           <Ionicons name="image-outline" size={36} color="rgba(242,244,239,0.5)" />
         </View>

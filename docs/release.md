@@ -30,14 +30,17 @@ Owner: RBChedda. Tick these off in order. Anything that creates an Expo or Apple
   - [ ] first saved hunt is held and saves after sign-in
   - [ ] map and terrain
   - [ ] location prompt text
-  - [ ] photo and camera prompt text
+  - [ ] photo and camera prompt text (both say "Photos are shared as uploaded"; no microphone prompt; no location prompt from photos)
+  - [ ] post photo: camera + library, preview/remove, shows on the card for the author right away and for others only after the delay
+  - [ ] diary photos: add/remove up to 6 on new and edit, saved offline then uploaded on reconnect, shown on the entry and after a reinstall restore
+  - [ ] HEIC from the library arrives as JPEG; a large photo stays under 10 MB
   - [ ] purchase, restore and sandbox renewals
   - [ ] delete account
   - [ ] offline Hunt Log
 
 ## Dec 14 → Dec 21: store listing and submission
 - [ ] Screenshots (6.9" and 6.5" iPhone; v1 is iPhone only, `supportsTablet: false`), app icon 1024², subtitle, keywords, description, support URL.
-- [ ] Privacy Policy, Terms, support URL and support inbox live and set as EAS env vars (`docs/launch/publish-checklist.md`). Privacy "nutrition label": location (app functionality, not tracking), account info, user content (posts/diary). No purchases while the v1 paywall is hidden.
+- [ ] Privacy Policy, Terms, support URL and support inbox live and set as EAS env vars (`docs/launch/publish-checklist.md`). Privacy "nutrition label": location (app functionality, not tracking), account info, user content (posts/diary) **including "Photos or Videos"** (User Content → Photos or Videos: app functionality, linked to the user, not used for tracking; v1 posts and diary entries carry photos). No purchases while the v1 paywall is hidden.
 - [ ] Age rating questionnaire (hunting: realistic violence "none"; check the weapons references answer).
 - [ ] Export compliance: `usesNonExemptEncryption: false` is set (HTTPS only).
 - [ ] Review notes: a demo account. v1 has no in-app purchases (paywall flag off), so there is no paywall to describe.
@@ -45,12 +48,14 @@ Owner: RBChedda. Tick these off in order. Anything that creates an Expo or Apple
 - [ ] Subscription disclosure on the paywall (3.1.2): already covered by tests (paid release only; hidden in v1).
 - [ ] Submit for review by **Dec 21**. Apple's holiday slowdown is usually about Dec 22–27, so submit early.
 
-## To add later: permission strings
+## Permission strings
 
-Location ships (When In Use only) via the `expo-location` plugin in app.json: "BirdBrain shows where you are on the map so you can see which land you're on." No camera or photo-library strings yet. Add each one in `app.config.ts` → `ios.infoPlist` (plus the expo plugin) in the same PR as the feature, worded plainly:
-
-- `NSLocationWhenInUseUsageDescription`: when the map shows your position (e.g. "Shows where you are on the map. Your location isn't saved or shared.").
-- `NSCameraUsageDescription` / `NSPhotoLibraryUsageDescription`: when hunt-log photos ship.
+- Location (When In Use only) via the `expo-location` plugin in app.json: "BirdBrain shows where you are on the map so you can see which land you're on."
+- Photos (v1) via the `expo-image-picker` plugin in app.json:
+  - `NSPhotoLibraryUsageDescription`: "BirdBrain uses your photo library so you can add a picture to a post or your private hunt diary. Photos are shared as uploaded, so crop out anything you don't want seen."
+  - `NSCameraUsageDescription`: "BirdBrain uses the camera so you can take a picture for a post or your private hunt diary. Photos are shared as uploaded, so crop out anything you don't want seen."
+  - `microphonePermission: false` (no `NSMicrophoneUsageDescription`, Android `RECORD_AUDIO` removed). Photos never request location.
+  - **expo-image-picker is a native module: it needs a new EAS build.** An OTA update (`eas update`) to an older binary won't have it. It is in Expo Go, so dev in Expo Go still works.
 - Don't add `NSLocationAlwaysAndWhenInUseUsageDescription` or `NSPhotoLibraryAddUsageDescription` unless a feature really needs background location or saving to the library.
 
 ## Not possible from the Linux dev box

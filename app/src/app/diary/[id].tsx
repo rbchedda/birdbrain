@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { StoredPhoto } from '@/components/Photos';
 import { ScreenHeader } from '@/components/Screen';
 import { PrivacyPill } from '@/components/stats/parts';
 import { Button, Notice, SectionTitle, ui } from '@/components/ui';
@@ -361,7 +362,15 @@ export default function DiaryEntryScreen() {
               />
             )}
             {e.caption ? <Text style={ui.body}>{e.caption}</Text> : null}
-            {d?.photos.length ? <Row label="Photos" value={`${d.photos.length} private`} /> : null}
+            {d?.photos.length ? (
+              <>
+                <SectionTitle>Photos</SectionTitle>
+                <Text style={ui.muted}>Private to you.</Text>
+                {d.photos.map((p, i) => (
+                  <StoredPhoto key={p.id} bucket="diary-photos" path={p.path} localUri={p.localUri} label={`Diary photo ${i + 1}`} testID={`diary-photo-${i}`} />
+                ))}
+              </>
+            ) : null}
 
             {flags.diaryShare ? (
               <DiarySharePanel clientId={e.clientId} synced={e.sync.status === 'synced'} hasPhotos={!!d?.photos.length} />
